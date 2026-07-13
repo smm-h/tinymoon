@@ -14,6 +14,16 @@ function toastRoot() {
   return root;
 }
 
+let errorHook = null;
+
+// setToastErrorHook(fn): register a module-level hook invoked as fn(message)
+// whenever an error toast is shown — e.g. to mirror errors into a log.
+// Registering a second hook is a hard error, never a silent overwrite.
+export function setToastErrorHook(fn) {
+  if (errorHook) throw new Error("setToastErrorHook: a hook is already registered");
+  errorHook = fn;
+}
+
 // toast(msg, kind, opts): kind "err" turns the toast red and keeps it on
 // screen longer. opts.duration (ms) overrides the lifetime. Every toast
 // carries a copy icon for its message text. The mount point is created
@@ -31,4 +41,7 @@ export function toast(msg, kind, opts) {
     // must stay shorter than this removal delay.
     setTimeout(() => t.remove(), 200);
   }, life);
+  // After the toast is on screen (and its removal is scheduled, so a
+  // throwing hook can't strand it). Hook exceptions propagate.
+  if (kind === "err" && errorHook) errorHook(msg);
 }
