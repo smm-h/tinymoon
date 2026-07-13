@@ -2,7 +2,44 @@
 
 A lean web framework that turns plain, semantic web content into a polished-looking web app.
 
-> **Status:** `0.0.1` is a name reservation. The framework itself — shell, tokens, primitives, and conformance checker — lands in upcoming releases.
+## Usage
+
+Link the four CSS layers (tokens first) and import the ES modules — no build step, no bundler:
+
+```html
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/shell.css">
+<link rel="stylesheet" href="assets/css/primitives.css">
+```
+
+```js
+import { mountShell, createSettings, toast } from "tinymoon";
+// or import primitives standalone: import { toast } from "tinymoon/assets/js/toast.js";
+
+const settings = createSettings({ storageKey: "my-app", defaults: { theme: "dark" } });
+settings.load();
+settings.applyTheme();
+
+const shell = mountShell({
+  root: document.body,
+  brand: { name: "myapp", logoHTML: '<div class="wordmark">my<b>app</b></div>' },
+  routes: {
+    home: { title: "Home", icon: "library", view: () => HomeView },
+  },
+  defaultRoute: "home",
+});
+```
+
+Views are plain objects following the contract `{root, built, build(), refresh(), setSub?}` — the [gallery](gallery/) is a complete working app and documents every token, primitive, and extension point (serve the repo root with a static server and open `/gallery/`).
+
+From Go, the assets ship as an embedded filesystem:
+
+```go
+import "github.com/smm-h/tinymoon" // tinymoon.Assets, tinymoon.FS(), tinymoon.Handler()
+```
+
+From Python, the wheel carries the assets; `tinymoon.assets_path()` returns their directory.
 
 ## Philosophy
 

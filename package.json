@@ -1,12 +1,13 @@
 {
   "name": "tinymoon",
   "version": "0.0.1",
-  "description": "Zero-dependency vanilla JS/CSS UI framework (placeholder release)",
+  "description": "Zero-dependency vanilla JS/CSS UI framework",
   "license": "MIT",
-  "main": "index.js",
+  "type": "module",
+  "main": "./assets/js/index.js",
   "files": [
-    "index.js",
-    "README.md"
+    "assets",
+    "index.js"
   ],
   "repository": "github:smm-h/tinymoon",
   "author": "smm-h",

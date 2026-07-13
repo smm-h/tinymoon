@@ -29,6 +29,16 @@ Repository = "https://github.com/smm-h/tinymoon"
 
 [tool.hatch.build.targets.wheel]
 packages = ["tinymoon"]
+# The repo keeps a tinymoon/assets → ../assets symlink so source checkouts
+# (editable installs) resolve the same path the wheel ships. The wheel gets
+# the real files via force-include below; the symlink itself is excluded so
+# the files are not added twice.
+exclude = ["tinymoon/assets"]
+
+# Ship the framework assets inside the wheel (force-include bypasses the
+# exclude above).
+[tool.hatch.build.targets.wheel.force-include]
+"assets" = "tinymoon/assets"
 
 [dependency-groups]
 dev = [
