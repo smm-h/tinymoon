@@ -1,0 +1,23 @@
+{
+  "name": "tinymoon",
+  "version": "0.0.1",
+  "description": "Zero-dependency vanilla JS/CSS UI framework (placeholder release)",
+  "license": "MIT",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "repository": "github:smm-h/tinymoon",
+  "author": "smm-h",
+  "keywords": [
+    "ui",
+    "framework",
+    "vanilla-js",
+    "css",
+    "zero-dependency"
+  ],
+  "scripts": {
+    "test": "echo \"no tests\" && exit 0"
+  }
+}
