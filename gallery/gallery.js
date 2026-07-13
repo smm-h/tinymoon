@@ -384,8 +384,7 @@ const WidgetsView = {
       return c;
     };
     cgrid.appendChild(mkCard("A resting card", "", "idle"));
-    cgrid.appendChild(mkCard("An active card", "active", "active"));
-    cgrid.appendChild(mkCard("A playing card (accent edge + glow)", "playing", "live"));
+    cgrid.appendChild(mkCard("An active card (accent edge + glow)", "active", "active"));
     cards.appendChild(cgrid);
     this.root.appendChild(cards);
 

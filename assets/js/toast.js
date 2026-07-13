@@ -27,6 +27,8 @@ export function toast(msg, kind, opts) {
   const life = opts && opts.duration ? opts.duration : (kind === "err" ? 5200 : 3200);
   setTimeout(() => {
     t.classList.add("fading");
-    setTimeout(() => t.remove(), 300);
+    // Coupled with .toast.fading in primitives.css: its 180ms transition
+    // must stay shorter than this removal delay.
+    setTimeout(() => t.remove(), 200);
   }, life);
 }

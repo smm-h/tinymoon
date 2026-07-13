@@ -49,7 +49,7 @@ export function createSettings({ storageKey, defaults } = {}) {
     applyTheme() {
       if (!("theme" in data)) throw new Error("applyTheme: no \"theme\" key in the settings schema");
       document.documentElement.dataset.theme = data.theme;
-      window.dispatchEvent(new Event("tm:theme"));
+      window.dispatchEvent(new CustomEvent("tm:theme"));
     },
   };
   return store;

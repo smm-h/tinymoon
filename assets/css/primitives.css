@@ -160,7 +160,8 @@ input[type="text"]::placeholder { color: var(--text-faint); }
   white-space: nowrap;
 }
 
-/* spinner */
+/* spinner — a continuous rotation, deliberately outside the 100–180ms ease
+   vocabulary (which covers one-shot eases only). */
 .spin { animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -206,10 +207,10 @@ input[type="text"]::placeholder { color: var(--text-faint); }
   overflow: hidden;
 }
 .card:hover { border-color: var(--border-2); box-shadow: var(--shadow-card); }
-/* Active card: visible accent outline; the playing state adds the glow. */
-.card.active { border-color: var(--accent-a45); }
-.card.playing { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-a12); }
-.card.playing::before {
+/* Active card: the generic highlighted state — accent border, left edge,
+   and glow. */
+.card.active { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-a12); }
+.card.active::before {
   content: "";
   position: absolute;
   left: 0;
@@ -528,7 +529,9 @@ table.data tr:hover td { background: var(--surface-2); color: var(--text); }
 .toast .copy-btn.copied svg { color: var(--green); }
 .toast.err { border-left-color: var(--red); }
 .toast.err svg { color: var(--red); }
-.toast.fading { opacity: 0; transform: translateX(8px); transition: opacity 250ms ease, transform 250ms ease; }
+/* Coupled with toast.js's removal timeout (200ms): this transition must stay
+   shorter than the JS removal delay. */
+.toast.fading { opacity: 0; transform: translateX(8px); transition: opacity 180ms ease, transform 180ms ease; }
 @keyframes toast-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
 
 /* ---------- topbar action buttons ---------- */
