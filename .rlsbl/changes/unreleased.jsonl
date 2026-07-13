@@ -1,0 +1,1 @@
+{"id":"18c1e781f297e6d98212e9a92abb41bfb661bb0c8d34a9bc","commits":["f739dad4a49c1a871ff4c15ee0e9ea82bdd4e040"],"user_facing":true,"description":"The toast error hook now receives the toast's opts object, so per-call metadata reaches logging hooks.","type":"fix"}
