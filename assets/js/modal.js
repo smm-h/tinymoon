@@ -13,10 +13,16 @@ function modalRoot() {
   return root;
 }
 
+// The currently open modal's close(), so opening over an open modal can run
+// the previous modal's full close (listeners removed, its onClose fired).
+let currentClose = null;
+
 // openModal({title, body, actions, onClose}) → close(). body is a string or
 // a node; actions is an optional array of footer buttons. Closes on Escape,
-// the close button, a backdrop click, or the returned function.
+// the close button, a backdrop click, or the returned function. Opening
+// while a modal is already open closes the previous one first.
 export function openModal({ title, body, actions, onClose }) {
+  if (currentClose) currentClose();
   const root = modalRoot();
   root.textContent = "";
   const m = el("div", "modal");
@@ -40,6 +46,7 @@ export function openModal({ title, body, actions, onClose }) {
   root.classList.add("open");
 
   const close = () => {
+    if (currentClose === close) currentClose = null;
     root.classList.remove("open");
     root.textContent = "";
     document.removeEventListener("keydown", onKey);
@@ -51,5 +58,6 @@ export function openModal({ title, body, actions, onClose }) {
   document.addEventListener("keydown", onKey);
   root.addEventListener("pointerdown", onDown);
   x.addEventListener("click", close);
+  currentClose = close;
   return close;
 }

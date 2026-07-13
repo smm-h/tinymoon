@@ -5,6 +5,14 @@ import { $$, el } from "./dom.js";
 import { icon } from "./icons.js";
 import { cssVar } from "./settings.js";
 
+// At most one Select is open at a time; this single module-level document
+// listener closes it on an outside pointerdown. Instances never register
+// their own document listeners, so nothing accumulates.
+let openSelect = null;
+document.addEventListener("pointerdown", (e) => {
+  if (openSelect && !openSelect.root.contains(e.target)) openSelect.close();
+});
+
 export class Select {
   // opts: { items: [..], value, onChange(v), labels?, width? }
   constructor(opts) {
@@ -38,9 +46,6 @@ export class Select {
       }
     });
     this.menu.addEventListener("keydown", (e) => this.menuKey(e));
-    document.addEventListener("pointerdown", (e) => {
-      if (!this.root.contains(e.target)) this.close();
-    });
     this.renderLabel();
     this.renderMenu();
   }
@@ -92,7 +97,8 @@ export class Select {
   toggle() { this.root.classList.contains("open") ? this.close() : this.open(); }
 
   open() {
-    $$(".sel.open").forEach((s) => s.classList.remove("open"));
+    if (openSelect && openSelect !== this) openSelect.close();
+    openSelect = this;
     this.root.classList.add("open");
     // Flip up when the menu would clip the viewport bottom (or the footer
     // slot — read live so the heuristic tracks the configured footer).
@@ -105,7 +111,10 @@ export class Select {
     this.setHover(Math.max(0, this.items.indexOf(this.value)));
   }
 
-  close() { this.root.classList.remove("open"); }
+  close() {
+    this.root.classList.remove("open");
+    if (openSelect === this) openSelect = null;
+  }
 
   menuKey(e) {
     const n = this.items.length;

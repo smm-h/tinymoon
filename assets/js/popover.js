@@ -4,9 +4,15 @@ import { el } from "./dom.js";
 import { cssVar } from "./settings.js";
 
 let popoverEl = null;
+// Document listener refs are kept module-level so closePopover() always
+// removes both, no matter which path closed the popover.
+let onDocDown = null;
+let onDocKey = null;
 
 export function closePopover() {
   if (popoverEl) { popoverEl.remove(); popoverEl = null; }
+  if (onDocDown) { document.removeEventListener("pointerdown", onDocDown, true); onDocDown = null; }
+  if (onDocKey) { document.removeEventListener("keydown", onDocKey); onDocKey = null; }
 }
 
 // openPopover(anchor, build): build(body) fills the content. Closes on
@@ -27,15 +33,14 @@ export function openPopover(anchor, build) {
   x = Math.max(8, Math.min(x, window.innerWidth - pr.width - 8));
   popoverEl.style.left = x + "px";
   popoverEl.style.top = y + "px";
-  const onDown = (e) => {
+  onDocDown = (e) => {
     if (popoverEl && !popoverEl.contains(e.target) && e.target !== anchor && !anchor.contains(e.target)) {
       closePopover();
-      document.removeEventListener("pointerdown", onDown, true);
     }
   };
-  const onKey = (e) => {
-    if (e.key === "Escape") { closePopover(); document.removeEventListener("keydown", onKey); }
+  onDocKey = (e) => {
+    if (e.key === "Escape") closePopover();
   };
-  document.addEventListener("pointerdown", onDown, true);
-  document.addEventListener("keydown", onKey);
+  document.addEventListener("pointerdown", onDocDown, true);
+  document.addEventListener("keydown", onDocKey);
 }
