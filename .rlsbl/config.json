@@ -1,7 +1,8 @@
 {
   "targets": [
     "npm",
-    "pypi"
+    "pypi",
+    "go"
   ],
   "private": false,
   "pipelines": {
@@ -12,6 +13,10 @@
     },
     "pypi": {
       "type": "pypi",
+      "local": false
+    },
+    "go": {
+      "type": "go",
       "local": false
     }
   }
