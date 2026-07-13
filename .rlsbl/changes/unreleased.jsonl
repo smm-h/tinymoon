@@ -10,3 +10,4 @@
 {"id":"18c1d59ffb346491d2e75c3552f74a4cb9e1e08675edb22a","commits":["b4261db38b071bc5a7d4b83ae206503de249a71b"],"user_facing":false}
 {"id":"18c1d5a0236fd39cbf5363a20fb14cf989230047fe0d0a1a","commits":["d70a61efb8f76f627a43d204a97d47ec6e5d788e","fac0004d3e14b8f483097c977d8ee32c304566c0"],"user_facing":true,"description":"`tinymoon check` conformance checker: scans HTML/CSS/JS for external URLs, native controls, title attributes, rounded corners, and off-token colors; hard CI gate, no bypass flags.","type":"feature"}
 {"id":"18c1d5abe5649f48ca9540f667c34a62be80da1c71d6069d","commits":["4f58441627685fb483be937a625b4911269c0f1e"],"user_facing":false}
+{"id":"18c1d5abeeec42bacb98f6f8bf434bdd814ad752ea94599a","commits":["a0327331794a1382163146b058315965b3f813a2"],"user_facing":false}
