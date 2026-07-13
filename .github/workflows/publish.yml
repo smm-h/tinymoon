@@ -184,9 +184,19 @@ jobs:
       - name: Scan source for secrets
         run: |
           gitleaks dir .
-      - uses: goreleaser/goreleaser-action@v7
-        with:
-          version: ~> v2
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # tinymoon's Go module is a library (embed.FS + http.Handler) -- there
+      # is no main package, so goreleaser has nothing to build. For a Go
+      # library the pushed tag IS the publish: the module proxy serves it
+      # straight from git. This step primes proxy.golang.org and hard-fails
+      # if the tagged version does not resolve. Like the gate job, it assumes
+      # the run is at the tag ref (release trigger or dispatch at the tag).
+      - name: Verify module on the Go proxy
+        run: |
+          set -euo pipefail
+          mod="$(go list -m)"
+          ver="$GITHUB_REF_NAME"
+          dir="$(mktemp -d)"
+          cd "$dir"
+          go mod init proxyprime
+          GOPROXY=https://proxy.golang.org go mod download "${mod}@${ver}"
+          echo "Go proxy serves ${mod}@${ver}"
