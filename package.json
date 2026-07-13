@@ -5,6 +5,10 @@
   "license": "MIT",
   "type": "module",
   "main": "./assets/js/index.js",
+  "exports": {
+    ".": "./assets/js/index.js",
+    "./assets/*": "./assets/*"
+  },
   "files": [
     "assets",
     "index.js"
