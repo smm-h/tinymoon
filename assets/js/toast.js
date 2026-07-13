@@ -16,8 +16,10 @@ function toastRoot() {
 
 let errorHook = null;
 
-// setToastErrorHook(fn): register a module-level hook invoked as fn(message)
-// whenever an error toast is shown — e.g. to mirror errors into a log.
+// setToastErrorHook(fn): register a module-level hook invoked as
+// fn(message, opts) whenever an error toast is shown — e.g. to mirror errors
+// into a log. opts is the same opts object toast() received ({} when the
+// caller passed none, never undefined), so per-call metadata reaches the hook.
 // Registering a second hook is a hard error, never a silent overwrite.
 export function setToastErrorHook(fn) {
   if (errorHook) throw new Error("setToastErrorHook: a hook is already registered");
@@ -43,5 +45,5 @@ export function toast(msg, kind, opts) {
   }, life);
   // After the toast is on screen (and its removal is scheduled, so a
   // throwing hook can't strand it). Hook exceptions propagate.
-  if (kind === "err" && errorHook) errorHook(msg);
+  if (kind === "err" && errorHook) errorHook(msg, opts || {});
 }

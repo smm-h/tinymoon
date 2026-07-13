@@ -450,7 +450,7 @@ registerCtxFooter(() => [
 
 // toast error hook (extension point): mirror error toasts into the console
 // log — visible when pressing "Error toast" on the Widgets page.
-setToastErrorHook((msg) => console.error("[gallery] error toast: " + msg));
+setToastErrorHook((msg, opts) => console.error("[gallery] error toast: " + msg, opts));
 
 // verbose demo setting: narrate setting changes
 window.addEventListener("tm:setting", (e) => {
@@ -497,7 +497,7 @@ Consumer apps extend tinymoon through explicit seams, never by patching internal
 - **Context menus** — \`registerCtx(key, provider)\` serves right-clicks on \`[data-ctx]\` regions; \`registerCtxFooter(fn)\` appends app-global items to every menu.
 - **Settings schema** — \`createSettings({storageKey, defaults})\`: the defaults object is the schema; unknown keys are hard errors.
 - **Icons** — \`registerIcons({name: svgString})\` merges consumer icons into the built-in set; a name collision with an existing icon is a hard error, never a silent overwrite.
-- **Toast error hook** — \`setToastErrorHook(fn)\` mirrors every error toast's message into your hook (e.g. a log); registering a second hook is a hard error, never a silent overwrite. This gallery mirrors error toasts to the browser console — press the **Error toast** button on the Widgets page with the console open.
+- **Toast error hook** — \`setToastErrorHook(fn)\` mirrors every error toast's message into your hook (e.g. a log), invoked as \`fn(message, opts)\` where opts is the toast's own opts object (\`{}\` when the caller passed none) so per-call metadata reaches the hook; registering a second hook is a hard error, never a silent overwrite. This gallery mirrors error toasts (message and opts) to the browser console — press the **Error toast** button on the Widgets page with the console open.
 
 ### Custom components {#custom-components}
 
