@@ -1,0 +1,11 @@
+@import url("https://fonts.example.com/font.css");
+@import "//cdn.example.com/reset.css";
+.hero {
+  background-image: url("https://cdn.example.com/bg.png");
+}
+.logo {
+  background: url(//cdn.example.com/logo.svg);
+}
+.bad-data {
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><image href='https://evil.example.com/x.png'/></svg>");
+}

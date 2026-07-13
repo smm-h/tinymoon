@@ -1,0 +1,15 @@
+.card {
+  border-radius: 8px;
+}
+.pill {
+  border-radius: 999px 4px;
+}
+.zero {
+  border-radius: 0;
+}
+.zero-px {
+  border-radius: 0px !important;
+}
+.corner {
+  border-top-left-radius: 6px;
+}

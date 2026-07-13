@@ -1,0 +1,30 @@
+/* Comment mentioning https://example.com/in-comment is fine. */
+@import url("extra.css");
+@font-face {
+  font-family: "Plex";
+  src: url("../fonts/plex.woff2") format("woff2");
+}
+:root {
+  --bg: #0a0a0a;
+  --accent-soft: rgba(45, 127, 249, 0.14);
+  --hue: oklch(0.7 0.1 200);
+}
+html[data-theme="light"] {
+  --bg: #eef0f3;
+  --shadow: 0 8px 24px hsla(220, 20%, 10%, 0.1);
+}
+@media (min-width: 600px) {
+  :root {
+    --wide-accent: #5c9dff;
+  }
+}
+.grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2'%3E%3C/svg%3E");
+}
+.box {
+  color: var(--text);
+  background: transparent;
+  border-color: currentColor;
+  outline-color: inherit;
+  border-radius: 0 !important;
+}

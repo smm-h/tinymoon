@@ -1,0 +1,15 @@
+:root {
+  --custom: #123456;
+}
+.chip {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+}
+.badge {
+  background: hsl(200, 50%, 50%);
+  border-color: oklch(0.7 0.1 200);
+  outline-color: var(--accent);
+}
+.thing {
+  --local-token: #abc;
+}

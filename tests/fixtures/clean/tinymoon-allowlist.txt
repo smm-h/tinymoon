@@ -1,0 +1,2 @@
+# Exact URLs exempted from the external-url rule (one per line).
+https://allowed.example.com/exactly-this
