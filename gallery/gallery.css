@@ -1,0 +1,81 @@
+/* tinymoon gallery — thin demo-only styles. Everything routes through the
+   framework's design tokens; no palette values live here. */
+
+/* token swatches */
+.sw-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+}
+.sw {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  padding: 10px;
+}
+.sw-chip {
+  height: 34px;
+  border: 1px solid var(--border-2);
+  margin-bottom: 8px;
+}
+.sw-name { font-size: 11px; color: var(--text); }
+.sw-val { font-size: 10px; color: var(--text-faint); margin-top: 2px; overflow-wrap: anywhere; }
+
+/* layout/shadow token rows */
+.tok-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.tok-row:last-child { border-bottom: none; }
+.tok-name { width: 180px; flex: none; font-size: 11.5px; color: var(--text); }
+.tok-val { font-size: 11px; color: var(--text-faint); overflow-wrap: anywhere; }
+.shadow-demo {
+  width: 120px;
+  height: 44px;
+  flex: none;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+/* typography specimens */
+.type-sample { margin-bottom: 18px; }
+.type-sample .type-label {
+  font: 400 10px var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 4px;
+}
+
+/* widget demo rows */
+.demo-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.demo-row:last-child { margin-bottom: 0; }
+
+/* custom-component demo (consumer-defined, follows the framework's rules) */
+.spark-canvas {
+  width: 100%;
+  height: 60px;
+  display: block;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+}
+
+/* footer slot demo */
+.gallery-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--footer-h);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border-2);
+  color: var(--text-faint);
+  font: 400 11px var(--font-mono);
+}
