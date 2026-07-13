@@ -8,7 +8,7 @@
 
 import {
   $$, el, icon,
-  toast, openModal, Select, openPopover,
+  toast, setToastErrorHook, openModal, Select, openPopover,
   registerCtx, registerCtxFooter,
   toggleWidget, segmented, copyButton, kebabButton,
   createSettings, cssVar,
@@ -448,6 +448,10 @@ registerCtxFooter(() => [
   { label: "Toggle theme", icon: "sun", action: () => settings.set("theme", settings.get("theme") === "dark" ? "light" : "dark") },
 ]);
 
+// toast error hook (extension point): mirror error toasts into the console
+// log — visible when pressing "Error toast" on the Widgets page.
+setToastErrorHook((msg) => console.error("[gallery] error toast: " + msg));
+
 // verbose demo setting: narrate setting changes
 window.addEventListener("tm:setting", (e) => {
   if (settings.get("verbose") || e.detail.key === "verbose") {
@@ -487,11 +491,13 @@ Consumer apps extend tinymoon through explicit seams, never by patching internal
 
 - **Routes** — \`mountShell({routes})\`: each key maps to a title, an icon, and a view factory. \`hidden: true\` keeps a route out of the sidebar but routable.
 - **Legacy routes** — \`legacyRoutes: {old: "new"}\` redirects stale bookmarks, tails included.
+- **Route hook** — \`onRoute: (routeKey, sub) => …\` fires after the router finishes handling a route (view built, \`setSub\` applied, \`refresh()\` run, title set), including the initial route; \`routeKey\` is the resolved key after legacy redirects and \`sub\` is the deep-link tail or \`null\`. The shell object returned by \`mountShell\` also exposes \`refreshCurrent()\`, which re-runs the current view's \`refresh()\` in place — no rebuild, no entry animation.
 - **Topbar actions** — \`topbarActions\`: prebuilt nodes or \`{icon, tip, onClick}\` specs rendered right of the busy indicator.
 - **Footer slot** — \`footer: {height, node}\` pins an app-owned bar to the bottom; the shell sets \`--footer-h\` so the frame, toasts, tooltips, selects, and popovers all clear it.
 - **Context menus** — \`registerCtx(key, provider)\` serves right-clicks on \`[data-ctx]\` regions; \`registerCtxFooter(fn)\` appends app-global items to every menu.
 - **Settings schema** — \`createSettings({storageKey, defaults})\`: the defaults object is the schema; unknown keys are hard errors.
 - **Icons** — \`registerIcons({name: svgString})\` merges consumer icons into the built-in set; a name collision with an existing icon is a hard error, never a silent overwrite.
+- **Toast error hook** — \`setToastErrorHook(fn)\` mirrors every error toast's message into your hook (e.g. a log); registering a second hook is a hard error, never a silent overwrite. This gallery mirrors error toasts to the browser console — press the **Error toast** button on the Widgets page with the console open.
 
 ### Custom components {#custom-components}
 
