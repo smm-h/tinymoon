@@ -3,3 +3,4 @@
 {"id":"18c1cc216d0e32fa1029e07eadb84cc8a47ea09d511e4fc4","commits":["604bbf9419bf4db817c4ad2a3a6226299b54ce2e"],"user_facing":false}
 {"id":"18c1d16c4ff40426c9396b1d34574a9687d9e70ce70f028e","commits":["477451297681bfbe84958583473fa9dde3256a26"],"user_facing":true,"description":"Design tokens, base styles, app shell, and UI primitives shipped as plain CSS, with vendored fonts.","type":"feature"}
 {"id":"18c1d16c59cfd8eba0d008f9942249e7a407ef9da52d1250","commits":["c178a68686e7cd6f827a2d45b2066906300ef471"],"user_facing":true,"description":"ES-module UI primitives: app shell with hash router, modals, toasts, tooltips, custom select, context menus, popovers, controls, settings store, and mini-wiki builder.","type":"feature"}
+{"id":"18c1d16c62a5f347fe8d55bcfd294566a5cadd9620cd601f","commits":["29a10e0467085db87204b1255e23e5ccbc0e30fc"],"user_facing":true,"description":"Interactive gallery documenting every token and primitive.","type":"feature"}
