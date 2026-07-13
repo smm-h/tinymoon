@@ -2,6 +2,14 @@
 
 # Changelog
 
+## 0.3.1
+
+Toast error hook receives the toast opts for per-call metadata.
+
+### Fixes
+
+- The toast error hook now receives the toast's opts object, so per-call metadata reaches logging hooks.
+
 ## 0.3.0
 
 Shell routing hooks (onRoute, refreshCurrent) and a toast error hook for log mirroring.
