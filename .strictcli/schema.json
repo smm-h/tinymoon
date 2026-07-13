@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "defaults": {
+    "schema_version": 1,
+    "app": {
+      "env_prefix": null,
+      "config": false,
+      "global_flags": [],
+      "commands": {},
+      "groups": {},
+      "deprecated": {},
+      "tag_contracts": {}
+    },
+    "flag": {
+      "short": null,
+      "default": null,
+      "env": null,
+      "choices": null,
+      "repeatable": false,
+      "unique": false,
+      "env_separator": null,
+      "negatable": null,
+      "hidden": false
+    },
+    "arg": {
+      "type": "str",
+      "required": true,
+      "default": null,
+      "variadic": false,
+      "choices": null
+    },
+    "command": {
+      "passthrough": false,
+      "flags": [],
+      "args": [],
+      "tags": [],
+      "constraints": [],
+      "hidden": false,
+      "interactive": false
+    },
+    "group": {
+      "commands": {},
+      "groups": {},
+      "deprecated": {},
+      "tags": [],
+      "hidden": false
+    }
+  },
+  "project_id": "tinymoon",
+  "name": "tinymoon",
+  "version": "0.1.0",
+  "help": "Tooling for the tinymoon web framework. Ships the conformance checker that enforces the framework's non-negotiables (no external URLs, no native browser controls, no title= attributes, no rounded corners, no off-token colors) as hard errors.",
+  "commands": {
+    "check": {
+      "name": "check",
+      "help": "Recursively scan the .html/.css/.js files under --dir for conformance violations: external URLs (external-url), native browser controls (native-control), title= attributes (title-attr), non-zero border-radius (border-radius), and off-token color literals (raw-color). Prints one line per violation (path:line: [rule-id] message) and a summary count. Exits 0 when clean, 1 on any violation -- there is no bypass. An optional tinymoon-allowlist.txt at the scanned directory root (one exact URL per line, # comments allowed) exempts exact URL matches from the external-url rule.",
+      "flags": [
+        {
+          "name": "dir",
+          "type": "str",
+          "help": "Directory to scan (required -- the checker never scans the current directory implicitly)"
+        }
+      ]
+    }
+  }
+}
