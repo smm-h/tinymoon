@@ -6,3 +6,4 @@
 {"id":"18c1d16c62a5f347fe8d55bcfd294566a5cadd9620cd601f","commits":["29a10e0467085db87204b1255e23e5ccbc0e30fc"],"user_facing":true,"description":"Interactive gallery documenting every token and primitive.","type":"feature"}
 {"id":"18c1d16c6be3c768cb6a5bcd8c09475a90fd633aa0b9ce15","commits":["0aae65bc64a8ca820bd7b67bfc7357ddf324a0d9"],"user_facing":true,"description":"Go module exposing the assets as an embed.FS and http.Handler.","type":"feature"}
 {"id":"18c1d16c7517dc51e5b33cf473ca45a5ad21cc8e4fc5b519","commits":["996a1c49badcf2c4edb2ef5c4d1d28c45d51d8b7","3b7e85aedd9d3a813d2456c53571dbeaafdcf76a"],"user_facing":true,"description":"npm package exports the ES modules; the PyPI wheel ships the assets, exposed via `tinymoon.assets_path()`.","type":"feature"}
+{"id":"18c1d16c7e995ce7d5018132b0124ffa89328c3cef44a51c","commits":["b4261db38b071bc5a7d4b83ae206503de249a71b"],"user_facing":false}
