@@ -23,6 +23,14 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 
+# Own-ecosystem dependency: always unpinned, always latest.
+dependencies = [
+    "strictcli",
+]
+
+[project.scripts]
+tinymoon = "tinymoon.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/smm-h/tinymoon"
 Repository = "https://github.com/smm-h/tinymoon"
