@@ -57,6 +57,36 @@ From Python, the wheel carries the assets; `tinymoon.assets_path()` returns thei
 
 **Very strict.** Hard errors over warnings, no escape hatches, fewer options and more opinions. tinymoon ships a conformance checker that consumer projects run as a hard CI gate — external URLs, native widgets, `title=` attributes, rounded corners, and off-token colors are build failures, not style suggestions. Strictness is what keeps consumer-defined components coherent.
 
+## Conformance
+
+`tinymoon check` scans a directory's `.html`, `.css`, and `.js` files and enforces the framework's non-negotiables as hard errors:
+
+- **external-url** — no network loads: no `http://`, `https://`, or protocol-relative `//host` URLs in HTML `src`/`href`/`srcset`, CSS `url()`/`@import`, or JS import specifiers and `fetch()`/`import()` literals (XML namespace identifiers and URLs in comments/prose are fine).
+- **native-control** — no native `<select>`, `<dialog>`, or `<input type=checkbox|radio|file>`, in markup or created from JS; use the framework's primitives.
+- **title-attr** — no `title=` attributes (SVG `<title>` child elements are fine); use the tooltip primitive instead.
+- **border-radius** — no `border-radius` (or `borderRadius` in JS) other than `0`/`0px`; corners are sharp everywhere.
+- **raw-color** — no color literals (hex, `rgb()`/`rgba()`/`hsl()`/`hsla()`/`oklch()`) outside custom-property definitions in `:root`/`html[data-theme=...]` blocks; everything else goes through `var(--token)` or `cssVar()`. (Named CSS colors are not checked.)
+
+Run it against your project's web directory:
+
+```
+uvx tinymoon check --dir ./web
+```
+
+or install it once with `uv tool install tinymoon` and run `tinymoon check --dir ./web`. The `--dir` flag is required — the checker never scans the current directory implicitly.
+
+It prints one line per violation (`path:line: [rule-id] message`) plus a summary, and exits non-zero if anything is found. There is deliberately no `--skip`, `--ignore`, warning mode, or any other bypass — a violation is a build failure.
+
+If a specific URL genuinely must be exempt, add it to a `tinymoon-allowlist.txt` file at the scanned directory root — one exact URL per line, `#` comments allowed. The allowlist is a reviewable file in your repo, not a CLI flag.
+
+Use it as a hard gate in CI:
+
+```yaml
+- run: uvx tinymoon check --dir ./web
+```
+
+The step fails the build on any violation; there is nothing to configure and nothing to bypass.
+
 ## Install
 
 npm:
