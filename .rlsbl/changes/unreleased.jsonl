@@ -13,3 +13,4 @@
 {"id":"18c1d369a6b5de997e56f62f572e4c12b8d2f6a51637cc98","commits":["8d4491cbde919706bbe3a6e0f3d21466bde5a66c","b14c8a479c939c4da141001181d1d1e697944ca8"],"user_facing":true,"description":"Icon set trimmed to framework/UI staples (audio-transport icons removed); new `registerIcons()` extension point for consumer icons (hard error on name collision). package.json now declares an `exports` map locking the documented entry points (`tinymoon` and `tinymoon/assets/*`).","type":"fix"}
 {"id":"18c1d36fc6a2bee0ceb0f88bbb914d3f9ba8e6eab8e4d970","commits":["0d4fc35f1568821d402c4232b38f7a5b79669ef4"],"user_facing":false}
 {"id":"18c1d379a83bdaa08da38f9076534ed596435afec77c2712","commits":["de1df0c8c815f7c6401b0cf0b8cc012d3c3cc724"],"user_facing":false}
+{"id":"18c1d382ff296fe949f8bc2ac98e4a1f9b00e33b2e1f9968","commits":["0022b941f2cb31cc5a9330eb00885d994de861fe"],"user_facing":false}
