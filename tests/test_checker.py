@@ -67,6 +67,7 @@ EXPECTED_VIOLATIONS = {
         (4, TITLE_ATTR),  # .title = assignment
         (5, TITLE_ATTR),  # setAttribute("title", ...)
         # line 6 document.title must NOT fire
+        (7, TITLE_ATTR),  # mydocument.title = -- only bare `document` is exempt
     ],
     "border-radius.css": [
         (2, BORDER_RADIUS),  # 8px

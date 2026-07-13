@@ -353,7 +353,11 @@ _JS_TYPE_SETATTR_RE = re.compile(
     r"""\bsetAttribute\s*\(\s*(["'])type\1\s*,\s*(["'])(checkbox|radio|file)\2"""
 )
 
-_JS_TITLE_ASSIGN_RE = re.compile(r"""(?<!document)\.\s*title\s*=(?!=)""")
+# Captures the trailing receiver identifier (greedy, so a leftmost match
+# always grabs the whole identifier -- "mydocument" never matches as
+# "document"). The document.title exemption is decided in scan_js: only a
+# bare `document` receiver (not preceded by a `.`) is the page title.
+_JS_TITLE_ASSIGN_RE = re.compile(r"""([\w$]*)\s*\.\s*title\s*=(?!=)""")
 _JS_TITLE_SETATTR_RE = re.compile(r"""\bsetAttribute\s*\(\s*(["'])title\1""")
 
 _JS_BR_ASSIGN_RE = re.compile(
@@ -417,6 +421,13 @@ def scan_js(text, path, allowlist, line_offset=0):
         )
 
     for m in _JS_TITLE_ASSIGN_RE.finditer(src):
+        # document.title is the page title, not an element tooltip -- exempt,
+        # but only when the receiver is exactly the identifier `document`
+        # (identifiers merely ending in "document", or `foo.document`, fire).
+        if m.group(1) == "document" and (
+            m.start() == 0 or src[m.start() - 1] != "."
+        ):
+            continue
         out.append(
             Violation(
                 path,
