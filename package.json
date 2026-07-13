@@ -15,7 +15,8 @@
     "framework",
     "vanilla-js",
     "css",
-    "zero-dependency"
+    "zero-dependency",
+    "rlsbl"
   ],
   "scripts": {
     "test": "echo \"no tests\" && exit 0"

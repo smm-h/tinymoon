@@ -12,7 +12,7 @@ license = "MIT"
 authors = [
     { name = "smm-h", email = "smmh72@gmail.com" },
 ]
-keywords = ["ui", "framework", "vanilla-js", "css", "zero-dependency"]
+keywords = ["ui", "framework", "vanilla-js", "css", "zero-dependency", "rlsbl"]
 classifiers = [
     "Development Status :: 1 - Planning",
     "License :: OSI Approved :: MIT License",
