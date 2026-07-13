@@ -1,0 +1,99 @@
+/* tinymoon — design tokens. The single source of truth for color, spacing,
+   and typography. Every other stylesheet — and any canvas-rendering JS, via
+   cssVar() — references these custom properties; raw palette values appear
+   nowhere else. */
+
+/* ---------- tokens ---------- */
+
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface-2: #191919;
+  --surface-3: #1f1f1f;
+  --border: #1e1e1e;
+  --border-2: #2b2b2b;
+  --text: #e6e6e6;
+  --text-dim: #9c9ca3;
+  --text-faint: #64646c;
+  --accent: #2d7ff9;
+  --accent-hi: #5c9dff;
+  --accent-soft: rgba(45, 127, 249, 0.14);
+  --accent-glow: rgba(45, 127, 249, 0.35);
+  /* accent alpha scale: translucent accent variants for borders and glows */
+  --accent-a12: rgba(45, 127, 249, 0.12);
+  --accent-a18: rgba(45, 127, 249, 0.18);
+  --accent-a35: rgba(45, 127, 249, 0.35);
+  --accent-a40: rgba(45, 127, 249, 0.4);
+  --accent-a45: rgba(45, 127, 249, 0.45);
+  /* text/icon color on top of solid accent fills */
+  --on-accent: #ffffff;
+  --green: #2fbf71;
+  --green-soft: rgba(47, 191, 113, 0.12);
+  --orange: #f28b2e;
+  --purple: #a06bf5;
+  --red: #e5484d;
+  --red-soft: rgba(229, 72, 77, 0.12);
+  --gold: #f5b944;
+  /* theme-dependent surfaces the components pull instead of literals */
+  --input-bg: #0a0a0a;
+  --hover-border: #3a3a3a;
+  --scroll-thumb: #242424;
+  --overlay: rgba(10, 10, 10, 0.55);
+  --backdrop: rgba(0, 0, 0, 0.65);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.6);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.7), 0 0 40px rgba(45, 127, 249, 0.06);
+  --grain-opacity: 0.05;
+  --font-ui: "Plex", system-ui, sans-serif;
+  --font-mono: "Plex Mono", ui-monospace, monospace;
+  --font-brand: "Grotesk", "Plex", sans-serif;
+  --sidebar-w: 216px;
+  /* height of the optional footer slot; mountShell sets it when a footer is
+     configured, 0 means no footer */
+  --footer-h: 0px;
+  --topbar-h: 56px;
+  /* single-character brand mark for the collapsed sidebar; mountShell sets
+     it from the configured brand name */
+  --brand-initial: "";
+}
+
+/* Light theme: not an inversion — a paper-and-ink workbench with the same
+   accent. Surfaces go white/light-gray, text goes near-black, shadows and
+   glows soften. */
+html[data-theme="light"] {
+  --bg: #eef0f3;
+  --surface: #ffffff;
+  --surface-2: #f4f5f8;
+  --surface-3: #e9ebf0;
+  --border: #e2e4ea;
+  --border-2: #cfd3db;
+  --text: #191b1f;
+  --text-dim: #565b66;
+  --text-faint: #8d93a0;
+  --accent: #2d7ff9;
+  --accent-hi: #1f6ce0;
+  --accent-soft: rgba(45, 127, 249, 0.1);
+  --accent-glow: rgba(45, 127, 249, 0.22);
+  --accent-a12: rgba(45, 127, 249, 0.12);
+  --accent-a18: rgba(45, 127, 249, 0.18);
+  --accent-a35: rgba(45, 127, 249, 0.35);
+  --accent-a40: rgba(45, 127, 249, 0.4);
+  --accent-a45: rgba(45, 127, 249, 0.45);
+  --on-accent: #ffffff;
+  --green: #1d9d5c;
+  --green-soft: rgba(29, 157, 92, 0.1);
+  --orange: #d97016;
+  --purple: #8a4ff0;
+  --red: #d93a40;
+  --red-soft: rgba(217, 58, 64, 0.1);
+  --gold: #d99b17;
+  --input-bg: #ffffff;
+  --hover-border: #b7bcc7;
+  --scroll-thumb: #c6cad3;
+  --overlay: rgba(255, 255, 255, 0.6);
+  --backdrop: rgba(23, 27, 34, 0.4);
+  --shadow-card: 0 8px 24px rgba(23, 27, 34, 0.1);
+  --shadow-pop: 0 12px 32px rgba(23, 27, 34, 0.18);
+  --shadow-modal: 0 24px 64px rgba(23, 27, 34, 0.22);
+  --grain-opacity: 0.025;
+}
