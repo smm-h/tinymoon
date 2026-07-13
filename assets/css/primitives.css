@@ -533,10 +533,10 @@ table.data tr:hover td { background: var(--surface-2); color: var(--text); }
 
 /* ---------- topbar action buttons ---------- */
 
-#topbar-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
-#busy + #topbar-actions { margin-left: 16px; }
-#busy.hidden + #topbar-actions { margin-left: auto; }
-#topbar-actions .icon-btn svg { width: 16px; height: 16px; }
+#tm-topbar-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+#tm-busy + #tm-topbar-actions { margin-left: 16px; }
+#tm-busy.hidden + #tm-topbar-actions { margin-left: auto; }
+#tm-topbar-actions .icon-btn svg { width: 16px; height: 16px; }
 
 /* ---------- toggle switch ---------- */
 

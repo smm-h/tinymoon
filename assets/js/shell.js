@@ -15,12 +15,12 @@
 //   legacyRoutes?  — {oldKey: "newRoute"}: old hashes redirect, deep-link
 //                    tails are preserved
 //   topbarActions? — array of nodes or {icon, tip, onClick} specs rendered
-//                    into #topbar-actions
+//                    into #tm-topbar-actions
 //   footer?        — {height, node}: sets --footer-h and appends node to
 //                    the body. Without it --footer-h stays 0.
 //
 // View contract: {root, built, build(), refresh(), setSub?(sub)}. The router
-// creates each view's section element (section.view) inside #content and
+// creates each view's section element (section.view) inside #tm-content and
 // assigns it to view.root before the first build() — views never pre-declare
 // HTML. build() must be idempotent (guard on .built); refresh() runs on
 // every visit; setSub(sub) receives the deep-link tail ("#/key/a/b" → "a/b")
@@ -53,18 +53,18 @@ export function mountShell(config) {
   // ---------- frame ----------
 
   const app = el("div");
-  app.id = "app";
+  app.id = "tm-app";
 
   const sidebar = el("aside");
-  sidebar.id = "sidebar";
+  sidebar.id = "tm-sidebar";
   const logo = el("div");
-  logo.id = "logo";
+  logo.id = "tm-logo";
   logo.innerHTML = brand.logoHTML;
   // The collapsed sidebar shows only the brand's first letter (see
   // shell.css); CSS content needs a quoted string, hence JSON.stringify.
   document.documentElement.style.setProperty("--brand-initial", JSON.stringify(brand.name.charAt(0)));
   const nav = el("nav");
-  nav.id = "nav";
+  nav.id = "tm-nav";
   nav.setAttribute("aria-label", "Main");
   for (const [key, r] of Object.entries(routes)) {
     if (r.hidden) continue;
@@ -80,17 +80,17 @@ export function mountShell(config) {
   sidebar.appendChild(nav);
 
   const main = el("div");
-  main.id = "main";
+  main.id = "tm-main";
   const topbar = el("header");
-  topbar.id = "topbar";
+  topbar.id = "tm-topbar";
   const pageTitle = el("span");
-  pageTitle.id = "page-title";
+  pageTitle.id = "tm-page-title";
   const pageSub = el("span");
-  pageSub.id = "page-sub";
+  pageSub.id = "tm-page-sub";
   const busy = el("span", "hidden");
-  busy.id = "busy";
+  busy.id = "tm-busy";
   const actions = el("div");
-  actions.id = "topbar-actions";
+  actions.id = "tm-topbar-actions";
   for (const a of topbarActions || []) {
     if (a instanceof Node) { actions.appendChild(a); continue; }
     const b = el("button", "icon-btn");
@@ -105,7 +105,7 @@ export function mountShell(config) {
   topbar.appendChild(busy);
   topbar.appendChild(actions);
   const content = el("div");
-  content.id = "content";
+  content.id = "tm-content";
   main.appendChild(topbar);
   main.appendChild(content);
 

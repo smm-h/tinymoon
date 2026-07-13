@@ -472,7 +472,7 @@ tinymoon is a **content-first web framework**: you bring plain, semantic content
     md: `
 A route's view is a plain object: \`{root, built, build(), refresh(), setSub?}\`. The shell's router owns the lifecycle:
 
-- **root** — the view's \`section.view\` element. The router creates it inside \`#content\` and assigns it before the first \`build()\`; views never pre-declare HTML.
+- **root** — the view's \`section.view\` element. The router creates it inside \`#tm-content\` and assigns it before the first \`build()\`; views never pre-declare HTML.
 - **built + build()** — \`build()\` runs on every visit and must be idempotent: guard on \`this.built\` and construct the DOM once. Build the DOM once, then mutate data in place — no re-render passes.
 - **refresh()** — runs on every visit, after the view is shown. Cheap updates belong here.
 - **setSub(sub)** — optional. A deep link \`#/key/a/b\` delivers \`"a/b"\` before \`refresh()\` runs.
