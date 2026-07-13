@@ -31,6 +31,8 @@ const shell = mountShell({
 });
 ```
 
+Consumer apps can extend the built-in icon set with `registerIcons({name: svgString})` — colliding with an existing icon name is a hard error, never a silent overwrite.
+
 Views are plain objects following the contract `{root, built, build(), refresh(), setSub?}` — the [gallery](gallery/) is a complete working app and documents every token, primitive, and extension point (serve the repo root with a static server and open `/gallery/`).
 
 From Go, the assets ship as an embedded filesystem:

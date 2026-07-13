@@ -2,7 +2,7 @@
 // also importable standalone.
 
 export { $, $$, el } from "./dom.js";
-export { ICONS, icon } from "./icons.js";
+export { ICONS, icon, registerIcons } from "./icons.js";
 export { api, post } from "./net.js";
 export { fmtTime } from "./format.js";
 export { renderMiniMd } from "./markdown.js";

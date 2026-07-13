@@ -492,6 +492,7 @@ Consumer apps extend tinymoon through explicit seams, never by patching internal
 - **Footer slot** — \`footer: {height, node}\` pins an app-owned bar to the bottom; the shell sets \`--footer-h\` so the frame, toasts, tooltips, selects, and popovers all clear it.
 - **Context menus** — \`registerCtx(key, provider)\` serves right-clicks on \`[data-ctx]\` regions; \`registerCtxFooter(fn)\` appends app-global items to every menu.
 - **Settings schema** — \`createSettings({storageKey, defaults})\`: the defaults object is the schema; unknown keys are hard errors.
+- **Icons** — \`registerIcons({name: svgString})\` merges consumer icons into the built-in set; a name collision with an existing icon is a hard error, never a silent overwrite.
 
 ### Custom components {#custom-components}
 
