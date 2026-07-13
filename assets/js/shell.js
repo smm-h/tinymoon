@@ -1,7 +1,8 @@
 // tinymoon — app shell: builds the sidebar/nav/topbar/content frame, mounts
 // the framework overlay roots, and runs the hash router.
 //
-// mountShell(config) → {navigate(route), setBusy(msg), setTitle(title, sub)}
+// mountShell(config) → {navigate(route), setBusy(msg), setTitle(title, sub),
+// refreshCurrent()}
 //
 // config (required unless marked optional):
 //   root           — container element the shell frame is appended to
@@ -18,6 +19,11 @@
 //                    into #tm-topbar-actions
 //   footer?        — {height, node}: sets --footer-h and appends node to
 //                    the body. Without it --footer-h stays 0.
+//   onRoute?       — fn(routeKey, sub): called after the router finishes
+//                    handling a route (view built, setSub applied, refresh
+//                    run, title set), including the initial route during
+//                    mount. routeKey is the resolved route key (post
+//                    legacy-redirect); sub is the deep-link tail or null.
 //
 // View contract: {root, built, build(), refresh(), setSub?(sub)}. The router
 // creates each view's section element (section.view) inside #tm-content and
@@ -43,7 +49,7 @@ function ensureRoot(id) {
 }
 
 export function mountShell(config) {
-  const { root, brand, routes, defaultRoute, legacyRoutes, topbarActions, footer } = config || {};
+  const { root, brand, routes, defaultRoute, legacyRoutes, topbarActions, footer, onRoute } = config || {};
   need(root && root.appendChild, "root element is required");
   need(brand && brand.name && brand.logoHTML, "brand {name, logoHTML} is required");
   need(routes && Object.keys(routes).length, "routes is required");
@@ -183,6 +189,8 @@ export function mountShell(config) {
       content.scrollTop = 0;
     }
     view.refresh();
+    // Last, so routing state is fully consistent when the hook observes it.
+    if (onRoute) onRoute(name, sub || null);
   }
 
   window.addEventListener("hashchange", route);
@@ -192,5 +200,12 @@ export function mountShell(config) {
     navigate(r) { location.hash = "#/" + r; },
     setBusy,
     setTitle,
+    // Re-run the current view's refresh() in place: no rebuild, no entry
+    // animation. No-op before the first route or if the view isn't built.
+    refreshCurrent() {
+      if (!currentRoute) return;
+      const view = routes[currentRoute].view();
+      if (view.built) view.refresh();
+    },
   };
 }
