@@ -1,3 +1,4 @@
 {"id":"18c1cbdfd89f0985a0ff2a57d2ee4b65a7ff437d638fa135","commits":["082cacea8f4b501b69715af612ec1ac9f5e50c49"],"user_facing":false}
 {"id":"18c1cc207af6d28ae50104a7c416497d834df9c5e7eb060d","commits":["cb890eca94f6b4a257119bd8ce27f09cffb87b12"],"user_facing":true,"description":"README now leads with the project philosophy: zero-build vanilla web framework, strict by design.","type":"feature"}
 {"id":"18c1cc216d0e32fa1029e07eadb84cc8a47ea09d511e4fc4","commits":["604bbf9419bf4db817c4ad2a3a6226299b54ce2e"],"user_facing":false}
+{"id":"18c1d16c4ff40426c9396b1d34574a9687d9e70ce70f028e","commits":["477451297681bfbe84958583473fa9dde3256a26"],"user_facing":true,"description":"Design tokens, base styles, app shell, and UI primitives shipped as plain CSS, with vendored fonts.","type":"feature"}
