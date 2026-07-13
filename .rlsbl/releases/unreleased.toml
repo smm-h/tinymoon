@@ -4,7 +4,7 @@ bump = "minor"
 description = "The framework lands: design tokens, base styles, app shell, and UI primitives as zero-build vanilla CSS and ES modules; embeddable Go module; conformance checker CLI."
 # Optional context explaining why these changes were made
 context = """
-0.0.1 was a name reservation across registries. This release ships the actual framework: npm carries the browser assets (vanilla CSS and native ES modules, zero build step), PyPI carries the same assets plus the `tinymoon check` conformance checker CLI, and the Go module wraps the assets in an embed.FS for server-side embedding. All three targets are versioned together.
+0.0.1 was a name reservation across registries. 0.1.0 was tagged but never published anywhere: a release-tooling failure caused the CI gate to fail, all registry jobs were skipped, and the v0.1.0 tag was subsequently removed. 0.2.0 is therefore the first release that actually ships the framework: npm carries the browser assets (vanilla CSS and native ES modules, zero build step), PyPI carries the same assets plus the `tinymoon check` conformance checker CLI, and the Go module wraps the assets in an embed.FS for server-side embedding. All three targets are versioned together.
 """
 # Pre-release identifier: alpha, beta, rc, or stable
 # preid = ""
