@@ -2,6 +2,14 @@
 
 # Changelog
 
+## 0.3.0
+
+Shell routing hooks (onRoute, refreshCurrent) and a toast error hook for log mirroring.
+
+### Features
+
+- mountShell gains an onRoute(routeKey, sub) callback and a refreshCurrent() helper; toast errors can be mirrored via setToastErrorHook().
+
 ## 0.2.0
 
 The framework lands: design tokens, base styles, app shell, and UI primitives as zero-build vanilla CSS and ES modules; embeddable Go module; conformance checker CLI.
