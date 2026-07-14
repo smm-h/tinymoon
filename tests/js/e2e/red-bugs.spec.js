@@ -7,15 +7,13 @@ import { test, expect } from "@playwright/test";
 // test.fail() line and the test becomes a real regression guard.
 
 // ---------------------------------------------------------------------------
-// BUG (Escape multi-close) — assets/js/select.js + assets/js/modal.js — FIX: Phase 3
-// A Select opened inside an open modal: pressing Escape once closes BOTH the
-// select menu and the modal. select.js handles Escape on its menu element but
-// does not stopPropagation, so the keydown bubbles to modal.js's document
-// listener, which closes the modal too. Correct future behavior: one Escape
-// closes only the select menu; the modal stays open.
+// BUG (Escape multi-close) — FIXED in Phase 2.1 (kernel overlay module).
+// A Select opened inside an open modal: pressing Escape once used to close
+// BOTH because select.js didn't stopPropagation and modal.js had its own
+// document listener. Now both go through the kernel's pushLayer stack, and
+// only the topmost layer closes per Escape press.
 // ---------------------------------------------------------------------------
 test("one Escape closes only the select menu, leaving the modal open", async ({ page }) => {
-  test.fail(); // expected to fail until Phase 3 fixes Escape stacking
   await page.goto("/tests/js/e2e/fixtures/escape-stack.html");
   await page.waitForFunction(() => window.__escapeStackReady === true);
 
