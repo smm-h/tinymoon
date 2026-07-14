@@ -38,9 +38,13 @@
   --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.6);
   --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.7), 0 0 40px color-mix(in srgb, var(--accent) 6%, transparent);
   --grain-opacity: 0.05;
-  --font-ui: "Plex", system-ui, sans-serif;
-  --font-mono: "Plex Mono", ui-monospace, monospace;
-  --font-brand: "Grotesk", "Plex", sans-serif;
+  /* Non-Latin font policy: Latin scripts use vendored faces (Plex, Plex Mono,
+     Grotesk); non-Latin falls back to system fonts tuned to approximate the
+     identity weight and feel. The system-ui / -apple-system / Segoe UI chain
+     provides decent CJK, Arabic, Devanagari, etc. coverage on every major OS. */
+  --font-ui: "Plex", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Plex Mono", ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
+  --font-brand: "Grotesk", system-ui, sans-serif;
   --sidebar-w: 216px;
   /* height of the optional footer slot; mountShell sets it when a footer is
      configured, 0 means no footer */
