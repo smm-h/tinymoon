@@ -37,14 +37,28 @@ const COLOR_TOKENS = [
   "--bg", "--surface", "--surface-2", "--surface-3", "--border", "--border-2",
   "--text", "--text-dim", "--text-faint",
   "--accent", "--accent-hi", "--accent-soft", "--accent-glow",
-  "--accent-a12", "--accent-a18", "--accent-a35", "--accent-a40", "--accent-a45",
-  "--on-accent", "--green", "--green-soft", "--orange", "--purple",
-  "--red", "--red-soft", "--gold",
-  "--input-bg", "--hover-border", "--scroll-thumb", "--overlay", "--backdrop",
+  "--accent-a12", "--accent-a18", "--accent-a35", "--accent-a40",
+  "--on-accent", "--green", "--red",
+  "--input-bg", "--hover-border", "--scroll-thumb", "--backdrop",
 ];
 const LAYOUT_TOKENS = ["--sidebar-w", "--topbar-h", "--footer-h", "--grain-opacity"];
 const FONT_TOKENS = ["--font-ui", "--font-mono", "--font-brand"];
 const SHADOW_TOKENS = ["--shadow-card", "--shadow-pop", "--shadow-modal"];
+const TEXT_TOKENS = [
+  "--text-3xl", "--text-2xl", "--text-xl", "--text-lg", "--text-base",
+  "--text-sm", "--text-xs", "--text-2xs", "--text-3xs",
+  "--text-micro", "--text-label",
+];
+const WEIGHT_TOKENS = ["--weight-normal", "--weight-medium", "--weight-semibold", "--weight-bold"];
+const LEADING_TOKENS = ["--leading-tight", "--leading-normal", "--leading-relaxed"];
+const SPACING_TOKENS = [
+  "--space-1", "--space-2", "--space-3", "--space-4", "--space-5",
+  "--space-6", "--space-7", "--space-8", "--space-9", "--space-10",
+  "--space-12", "--space-14", "--space-16", "--space-18", "--space-20",
+  "--space-24", "--space-26", "--space-28", "--space-48",
+];
+const DURATION_TOKENS = ["--dur-fast", "--dur-quick", "--dur-base", "--dur-mid", "--dur-slow"];
+const Z_TOKENS = ["--z-menu", "--z-modal", "--z-ctx", "--z-popover", "--z-toast", "--z-grain", "--z-tooltip"];
 
 function panel(title, iconName) {
   const p = el("div", "panel");
@@ -116,6 +130,28 @@ const TokensView = {
       shadows.appendChild(row);
     }
     this.root.appendChild(shadows);
+
+    // scale tokens: type, weight, leading, spacing, duration, z-index
+    const scales = [
+      ["Type scale", "note", TEXT_TOKENS],
+      ["Font weight", "note", WEIGHT_TOKENS],
+      ["Line height", "note", LEADING_TOKENS],
+      ["Spacing scale", "faders", SPACING_TOKENS],
+      ["Duration scale", "faders", DURATION_TOKENS],
+      ["Z-index scale", "faders", Z_TOKENS],
+    ];
+    for (const [title, ic, tokens] of scales) {
+      const p = panel(title, ic);
+      for (const name of tokens) {
+        const row = el("div", "tok-row");
+        row.appendChild(el("div", "tok-name mono", name));
+        const v = el("div", "tok-val mono");
+        v.dataset.token = name;
+        row.appendChild(v);
+        p.appendChild(row);
+      }
+      this.root.appendChild(p);
+    }
   },
 
   // Values are read live from the computed style, so theme switches show the
