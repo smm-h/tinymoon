@@ -15,12 +15,12 @@ REPO = Path(__file__).resolve().parent.parent
 # headroom. Raising a ceiling is a deliberate decision that must happen in
 # this file, in review -- never as a side effect.
 #
-# Baselines (re-measured after Phase 5 object-copy system):
-#   assets/css/*.css  47,476 bytes (4 files)  -- ceiling 49,000
-#   assets/js/*.js    98,657 bytes (19 files) -- ceiling 100,000
+# Baselines (re-measured after Phase 7 responsive + RTL sweep):
+#   assets/css/*.css  54,543 bytes (4 files)  -- ceiling 57,000
+#   assets/js/*.js    101,541 bytes (19 files) -- ceiling 104,000
 #   assets/fonts/*.woff2  97,596 bytes (4 files) -- ceiling 122,000
-CSS_BUDGET_BYTES = 49_000
-JS_BUDGET_BYTES = 100_000
+CSS_BUDGET_BYTES = 57_000
+JS_BUDGET_BYTES = 104_000
 FONT_BUDGET_BYTES = 122_000
 
 
