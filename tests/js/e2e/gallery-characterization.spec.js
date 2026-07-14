@@ -4,7 +4,7 @@ import { test, expect } from "@playwright/test";
 // behavior before the Phase 2/3 refactors: every route renders, nothing is
 // fetched from off-origin, and a normal route walk produces no console errors.
 
-// The five gallery routes and their topbar titles.
+// The seven gallery routes and their topbar titles.
 const ROUTES = [
   ["tokens", "Tokens"],
   ["type", "Typography"],
@@ -12,6 +12,7 @@ const ROUTES = [
   ["forms", "Forms"],
   ["wiki", "Wiki"],
   ["custom", "Custom component"],
+  ["content", "Content-first"],
 ];
 
 async function goRoute(page, key, title) {
@@ -19,7 +20,7 @@ async function goRoute(page, key, title) {
   await expect(page.locator("#tm-page-title")).toHaveText(title);
 }
 
-test("all six gallery routes render a visible view with content", async ({ page }) => {
+test("all seven gallery routes render a visible view with content", async ({ page }) => {
   await page.goto("/gallery/");
   await expect(page.locator("#tm-app")).toBeVisible();
   for (const [key, title] of ROUTES) {
