@@ -200,7 +200,7 @@
    tooltip). */
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   grid-auto-rows: 232px;
   gap: var(--space-12);
 }
@@ -345,7 +345,7 @@ table.data tr:hover td { background: var(--surface-2); color: var(--text); }
   background: var(--surface);
   border: 1px solid var(--border);
   padding: var(--space-12) 0;
-  max-height: calc(100vh - var(--footer-h) - var(--topbar-h) - 64px);
+  max-height: calc(100dvh - var(--footer-h) - var(--topbar-h) - 64px);
   overflow-y: auto;
 }
 .docs-toc-head {
@@ -423,9 +423,9 @@ dialog.tm-modal {
   background: var(--surface);
   border: 1px solid var(--border-2);
   box-shadow: var(--shadow-modal);
-  min-width: 420px;
+  min-width: min(420px, calc(100vw - 32px));
   max-width: min(760px, calc(100vw - 64px));
-  max-height: calc(100vh - 120px);
+  max-height: calc(100dvh - 120px);
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -1005,4 +1005,61 @@ dialog.tm-modal::backdrop {
   opacity: 0.3;
   cursor: default;
   pointer-events: none;
+}
+
+/* ---------- responsive ---------- */
+
+/* Docs layout: stack TOC above content on narrow screens */
+@media (max-width: 768px) {
+  .docs-layout { flex-direction: column; }
+  .docs-toc {
+    position: static;
+    width: 100%;
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+/* Toast: full-width on narrow screens */
+@media (max-width: 480px) {
+  #tm-toast-root {
+    inset-inline-start: var(--space-8);
+    inset-inline-end: var(--space-8);
+    align-items: stretch;
+  }
+  .toast { max-width: none; }
+}
+
+/* Touch targets: ensure minimum 44px interactive area on touch devices */
+@media (pointer: coarse) {
+  /* buttons and icon buttons — touch target padding */
+  .btn { min-height: 44px; }
+  .icon-btn { min-width: 44px; min-height: 44px; }
+
+  /* select trigger — touch target padding */
+  .sel-btn { min-height: 44px; }
+  .sel-opt { min-height: 44px; }
+
+  /* context menu items — touch target padding */
+  #tm-ctx-root .ctx-item { min-height: 44px; }
+
+  /* docs TOC items — touch target padding */
+  .docs-toc-item { min-height: 44px; display: flex; align-items: center; }
+
+  /* toggle switch — touch target padding */
+  .switch { min-width: 44px; min-height: 44px; }
+
+  /* segmented control — touch target padding */
+  .seg button, .seg > label { min-height: 44px; }
+
+  /* datepicker day cells — touch target padding */
+  .tm-datepicker-day { min-width: 44px; min-height: 44px; }
+  .tm-datepicker-nav { min-width: 44px; min-height: 44px; }
+
+  /* toast dismiss — touch target padding */
+  .toast .toast-dismiss { min-width: 44px; min-height: 44px; }
+
+  /* checkbox + radio indicators — touch target padding */
+  .tm-checkbox { min-height: 44px; }
+  .tm-radio { min-height: 44px; }
 }

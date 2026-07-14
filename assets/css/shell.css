@@ -123,7 +123,7 @@
 
 /* ---------- responsive ---------- */
 
-@media (max-width: 1000px) {
+@media (max-width: 1000px) and (min-width: 769px) {
   :root { --sidebar-w: 60px; }
   #tm-logo { padding: var(--space-14) 0; text-align: center; }
   #tm-logo > * { display: none; }
@@ -136,4 +136,60 @@
   }
   .nav-item { justify-content: center; padding: var(--space-10) 0; }
   .nav-item .nav-label { display: none; }
+}
+
+/* Narrow screens: sidebar becomes an off-canvas drawer, hidden by default.
+   A hamburger button area is reserved in the topbar. The JS toggle that
+   adds/removes .sidebar-open on #tm-app is NOT implemented here (CSS-only
+   part); a separate JS change is needed to wire the hamburger click. */
+@media (max-width: 768px) {
+  :root { --sidebar-w: 0px; }
+  #tm-sidebar {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 240px;
+    z-index: var(--z-modal);
+    transform: translateX(-100%);
+    transition: transform var(--dur-slow) ease;
+  }
+  /* When the app has .sidebar-open, slide the drawer in */
+  #tm-app.sidebar-open #tm-sidebar {
+    transform: translateX(0);
+  }
+  /* Backdrop overlay when drawer is open */
+  #tm-app.sidebar-open::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: var(--backdrop);
+    z-index: calc(var(--z-modal) - 1);
+  }
+  /* Hamburger area in the topbar — visible on narrow screens */
+  .tm-hamburger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* touch target padding */
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: color var(--dur-base) ease;
+    flex: none;
+  }
+  .tm-hamburger svg { width: 20px; height: 20px; }
+  .tm-hamburger:hover { color: var(--text); }
+}
+/* Hide hamburger on wider screens */
+@media (min-width: 769px) {
+  .tm-hamburger { display: none; }
+}
+
+/* Touch targets: nav items on coarse-pointer devices */
+@media (pointer: coarse) {
+  .nav-item { min-height: 44px; /* touch target padding */ }
 }
