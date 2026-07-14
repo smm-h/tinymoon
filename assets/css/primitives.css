@@ -543,6 +543,10 @@ dialog.tm-modal::backdrop {
 
 /* ---------- toasts ---------- */
 
+/* The toast root uses popover="manual" to promote itself into the top layer
+   when a <dialog> is open, so toasts remain visible above modals. Reset
+   popover default styles (margin, inset, border, background) to preserve
+   the original fixed positioning. */
 #tm-toast-root {
   position: fixed;
   inset-inline-end: var(--space-16);
@@ -553,6 +557,12 @@ dialog.tm-modal::backdrop {
   gap: var(--space-8);
   align-items: flex-end;
   pointer-events: none;
+  /* Reset popover defaults */
+  margin: 0;
+  inset: auto;
+  border: none;
+  padding: 0;
+  background: transparent;
 }
 .toast {
   display: flex;
@@ -572,8 +582,25 @@ dialog.tm-modal::backdrop {
   pointer-events: auto;
 }
 .toast > svg { width: 14px; height: 14px; flex: none; color: var(--accent-hi); }
-.toast .toast-msg { min-width: 0; user-select: text; }
+.toast .toast-msg { min-width: 0; user-select: text; flex: 1; }
 .toast .copy-btn { margin-inline-start: var(--space-2); }
+.toast .toast-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  padding: 0;
+  margin-inline-start: var(--space-4);
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color var(--dur-quick) ease, border-color var(--dur-quick) ease;
+}
+.toast .toast-dismiss svg { width: 10px; height: 10px; }
+.toast .toast-dismiss:hover { color: var(--text); border-color: var(--border-2); }
 .toast.err { border-inline-start-color: var(--red); }
 .toast.err > svg { color: var(--red); }
 /* Coupled with toast.js's removal timeout (200ms): this transition must stay
