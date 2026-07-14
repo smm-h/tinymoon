@@ -3,7 +3,7 @@
 
 import { $$, el } from "./dom.js";
 import { icon } from "./icons.js";
-import { cssVar } from "./settings.js";
+import { cssVar, pushLayer } from "./kernel.js";
 
 // At most one Select is open at a time; this single module-level document
 // listener closes it on an outside pointerdown. Instances never register
@@ -109,9 +109,11 @@ export class Select {
     this.menu.tabIndex = -1;
     this.menu.focus();
     this.setHover(Math.max(0, this.items.indexOf(this.value)));
+    this._removeLayer = pushLayer(() => { this.close(); this.btn.focus(); });
   }
 
   close() {
+    if (this._removeLayer) { this._removeLayer(); this._removeLayer = null; }
     this.root.classList.remove("open");
     if (openSelect === this) openSelect = null;
   }
@@ -123,7 +125,6 @@ export class Select {
     else if (e.key === "Home") { e.preventDefault(); this.setHover(0); }
     else if (e.key === "End") { e.preventDefault(); this.setHover(n - 1); }
     else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.pick(this.hoverIdx); }
-    else if (e.key === "Escape") { e.preventDefault(); this.close(); this.btn.focus(); }
     else if (e.key === "Tab") { this.close(); }
     else if (e.key.length === 1 && /\S/.test(e.key)) {
       // type-ahead
