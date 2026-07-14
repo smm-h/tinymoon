@@ -61,8 +61,10 @@ textarea {
   background: var(--input-bg);
   border: 1px solid var(--border-2);
   color: var(--text);
-  font: 400 13px var(--font-ui);
-  padding: 10px;
+  font-weight: var(--weight-normal);
+  font-size: var(--text-xs);
+  font-family: var(--font-ui);
+  padding: var(--space-10);
   resize: vertical;
   user-select: text;
 }
@@ -74,7 +76,10 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: 400 14px/1.5 var(--font-ui);
+  font-weight: var(--weight-normal);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  font-family: var(--font-ui);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   user-select: none;
@@ -82,7 +87,7 @@ body {
 ::selection { background: var(--accent-soft); color: var(--text); }
 .mono { font-family: var(--font-mono); }
 .hidden { display: none !important; }
-h1, h2, h3 { font-family: var(--font-brand); font-weight: 500; margin: 0; }
+h1, h2, h3 { font-family: var(--font-brand); font-weight: var(--weight-medium); margin: 0; }
 
 a { color: var(--accent-hi); text-decoration: none; }
 
@@ -91,7 +96,7 @@ body::after {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 400;
+  z-index: var(--z-grain);
   pointer-events: none;
   opacity: var(--grain-opacity);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
