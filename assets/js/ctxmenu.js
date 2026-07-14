@@ -83,7 +83,7 @@ let _triggerElement = null; // element that opened the menu (for focus restore)
 
 export function showCtxMenu(x, y, items, trigger) {
   _triggerElement = trigger || null;
-  const menu = ensureRoot("tm-ctx-root", { role: "menu" });
+  const menu = ensureRoot("tm-ctx-root", { role: "menu", popover: "manual" });
   menu.textContent = "";
   for (const it of items) {
     if (it.sep) { menu.appendChild(el("div", "ctx-sep")); continue; }
@@ -96,6 +96,8 @@ export function showCtxMenu(x, y, items, trigger) {
     menu.appendChild(b);
   }
   menu.classList.add("open");
+  // Promote to top layer so the menu renders above the grain overlay.
+  if (menu.showPopover) try { menu.showPopover(); } catch (_) { /* already shown */ }
   const r = menu.getBoundingClientRect();
   if (x + r.width > window.innerWidth - 8) x = window.innerWidth - r.width - 8;
   if (y + r.height > window.innerHeight - 8) y = window.innerHeight - r.height - 8;
@@ -110,7 +112,10 @@ export function showCtxMenu(x, y, items, trigger) {
 export function hideCtxMenu() {
   if (removeLayer) { removeLayer(); removeLayer = null; }
   const menu = document.getElementById("tm-ctx-root");
-  if (menu) menu.classList.remove("open");
+  if (menu) {
+    menu.classList.remove("open");
+    if (menu.hidePopover) try { menu.hidePopover(); } catch (_) { /* not shown */ }
+  }
   // Restore focus to the element that triggered the menu.
   if (_triggerElement && _triggerElement.isConnected) {
     _triggerElement.focus();

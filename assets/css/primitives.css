@@ -386,6 +386,9 @@ table.data tr:hover td { background: var(--surface-2); color: var(--text); }
   box-shadow: var(--shadow-pop);
   padding: var(--space-4) 0;
   display: none;
+  /* Reset popover defaults (top-layer promotion via popover="manual") */
+  margin: 0;
+  inset: auto;
 }
 #tm-ctx-root.open { display: block; animation: menu-in var(--dur-fast) ease; }
 #tm-ctx-root .ctx-head {
@@ -849,6 +852,9 @@ dialog.tm-modal::backdrop {
   display: flex;
   gap: var(--space-4);
   animation: menu-in var(--dur-quick) ease;
+  /* Reset popover defaults (top-layer promotion via popover="manual") */
+  margin: 0;
+  inset: auto;
 }
 
 /* ---------- date picker ---------- */

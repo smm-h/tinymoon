@@ -10,7 +10,11 @@ let onDocDown = null;
 let removeLayer = null;
 
 export function closePopover() {
-  if (popoverEl) { popoverEl.remove(); popoverEl = null; }
+  if (popoverEl) {
+    if (popoverEl.hidePopover) try { popoverEl.hidePopover(); } catch (_) { /* not shown */ }
+    popoverEl.remove();
+    popoverEl = null;
+  }
   if (onDocDown) { document.removeEventListener("pointerdown", onDocDown, true); onDocDown = null; }
   if (removeLayer) { removeLayer(); removeLayer = null; }
 }
@@ -22,8 +26,11 @@ export function closePopover() {
 export function openPopover(anchor, build) {
   closePopover();
   popoverEl = el("div", "popover");
+  popoverEl.setAttribute("popover", "manual");
   build(popoverEl);
   document.body.appendChild(popoverEl);
+  // Promote to top layer so the popover renders above the grain overlay.
+  if (popoverEl.showPopover) try { popoverEl.showPopover(); } catch (_) { /* already shown */ }
   placeBelow(anchor, popoverEl, { gap: 6 });
   onDocDown = (e) => {
     if (popoverEl && !popoverEl.contains(e.target) && e.target !== anchor && !anchor.contains(e.target)) {
