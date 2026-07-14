@@ -640,9 +640,8 @@ dialog.tm-modal::backdrop {
   transition: transform var(--dur-base) ease, background var(--dur-base) ease;
 }
 .switch.on { background: var(--accent-soft); border-color: var(--accent); }
-/* RTL: translateX(18px) moves the knob toward inline-end in LTR only.
-   Needs :dir(rtl) override or JS. Tracked for Phase 7. */
 .switch.on i { transform: translateX(18px); background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+.switch.on i:dir(rtl) { transform: translateX(-18px); }
 
 /* ---------- settings rows ---------- */
 
