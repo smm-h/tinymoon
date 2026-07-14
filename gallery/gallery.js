@@ -896,6 +896,29 @@ shell = mountShell({
       title: "Custom component", icon: "wave", view: () => CustomView,
       tip: "Custom component -- a consumer-defined view following the contract, indistinguishable from a built-in.",
     },
+    content: {
+      title: "Content-first", icon: "docs",
+      view: '<h2>Content-first proof</h2>'
+        + '<p>This view uses the <strong>declarative view path</strong>: its view is an HTML string, not a view object. Every element below is plain semantic HTML with <em>zero framework classes</em>.</p>'
+        + '<h3>Headings</h3><h4>Fourth level</h4><h5>Fifth level</h5><h6>Sixth level</h6>'
+        + '<hr>'
+        + '<h3>Lists</h3>'
+        + '<ul><li>Unordered item one</li><li>Unordered item two<ul><li>Nested item</li></ul></li><li>Item three</li></ul>'
+        + '<ol><li>Ordered item one</li><li>Ordered item two<ol><li>Nested ordered</li></ol></li><li>Item three</li></ol>'
+        + '<h3>Blockquote</h3>'
+        + '<blockquote><p>A blockquote with an accent left border. No classes needed.</p></blockquote>'
+        + '<h3>Code</h3>'
+        + '<p>Inline <code>code</code> uses the mono font. Block code:</p>'
+        + '<pre><code>const x = 42;\nconsole.log(x);</code></pre>'
+        + '<h3>Table</h3>'
+        + '<table><thead><tr><th>Name</th><th>Value</th></tr></thead><tbody><tr><td>Alpha</td><td>1</td></tr><tr><td>Beta</td><td>2</td></tr></tbody></table>'
+        + '<h3>Definition list</h3>'
+        + '<dl><dt>Term</dt><dd>The definition of the term.</dd><dt>Another term</dt><dd>Its definition.</dd></dl>'
+        + '<h3>Figure</h3>'
+        + '<figure><div style="height:60px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-faint);">image placeholder</div><figcaption>A figure with a mono caption.</figcaption></figure>'
+        + '<p><a href="#/wiki">Back to the wiki</a></p>',
+      tip: "Content-first -- plain semantic HTML styled by the framework with zero classes, demonstrating the declarative view path.",
+    },
   },
   defaultRoute: "tokens",
   legacyRoutes: { docs: "wiki" },
