@@ -11,6 +11,9 @@ __pycache__/
 .DS_Store
 coverage/
 target/
+test-results/
+playwright-report/
+.playwright/
 .rlsbl-notes-*.tmp
 .rlsbl/lock
 .rlsbl-monorepo/lock
