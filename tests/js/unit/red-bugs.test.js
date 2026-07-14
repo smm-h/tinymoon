@@ -89,7 +89,7 @@ describe("markdown.renderMiniMd", () => {
 // non-2xx response rejects (as post() already does).
 // ---------------------------------------------------------------------------
 describe("net.api", () => {
-  it.fails("rejects on a non-2xx response instead of resolving the error body", async () => {
+  it("rejects on a non-2xx response instead of resolving the error body", async () => {
     global.fetch = vi.fn(() =>
       Promise.resolve({
         ok: false,
