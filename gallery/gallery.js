@@ -13,6 +13,7 @@ import {
   createSwitch, copyButton, kebabButton,
   createCheckbox, createRadio, createFileInput,
   createSegmented, createTabs,
+  createDatePicker,
   createSettings, cssVar,
   mountShell, createWikiView,
 } from "../assets/js/index.js";
@@ -773,6 +774,21 @@ const FormsView = {
     fileRow.appendChild(fi.el);
     fileSection.appendChild(fileRow);
     form.appendChild(fileSection);
+
+    // date picker
+    const dpSection = el("div");
+    dpSection.appendChild(el("div", "set-title", "Date picker"));
+    const dpRow = el("div", "demo-row");
+    dpRow.style.marginTop = "var(--space-8)";
+    const dp = createDatePicker({
+      name: "event-date",
+      label: "Event date",
+      value: "2026-07-14",
+      onChange: (v) => toast("Date selected: " + v),
+    });
+    dpRow.appendChild(dp.el);
+    dpSection.appendChild(dpRow);
+    form.appendChild(dpSection);
 
     // select
     const selSection = el("div");
