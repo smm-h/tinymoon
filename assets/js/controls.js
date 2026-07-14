@@ -67,32 +67,6 @@ export function createSwitch(opts) {
   return { el: b, set, destroy };
 }
 
-// segmented({items: [{value, label, icon?, disabled?, title?}], value,
-// onChange}) → .seg element with .set(v) and .value. The `title` field is a
-// tooltip (data-tooltip), never a native title attribute.
-// LEGACY — prefer createSegmented for new code.
-export function segmented(opts) {
-  const wrap = el("div", "seg");
-  const btns = new Map();
-  for (const it of opts.items) {
-    const b = el("button");
-    b.type = "button";
-    if (it.icon) b.innerHTML = icon(it.icon);
-    b.appendChild(el("span", null, it.label));
-    if (it.disabled) b.disabled = true;
-    if (it.title) b.dataset.tooltip = it.title;
-    b.addEventListener("click", () => { wrap.set(it.value); opts.onChange(it.value); });
-    btns.set(it.value, b);
-    wrap.appendChild(b);
-  }
-  wrap.set = (v) => {
-    wrap.value = v;
-    for (const [val, b] of btns) b.classList.toggle("on", val === v);
-  };
-  wrap.set(opts.value);
-  return wrap;
-}
-
 // createSegmented({name, label, items: [{value, label, icon?, disabled?}],
 // value?, onChange?}) → {el, set(v), value (getter), destroy()}.
 // Form-participating segmented control built on hidden radios. The fieldset

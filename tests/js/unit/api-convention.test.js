@@ -28,7 +28,6 @@ import { describe, it, expect } from "vitest";
 
 const LEGACY = [
   // controls.js — returns bare DOM elements with expando methods
-  "segmented",
   "copyButton",
   "kebabButton",
 ];
@@ -75,8 +74,9 @@ const NOT_COMPONENTS = [
   "openPopover", "closePopover",
   // settings.js — store factory (not a UI component)
   "createSettings",
-  // kernel.js — infrastructure
-  "cssVar", "ensureRoot", "placeBelow",
+  // kernel.js — infrastructure + copyable registry
+  "cssVar", "ensureRoot", "getCopyData", "placeBelow",
+  "registerCopyable", "unregisterCopyable",
   // shell.js — app shell
   "mountShell",
   // wiki.js — rendering + view factory
