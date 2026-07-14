@@ -16,6 +16,7 @@ import {
   createDatePicker,
   createSettings, cssVar,
   mountShell, createWikiView,
+  registerCopyable,
 } from "../assets/js/index.js";
 
 // ---------- settings ----------
@@ -209,11 +210,16 @@ const TypeView = {
 
     const badges = panel("Badges + hashes", "info");
     const row = el("div", "demo-row");
-    row.appendChild(el("span", "badge", "badge"));
+    const badge1 = el("span", "badge", "badge");
+    registerCopyable(badge1, () => ({ text: "badge" }));
+    row.appendChild(badge1);
     const b2 = el("span", "badge", "with icon");
     b2.innerHTML = icon("check") + b2.innerHTML;
+    registerCopyable(b2, () => ({ text: "with icon" }));
     row.appendChild(b2);
-    row.appendChild(el("span", "hash", "3f9c1a7e0b2d — hashes wrap anywhere and stay faint"));
+    const hashSpan = el("span", "hash", "3f9c1a7e0b2d — hashes wrap anywhere and stay faint");
+    registerCopyable(hashSpan, () => ({ text: "3f9c1a7e0b2d" }));
+    row.appendChild(hashSpan);
     badges.appendChild(row);
     this.root.appendChild(badges);
   },
@@ -450,6 +456,8 @@ const WidgetsView = {
       const s = el("div", "stat");
       s.appendChild(el("span", "k", k));
       s.appendChild(el("span", "v", v));
+      // Register each stat as copyable: "key: value"
+      registerCopyable(s, () => ({ text: k + ": " + v }));
       stats.appendChild(s);
     }
     data.appendChild(stats);
@@ -469,6 +477,8 @@ const WidgetsView = {
       tr.appendChild(el("td", null, n));
       tr.appendChild(el("td", null, k));
       tr.appendChild(el("td", "hash", h));
+      // Register each table row as copyable: "name  kind  hash"
+      registerCopyable(tr, () => ({ text: n + "\t" + k + "\t" + h }));
       tbody.appendChild(tr);
     }
     table.appendChild(tbody);
