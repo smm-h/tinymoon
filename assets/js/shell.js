@@ -119,6 +119,18 @@ export function mountShell(config) {
   main.id = "tm-main";
   const topbar = el("header");
   topbar.id = "tm-topbar";
+
+  // Hamburger button: visible only at <=768px (CSS hides it above that).
+  // Toggles .sidebar-open on #tm-app to slide the drawer in/out.
+  const hamburger = el("button", "tm-hamburger");
+  hamburger.type = "button";
+  hamburger.setAttribute("aria-label", "Toggle navigation");
+  hamburger.innerHTML = icon("menu");
+  hamburger.addEventListener("click", () => {
+    app.classList.toggle("sidebar-open");
+  });
+  topbar.appendChild(hamburger);
+
   const pageTitle = el("h1");
   pageTitle.id = "tm-page-title";
   const pageSub = el("span");
@@ -165,6 +177,12 @@ export function mountShell(config) {
   app.appendChild(announcer);
   root.appendChild(app);
 
+  // Close the drawer when clicking on the main content area (outside the
+  // sidebar). This covers both the backdrop overlay and the content itself.
+  main.addEventListener("click", () => {
+    app.classList.remove("sidebar-open");
+  });
+
   // Framework overlay mount points (primitives also create these lazily via
   // kernel.ensureRoot; mounting them here keeps stacking order deterministic).
   // The modal uses a native <dialog> (top-layer) created per-open — no root.
@@ -202,6 +220,8 @@ export function mountShell(config) {
     const raw = location.hash.replace(/^#\//, "") || defaultRoute;
     if (currentHash === raw) return;
     currentHash = raw;
+    // Close the mobile drawer on every route change
+    app.classList.remove("sidebar-open");
     // Routes can carry a sub-path (deep link): #/key/<tail>.
     const parts = raw.split("/");
     const key = parts[0];
