@@ -12,7 +12,7 @@ export { openModal } from "./modal.js";
 export { Select } from "./select.js";
 export { registerCtx, registerCtxFooter, showCtxMenu, hideCtxMenu } from "./ctxmenu.js";
 export { openPopover, closePopover } from "./popover.js";
-export { toggleWidget, segmented, copyButton, kebabButton } from "./controls.js";
+export { createSwitch, segmented, copyButton, kebabButton, createCheckbox, createRadio, createFileInput } from "./controls.js";
 export { createSettings } from "./settings.js";
 export { cssVar, ensureRoot, placeBelow } from "./kernel.js";
 export { mountShell } from "./shell.js";
