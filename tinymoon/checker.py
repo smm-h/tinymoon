@@ -4,10 +4,12 @@ Scans .html, .css, and .js files for violations of the framework's
 non-negotiables. Five rules, each a hard error -- there is no warning
 mode and no bypass:
 
-- external-url:  no network loads (http://, https://, or protocol-relative
-  //host URLs) in HTML src/href/srcset, CSS url()/@import, JS import
-  specifiers or string literals passed to fetch()/import(). Exceptions:
-  XML namespace identifiers (xmlns/xmlns:* attributes, and
+- external-url:  no network loads (http://, https://, ws://, wss://, or
+  protocol-relative //host URLs) in HTML src/href/srcset/action/poster/
+  formaction/ping and <object data=>, CSS url()/@import, JS import
+  specifiers or string literals passed to fetch()/import() (including
+  template literals), and URLs in <script type="importmap"> JSON.
+  Exceptions: XML namespace identifiers (xmlns/xmlns:* attributes, and
   http(s)://www.w3.org/... identifiers inside data: URIs), URLs inside
   comments, and URLs in plain HTML prose. An optional allowlist file
   (tinymoon-allowlist.txt at the scanned dir root, one exact URL per
@@ -19,20 +21,35 @@ mode and no bypass:
 - title-attr: no title= attributes in HTML (SVG <title> child ELEMENTS are
   fine -- only the attribute is banned), and no JS `.title =` /
   setAttribute("title", ...) on elements. `document.title` is the page
-  title, not an element tooltip, and is exempt.
+  title, not an element tooltip, and is exempt. Non-DOM receivers (route,
+  config, options, etc.) are also exempt.
 - border-radius: no border-radius (or borderRadius in JS) with a value
   other than 0/0px -- in CSS rules, inline style= attributes, or JS style
   assignments (including setProperty("border-radius", ...)).
 - raw-color: no color literals -- hex (#fff, #ffffff, 4/8-digit),
-  rgb()/rgba()/hsl()/hsla()/oklch() -- anywhere except CSS custom-property
-  definitions inside `:root { }` or `html[data-theme="..."] { }` blocks
-  (the token layer). Banned in all other CSS rules, in inline styles, and
-  in all JS (canvas code must go through cssVar()). var(...) references,
-  currentColor, transparent, and inherit are always fine. Known
-  limitation: named CSS colors (red, papayawhip, ...) are NOT checked --
-  matching them produces too many false positives on ordinary words.
+  rgb()/rgba()/hsl()/hsla()/oklch()/oklab()/lab()/lch()/hwb()/color() --
+  anywhere except CSS custom-property definitions inside `:root { }` or
+  `html[data-theme="..."] { }` blocks (the token layer). Banned in all
+  other CSS rules, in inline styles, and in all JS (canvas code must go
+  through cssVar()). var(...) references, currentColor, transparent, and
+  inherit are always fine. JS private fields (#name) and location.hash
+  fragments are stripped before checking. Known limitation: named CSS
+  colors (red, papayawhip, ...) are NOT checked -- matching them produces
+  too many false positives on ordinary words.
+
+Known bypasses remaining for future work:
+- HTML-in-JS-strings: innerHTML/insertAdjacentHTML string content is not
+  parsed as HTML, so embedded URLs, native controls, title attributes,
+  etc. in those strings are invisible to the checker.
+- CSS var() resolution: the checker cannot trace var(--x) to its
+  definition, so a custom property holding a raw color used in a non-token
+  context is not caught.
+- JS string concatenation: URLs built from string concatenation
+  ("https://" + host) are not detected.
+- eval/Function: dynamically constructed code is not analyzed.
 """
 
+import json
 import re
 import urllib.parse
 from bisect import bisect_right
@@ -46,6 +63,7 @@ NATIVE_CONTROL = "native-control"
 TITLE_ATTR = "title-attr"
 BORDER_RADIUS = "border-radius"
 RAW_COLOR = "raw-color"
+ENCODING_ERROR = "encoding-error"
 
 SKIP_DIRS = {"node_modules", ".git", ".venv", "__pycache__", "dist"}
 SOURCE_EXTS = {".html", ".css", ".js"}
@@ -71,12 +89,12 @@ class Violation:
 # Shared: external-URL logic and color regexes
 # ---------------------------------------------------------------------------
 
-_EXTERNAL_RE = re.compile(r"^(?:https?:)?//")
+_EXTERNAL_RE = re.compile(r"^(?:https?:|wss?:)?//")
 _EMBEDDED_URL_RE = re.compile(r"""https?://[^\s"'<>()\\]+""")
 _W3_PREFIXES = ("http://www.w3.org/", "https://www.w3.org/")
 
 _HEX_COLOR_RE = re.compile(r"#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b")
-_COLOR_FN_RE = re.compile(r"\b(?:rgba?|hsla?|oklch)\s*\(")
+_COLOR_FN_RE = re.compile(r"\b(?:rgba?|hsla?|oklch|oklab|lab|lch|hwb|color)\s*\(")
 
 _CSS_URL_FN_RE = re.compile(
     r"""url\(\s*(?:"([^"]*)"|'([^']*)'|([^)"'\s][^)]*))\s*\)""", re.IGNORECASE
@@ -341,6 +359,10 @@ def _strip_js_comments(text):
 _JS_FROM_SPEC_RE = re.compile(r"""\bfrom\s*(["'])([^"']+)\1""")
 _JS_BARE_IMPORT_RE = re.compile(r"""\bimport\s*(["'])([^"']+)\1""")
 _JS_CALL_URL_RE = re.compile(r"""\b(?:import|fetch)\s*\(\s*(["'])([^"']+)\1""")
+_JS_CALL_TEMPLATE_URL_RE = re.compile(r"""\b(?:import|fetch)\s*\(\s*`([^`]*)`""")
+_JS_WEBSOCKET_URL_RE = re.compile(
+    r"""\bWebSocket\s*\(\s*(["'])([^"']+)\1"""
+)
 
 _JS_EL_NATIVE_RE = re.compile(r"""\bel\s*\(\s*(["'])(select)\1""")
 _JS_CREATE_NATIVE_RE = re.compile(
@@ -355,10 +377,30 @@ _JS_TYPE_SETATTR_RE = re.compile(
 
 # Captures the trailing receiver identifier (greedy, so a leftmost match
 # always grabs the whole identifier -- "mydocument" never matches as
-# "document"). The document.title exemption is decided in scan_js: only a
-# bare `document` receiver (not preceded by a `.`) is the page title.
+# "document"). The exemption logic is in scan_js: `document` (page title)
+# and non-DOM-looking receivers (route, config, options, etc.) are exempt.
 _JS_TITLE_ASSIGN_RE = re.compile(r"""([\w$]*)\s*\.\s*title\s*=(?!=)""")
 _JS_TITLE_SETATTR_RE = re.compile(r"""\bsetAttribute\s*\(\s*(["'])title\1""")
+
+# Receivers whose .title assignment is NOT a DOM tooltip. The set covers
+# common non-element variable names. The heuristic: if a receiver is
+# `document` (page title), starts with one of the DOM prefixes below, or
+# its identifier is NOT in this exclusion set, it fires the rule. This
+# is intentionally conservative -- unknown receivers fire the rule.
+_NON_DOM_TITLE_RECEIVERS = frozenset({
+    "route", "config", "options", "opts", "settings", "meta",
+    "item", "entry", "record", "row", "page", "tab", "section",
+    "breadcrumb", "crumb", "nav", "menu", "menuItem", "menuitem",
+    "chart", "series", "dataset", "column", "field", "header",
+    "window",  # window.title is not a DOM attribute
+})
+
+# Patterns for stripping JS private fields and location.hash assignments
+# before scanning for raw hex colors (avoids false positives).
+_JS_PRIVATE_FIELD_RE = re.compile(r"#[a-zA-Z_$][\w$]*")
+_JS_LOCATION_HASH_RE = re.compile(
+    r"""location\s*\.\s*hash\s*=\s*(?:(["'`]).*?\1|[^;\n]+)"""
+)
 
 _JS_BR_ASSIGN_RE = re.compile(
     r"""\bborderRadius\s*[:=](?!=)\s*(?:(["'`])\s*([^"'`]*)\1|([^;,\n})]+))"""
@@ -381,9 +423,14 @@ def scan_js(text, path, allowlist, line_offset=0):
     def line_of(offset):
         return bisect_right(line_starts, offset) + line_offset
 
-    for pat in (_JS_FROM_SPEC_RE, _JS_BARE_IMPORT_RE, _JS_CALL_URL_RE):
+    for pat in (
+        _JS_FROM_SPEC_RE, _JS_BARE_IMPORT_RE, _JS_CALL_URL_RE,
+        _JS_WEBSOCKET_URL_RE,
+    ):
         for m in pat.finditer(src):
             _check_external_url(m.group(2), line_of(m.start()), path, allowlist, out)
+    for m in _JS_CALL_TEMPLATE_URL_RE.finditer(src):
+        _check_external_url(m.group(1), line_of(m.start()), path, allowlist, out)
 
     for pat, what in (
         (_JS_EL_NATIVE_RE, lambda m: m.group(2)),
@@ -421,12 +468,17 @@ def scan_js(text, path, allowlist, line_offset=0):
         )
 
     for m in _JS_TITLE_ASSIGN_RE.finditer(src):
+        receiver = m.group(1)
         # document.title is the page title, not an element tooltip -- exempt,
         # but only when the receiver is exactly the identifier `document`
         # (identifiers merely ending in "document", or `foo.document`, fire).
-        if m.group(1) == "document" and (
+        if receiver == "document" and (
             m.start() == 0 or src[m.start() - 1] != "."
         ):
+            continue
+        # Non-DOM receivers: variable names that are clearly not DOM
+        # elements (route.title, config.title, etc.) are exempt.
+        if receiver in _NON_DOM_TITLE_RECEIVERS:
             continue
         out.append(
             Violation(
@@ -473,8 +525,15 @@ def scan_js(text, path, allowlist, line_offset=0):
                 )
             )
 
+    # Strip private field references (this.#face, #deed) and location.hash
+    # assignments (location.hash = "#abc123") before scanning for raw hex
+    # colors -- these are not color literals.
+    color_src = _JS_PRIVATE_FIELD_RE.sub(lambda m: " " * len(m.group(0)), src)
+    color_src = _JS_LOCATION_HASH_RE.sub(
+        lambda m: " " * len(m.group(0)), color_src
+    )
     for pat in (_HEX_COLOR_RE, _COLOR_FN_RE):
-        for m in pat.finditer(src):
+        for m in pat.finditer(color_src):
             literal = m.group(0).rstrip("(").strip()
             out.append(
                 Violation(
@@ -502,7 +561,7 @@ class _HTMLScanner(HTMLParser):
         self._path = path
         self._allowlist = allowlist
         self._out = out
-        self._container = None  # "style" | "script" | None
+        self._container = None  # "style" | "script" | "importmap" | None
 
     # -- tags ---------------------------------------------------------------
 
@@ -516,7 +575,9 @@ class _HTMLScanner(HTMLParser):
             if "src" in d:
                 return
             t = d.get("type", "").lower()
-            if t in ("", "module") or "javascript" in t:
+            if t == "importmap":
+                self._container = "importmap"
+            elif t in ("", "module") or "javascript" in t:
                 self._container = "script"
 
     def handle_startendtag(self, tag, attrs):
@@ -524,7 +585,7 @@ class _HTMLScanner(HTMLParser):
 
     def handle_endtag(self, tag):
         if tag.lower() in ("style", "script"):
-            self._container = None
+            self._container = None  # clears style, script, and importmap
 
     def _check_tag(self, tag, attrs):
         line = self.getpos()[0]
@@ -547,10 +608,22 @@ class _HTMLScanner(HTMLParser):
                 continue
             if lname == "xmlns" or lname.startswith("xmlns:"):
                 continue  # namespace identifiers, not loads
-            if lname in ("src", "href"):
+            if lname in (
+                "src", "href", "action", "poster", "formaction",
+            ):
                 _check_external_url(
                     value, line, self._path, self._allowlist, self._out
                 )
+            elif lname == "data" and tag == "object":
+                _check_external_url(
+                    value, line, self._path, self._allowlist, self._out
+                )
+            elif lname == "ping":
+                # ping= is space-separated list of URLs
+                for url in value.split():
+                    _check_external_url(
+                        url, line, self._path, self._allowlist, self._out
+                    )
             elif lname == "srcset":
                 for candidate in value.split(","):
                     candidate = candidate.strip()
@@ -599,12 +672,41 @@ class _HTMLScanner(HTMLParser):
             self._out.extend(
                 scan_css(data, self._path, self._allowlist, line_offset=offset)
             )
+        elif self._container == "importmap":
+            self._scan_importmap(data)
         elif self._container == "script":
             offset = self.getpos()[0] - 1
             self._out.extend(
                 scan_js(data, self._path, self._allowlist, line_offset=offset)
             )
         # Plain prose: URLs in documentation text are not loads. Ignored.
+
+    def _scan_importmap(self, data):
+        """Check URLs in <script type="importmap"> JSON content."""
+        line = self.getpos()[0]
+        try:
+            importmap = json.loads(data)
+        except (json.JSONDecodeError, ValueError):
+            return  # malformed importmap; not our problem
+        if not isinstance(importmap, dict):
+            return
+        imports = importmap.get("imports")
+        if isinstance(imports, dict):
+            for url in imports.values():
+                if isinstance(url, str):
+                    _check_external_url(
+                        url, line, self._path, self._allowlist, self._out
+                    )
+        scopes = importmap.get("scopes")
+        if isinstance(scopes, dict):
+            for scope_map in scopes.values():
+                if isinstance(scope_map, dict):
+                    for url in scope_map.values():
+                        if isinstance(url, str):
+                            _check_external_url(
+                                url, line, self._path, self._allowlist,
+                                self._out,
+                            )
 
     def handle_comment(self, data):
         pass  # URLs in comments are documentation, not loads.
@@ -655,6 +757,16 @@ def scan_file(path, root, allowlist):
     path = Path(path)
     text = path.read_text(encoding="utf-8", errors="replace")
     rel = str(path.relative_to(root))
+    if "�" in text:
+        return [
+            Violation(
+                rel,
+                1,
+                ENCODING_ERROR,
+                "file contains replacement characters (U+FFFD)"
+                " -- it is not valid UTF-8; fix the encoding before scanning",
+            )
+        ]
     ext = path.suffix.lower()
     if ext == ".html":
         return scan_html(text, rel, allowlist)
@@ -665,11 +777,23 @@ def scan_file(path, root, allowlist):
     return []
 
 
-def scan_dir(root):
-    """Scan a directory tree; returns Violations sorted by (path, line, rule)."""
+def scan_dir(root, stderr=None):
+    """Scan a directory tree; returns Violations sorted by (path, line, rule).
+
+    When ``stderr`` is not None, skip-directory notices are written to it.
+    The CLI passes ``sys.stderr``; programmatic callers can pass a
+    StringIO or None (silent).
+    """
     root = Path(root)
     if not root.is_dir():
         raise NotADirectoryError(f"not a directory: {root}")
+    if stderr is not None:
+        for d in sorted(root.iterdir()):
+            if d.is_dir() and d.name in SKIP_DIRS:
+                print(
+                    f"notice: skipping directory {d.name}/",
+                    file=stderr,
+                )
     allowlist = load_allowlist(root)
     out = []
     for f in iter_source_files(root):

@@ -12,6 +12,7 @@ from pathlib import Path
 
 from tinymoon.checker import (
     BORDER_RADIUS,
+    ENCODING_ERROR,
     EXTERNAL_URL,
     NATIVE_CONTROL,
     RAW_COLOR,
@@ -103,6 +104,33 @@ EXPECTED_VIOLATIONS = {
         (6, RAW_COLOR),  # oklch() string
         # line 7 cssVar() must NOT fire
     ],
+    # -- bypass-closure fixtures --
+    "external-url-template.js": [
+        (4, EXTERNAL_URL),  # import(`https://...`)
+        (5, EXTERNAL_URL),  # fetch(`http://...`)
+    ],
+    "external-url-importmap.html": [
+        (4, EXTERNAL_URL),  # "lodash": "https://..." in importmap
+    ],
+    "external-url-attrs.html": [
+        (4, EXTERNAL_URL),  # action="https://..."
+        (5, EXTERNAL_URL),  # poster="https://..."
+        (6, EXTERNAL_URL),  # formaction="https://..."
+        (7, EXTERNAL_URL),  # <object data="https://...">
+        (8, EXTERNAL_URL),  # ping URL 1
+        (8, EXTERNAL_URL),  # ping URL 2
+    ],
+    "external-url-ws.js": [
+        (1, EXTERNAL_URL),  # new WebSocket("ws://...")
+        (2, EXTERNAL_URL),  # new WebSocket("wss://...")
+    ],
+    "raw-color-extra-fns.css": [
+        (1, RAW_COLOR),  # oklab()
+        (2, RAW_COLOR),  # lab()
+        (3, RAW_COLOR),  # lch()
+        (4, RAW_COLOR),  # hwb()
+        (5, RAW_COLOR),  # color()
+    ],
 }
 
 
@@ -160,6 +188,23 @@ def test_gallery_self_conformance():
 # ---------------------------------------------------------------------------
 
 
+def test_encoding_error_on_invalid_utf8(tmp_path):
+    """A file with invalid UTF-8 emits an encoding-error violation."""
+    bad = tmp_path / "bad.js"
+    bad.write_bytes(b'const x = "\xff\xfe invalid";\n')
+    violations = scan_dir(tmp_path)
+    assert [(v.line, v.rule) for v in violations] == [(1, ENCODING_ERROR)]
+
+
+def test_skip_dirs_notice(tmp_path, capsys):
+    """scan_dir with stderr= prints skip notices for SKIP_DIRS entries."""
+    (tmp_path / "node_modules").mkdir()
+    (tmp_path / "ok.js").write_text("const x = 1;\n")
+    scan_dir(tmp_path, stderr=__import__("sys").stderr)
+    captured = capsys.readouterr()
+    assert "skipping directory node_modules/" in captured.err
+
+
 def test_cli_exit_zero_and_summary_when_clean():
     result = app.test(["check", "--dir", str(FIXTURES / "clean")])
     assert result.exit_code == 0
@@ -180,6 +225,7 @@ def test_cli_exit_one_and_line_format_on_violations():
         TITLE_ATTR,
         BORDER_RADIUS,
         RAW_COLOR,
+        ENCODING_ERROR,
     )
 
 

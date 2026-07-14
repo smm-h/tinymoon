@@ -14,3 +14,29 @@ export async function run(url) {
   const label = box.title;
   return { data, label };
 }
+
+// Private fields that look like hex colors must NOT fire raw-color.
+class ColorStore {
+  #face;
+  #deed;
+  #fab;
+  constructor() {
+    this.#face = "stored";
+    this.#deed = "done";
+    this.#fab = "good";
+  }
+}
+
+// location.hash assignments must NOT fire raw-color.
+function navigate() {
+  location.hash = "#abc123";
+  window.location.hash = "#def456";
+}
+
+// Non-DOM .title assignments must NOT fire title-attr.
+function setupRoutes(route, config, options) {
+  route.title = "Home";
+  config.title = "App settings";
+  options.title = "Preferences";
+  window.title = "My window";
+}

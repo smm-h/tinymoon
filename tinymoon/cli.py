@@ -53,7 +53,7 @@ def check(dir):
     if not root.is_dir():
         print(f"error: --dir {dir!r} is not a directory", file=sys.stderr)
         return 2
-    violations = scan_dir(root)
+    violations = scan_dir(root, stderr=sys.stderr)
     file_count = sum(1 for _ in iter_source_files(root))
     for v in violations:
         print(f"{root / v.path}:{v.line}: [{v.rule}] {v.message}")

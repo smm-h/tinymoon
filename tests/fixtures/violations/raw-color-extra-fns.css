@@ -1,0 +1,5 @@
+.a { color: oklab(0.7 -0.1 0.1) }
+.b { color: lab(50% 30 -20) }
+.c { color: lch(50% 40 60) }
+.d { color: hwb(200 10% 20%) }
+.e { color: color(display-p3 1 0 0) }
