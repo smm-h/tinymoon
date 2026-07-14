@@ -101,3 +101,59 @@ export function ensureRoot(id, attrs) {
   }
   return node;
 }
+
+// ---------------------------------------------------------------------------
+// Copyable registry — object-level Ctrl+C via the synchronous copy event
+// ---------------------------------------------------------------------------
+
+// Natively focusable tag names — elements that already accept keyboard focus
+// without needing tabindex. Shared concept with ctxmenu.js, but duplicated
+// here to keep kernel dependency-free from ctxmenu.
+const COPY_NATIVE_FOCUSABLE = new Set(["BUTTON", "A", "INPUT", "SELECT", "TEXTAREA"]);
+
+// WeakMap<Element, () => {text: string, html?: string}>
+const copyables = new WeakMap();
+
+// registerCopyable(element, getData): registers an element as a copy-object.
+// getData() returns {text: string, html?: string}. Adds tabindex="0" if the
+// element is not natively focusable (same pattern as ctxmenu).
+export function registerCopyable(element, getData) {
+  copyables.set(element, getData);
+  if (!COPY_NATIVE_FOCUSABLE.has(element.tagName) && !element.hasAttribute("tabindex")) {
+    element.setAttribute("tabindex", "0");
+  }
+}
+
+// unregisterCopyable(element): removes the element from the copy registry.
+export function unregisterCopyable(element) {
+  copyables.delete(element);
+}
+
+// getCopyData(element): if element (or an ancestor) is registered as
+// copyable, returns getData(). Otherwise returns null. Exported so
+// ctxmenu.js can check for copyable ancestors and build copy menu items.
+export function getCopyData(element) {
+  let node = element;
+  while (node) {
+    const getData = copyables.get(node);
+    if (getData) return getData();
+    node = node.parentElement;
+  }
+  return null;
+}
+
+// Document-level copy event listener: when fired, check if
+// document.activeElement is a registered copyable. If so, intercept and
+// set clipboard data from the getData function.
+document.addEventListener("copy", (e) => {
+  const active = document.activeElement;
+  if (!active) return;
+  const getData = copyables.get(active);
+  if (!getData) return;
+  const data = getData();
+  e.preventDefault();
+  e.clipboardData.setData("text/plain", data.text);
+  if (data.html) {
+    e.clipboardData.setData("text/html", data.html);
+  }
+});

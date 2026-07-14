@@ -7,7 +7,7 @@
 
 import { $$, el } from "./dom.js";
 import { icon } from "./icons.js";
-import { pushLayer, ensureRoot } from "./kernel.js";
+import { pushLayer, ensureRoot, getCopyData } from "./kernel.js";
 
 const ctxProviders = {};
 let ctxFooter = null;
@@ -119,10 +119,23 @@ export function hideCtxMenu() {
 }
 
 // Collect context menu items for a given target element by walking up the
-// [data-ctx] ancestor chain and appending footer items.
+// [data-ctx] ancestor chain, prepending a Copy item for copyable elements,
+// and appending footer items.
 function _collectItems(target) {
-  let node = target.closest("[data-ctx]");
   let items = [];
+
+  // If the target (or an ancestor) is a registered copyable, prepend a
+  // Copy item that writes the text data to the clipboard.
+  const copyData = getCopyData(target);
+  if (copyData) {
+    items.push({
+      label: "Copy",
+      icon: "copy",
+      action: () => navigator.clipboard.writeText(copyData.text),
+    });
+  }
+
+  let node = target.closest("[data-ctx]");
   while (node) {
     const p = ctxProviders[node.dataset.ctx];
     if (p) {
