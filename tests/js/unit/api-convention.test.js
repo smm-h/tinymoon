@@ -28,7 +28,6 @@ import { describe, it, expect } from "vitest";
 
 const LEGACY = [
   // controls.js — returns bare DOM elements with expando methods
-  "toggleWidget",
   "segmented",
   "copyButton",
   "kebabButton",
@@ -37,7 +36,11 @@ const LEGACY = [
 ];
 
 const MIGRATED = [
-  // (none yet — all component factories are pre-convention)
+  // controls.js — createX(opts) -> {el, ...} convention
+  "createSwitch",
+  "createCheckbox",
+  "createRadio",
+  "createFileInput",
 ];
 
 // Non-component exports: utilities, imperative actions, registration
@@ -103,29 +106,51 @@ describe("api-convention: barrel coverage", () => {
 // ---------------------------------------------------------------------------
 
 describe("api-convention: migrated primitives", () => {
-  // When MIGRATED is empty this test suite is a no-op scaffold.
-  // As primitives are migrated, add a test case for each one.
-
-  it("MIGRATED list is acknowledged (scaffold — no primitives migrated yet)", () => {
-    // This assertion documents the starting state. Once the first primitive
-    // is migrated, replace this with per-primitive checks.
-    expect(MIGRATED.length).toBe(0);
+  it("createSwitch(opts) conforms to the convention", async () => {
+    const { createSwitch } = await import("../../../assets/js/index.js");
+    const instance = createSwitch({ label: "Test", value: false, onChange: () => {} });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
   });
 
-  // Template for per-primitive checks (uncomment and adapt when migrating):
-  //
-  // it("createToggle(opts) conforms to the convention", async () => {
-  //   const { createToggle } = await import("../../../assets/js/index.js");
-  //   // Factory returns an object, not a DOM node
-  //   const instance = createToggle({ label: "Test", value: false, onChange: () => {} });
-  //   expect(instance).toBeDefined();
-  //   expect(typeof instance).toBe("object");
-  //   expect(instance).not.toBeInstanceOf(HTMLElement);
-  //   // .el is the root DOM element
-  //   expect(instance.el).toBeInstanceOf(HTMLElement);
-  //   // .destroy() exists
-  //   expect(typeof instance.destroy).toBe("function");
-  // });
+  it("createCheckbox(opts) conforms to the convention", async () => {
+    const { createCheckbox } = await import("../../../assets/js/index.js");
+    const instance = createCheckbox({ name: "test", label: "Test" });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
+    expect(typeof instance.get).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createRadio(opts) conforms to the convention", async () => {
+    const { createRadio } = await import("../../../assets/js/index.js");
+    const instance = createRadio({ name: "test", label: "Test", value: "a" });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
+    expect(typeof instance.get).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createFileInput(opts) conforms to the convention", async () => {
+    const { createFileInput } = await import("../../../assets/js/index.js");
+    const instance = createFileInput({ name: "test", label: "Choose" });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.getFiles).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
 });
 
 // ---------------------------------------------------------------------------
