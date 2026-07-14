@@ -31,8 +31,6 @@ const LEGACY = [
   "segmented",
   "copyButton",
   "kebabButton",
-  // select.js — class with `new Select(opts)`, root on `.root` not `.el`
-  "Select",
 ];
 
 const MIGRATED = [
@@ -41,6 +39,10 @@ const MIGRATED = [
   "createCheckbox",
   "createRadio",
   "createFileInput",
+  "createSegmented",
+  "createTabs",
+  // select.js — createSelect(opts) -> {el, set, value, setItems, destroy}
+  "createSelect",
 ];
 
 // Non-component exports: utilities, imperative actions, registration
@@ -149,6 +151,51 @@ describe("api-convention: migrated primitives", () => {
     expect(instance).not.toBeInstanceOf(HTMLElement);
     expect(instance.el).toBeInstanceOf(HTMLElement);
     expect(typeof instance.getFiles).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createSegmented(opts) conforms to the convention", async () => {
+    const { createSegmented } = await import("../../../assets/js/index.js");
+    const instance = createSegmented({
+      name: "test",
+      label: "Test",
+      items: [{ value: "a", label: "A" }, { value: "b", label: "B" }],
+    });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createTabs(opts) conforms to the convention", async () => {
+    const { createTabs } = await import("../../../assets/js/index.js");
+    const instance = createTabs({
+      label: "Test",
+      items: [{ value: "a", label: "A" }, { value: "b", label: "B" }],
+    });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createSelect(opts) conforms to the convention", async () => {
+    const { createSelect } = await import("../../../assets/js/index.js");
+    const instance = createSelect({
+      name: "test",
+      label: "Test",
+      items: [{ value: "a", label: "A" }, { value: "b", label: "B" }],
+    });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
+    expect(typeof instance.setItems).toBe("function");
     expect(typeof instance.destroy).toBe("function");
   });
 });
