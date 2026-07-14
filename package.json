@@ -7,11 +7,12 @@
   "main": "./assets/js/index.js",
   "exports": {
     ".": "./assets/js/index.js",
+    "./extras": "./assets/js/extras.js",
     "./assets/*": "./assets/*"
   },
   "files": [
     "assets",
-    "index.js"
+    "CHANGELOG.md"
   ],
   "repository": "github:smm-h/tinymoon",
   "author": "smm-h",
