@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RTL fixture</title>
+<!-- Load the framework CSS in the same order as the gallery -->
+<link rel="stylesheet" href="../../../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../../../assets/css/base.css">
+<link rel="stylesheet" href="../../../../assets/css/shell.css">
+<link rel="stylesheet" href="../../../../assets/css/primitives.css">
+</head>
+<body>
+<!-- RTL end-to-end fixture: verifies that Phase 1 logical property conversions
+     hold visually. Contains a sidebar, content area, table, and badges. -->
+<div id="tm-app" style="position: fixed; inset: 0; display: flex;">
+  <!-- Sidebar: border should be on the LEFT in RTL (border-inline-end) -->
+  <div id="tm-sidebar" style="width: 200px; flex: none; background: var(--surface); border-inline-end: 1px solid var(--border); display: flex; flex-direction: column;">
+    <div id="tm-nav" style="padding: var(--space-12) var(--space-8); display: flex; flex-direction: column; gap: var(--space-2);">
+      <button class="nav-item active">
+        <span class="nav-label">الرئيسية</span>
+      </button>
+      <button class="nav-item">
+        <span class="nav-label">الإعدادات</span>
+      </button>
+      <button class="nav-item">
+        <span class="nav-label">المستندات</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="tm-main" style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+    <div id="tm-topbar" style="height: var(--topbar-h); flex: none; display: flex; align-items: center; gap: var(--space-16); padding: 0 var(--space-24); border-bottom: 1px solid var(--border); background: var(--surface);">
+      <span id="tm-page-title" style="font-size: var(--text-lg); font-weight: var(--weight-medium);">اختبار RTL</span>
+    </div>
+
+    <div id="tm-content" style="flex: 1; overflow-y: auto; padding: var(--space-24);">
+      <h1>عنوان رئيسي</h1>
+      <h2>عنوان فرعي</h2>
+      <p>هذا نص تجريبي باللغة العربية لاختبار اتجاه الكتابة من اليمين إلى اليسار.</p>
+
+      <!-- Badges -->
+      <div style="display: flex; gap: 8px; margin: 16px 0;">
+        <span class="badge">شارة</span>
+        <span class="badge">نشط</span>
+        <span class="badge">معلق</span>
+      </div>
+
+      <!-- Data table -->
+      <table class="data">
+        <thead>
+          <tr>
+            <th>الاسم</th>
+            <th>النوع</th>
+            <th>الحالة</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ملف أول</td>
+            <td>مستند</td>
+            <td>نشط</td>
+          </tr>
+          <tr>
+            <td>ملف ثاني</td>
+            <td>صورة</td>
+            <td>معلق</td>
+          </tr>
+          <tr>
+            <td>ملف ثالث</td>
+            <td>فيديو</td>
+            <td>مكتمل</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Card with active state (tests inline-start border) -->
+      <div style="margin-top: 16px;">
+        <div class="card active" style="max-width: 400px;">
+          <div class="card-title-row">
+            <div class="card-title">بطاقة نشطة</div>
+          </div>
+          <div class="card-badges">
+            <span class="badge">RTL</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Signal to tests that the fixture is ready.
+window.__rtlReady = true;
+</script>
+</body>
+</html>
