@@ -2,13 +2,11 @@
 // and docs.
 
 import { el } from "./dom.js";
-import { hideTip } from "./tooltip.js";
-import { closePopover } from "./popover.js";
 
 // renderMiniMd(text) → DocumentFragment. The dialect: **bold**, *italic*,
 // `code`, [label](#/hash-target) links, and literal \n line breaks. Links
-// are internal hash navigations only (zero network) — clicking one navigates
-// and closes whatever overlay surfaced it.
+// are internal hash navigations only (zero network) — clicking one sets
+// location.hash and the kernel's hashchange listener closes all overlays.
 export function renderMiniMd(text) {
   const frag = document.createDocumentFragment();
   const inlineRe = /\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`|\[([^\]]+)\]\(([^)\s]+)\)/g;
@@ -35,8 +33,6 @@ export function renderMiniMd(text) {
           a.addEventListener("click", (ev) => {
             ev.preventDefault();
             ev.stopPropagation();
-            hideTip();
-            closePopover();
             location.hash = target;
           });
           frag.appendChild(a);

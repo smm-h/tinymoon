@@ -39,6 +39,21 @@ document.addEventListener("keydown", (e) => {
   layers[layers.length - 1].close();
 });
 
+// Hash navigation closes all open overlays. Overlays are transient UI that
+// must not survive a page-level navigation — a tooltip, popover, modal, or
+// context menu left floating after the content underneath changes is a bug.
+// This single listener replaces per-module cross-imports (e.g. markdown.js
+// importing hideTip/closePopover) and covers every overlay type uniformly.
+window.addEventListener("hashchange", () => {
+  while (layers.length > 0) {
+    const n = layers.length;
+    layers[n - 1].close();
+    // Defensive: if close() didn't remove the entry from the stack
+    // (broken overlay), pop it to prevent an infinite loop.
+    if (layers.length === n) layers.pop();
+  }
+});
+
 // ---------------------------------------------------------------------------
 // placeBelow — shared viewport-aware positioning for anchored overlays
 // ---------------------------------------------------------------------------
