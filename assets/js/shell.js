@@ -35,18 +35,9 @@
 import { $$, el } from "./dom.js";
 import { icon } from "./icons.js";
 import { ensureTooltip } from "./tooltip.js";
+import { ensureRoot } from "./kernel.js";
 
 function need(cond, msg) { if (!cond) throw new Error("mountShell: " + msg); }
-
-function ensureRoot(id) {
-  let node = document.getElementById(id);
-  if (!node) {
-    node = el("div");
-    node.id = id;
-    document.body.appendChild(node);
-  }
-  return node;
-}
 
 export function mountShell(config) {
   const { root, brand, routes, defaultRoute, legacyRoutes, topbarActions, footer, onRoute } = config || {};
@@ -119,9 +110,9 @@ export function mountShell(config) {
   app.appendChild(main);
   root.appendChild(app);
 
-  // Framework overlay mount points (primitives also create these lazily;
-  // mounting them here keeps stacking order deterministic).
-  ensureRoot("tm-ctx-root").setAttribute("role", "menu");
+  // Framework overlay mount points (primitives also create these lazily via
+  // kernel.ensureRoot; mounting them here keeps stacking order deterministic).
+  ensureRoot("tm-ctx-root", { role: "menu" });
   ensureRoot("tm-modal-root");
   ensureRoot("tm-toast-root");
   ensureTooltip();
