@@ -17,13 +17,13 @@
   --text-faint: #8a8a94;
   --accent: #2d6cf4;
   --accent-hi: #5c9dff;
-  --accent-soft: rgba(45, 108, 244, 0.14);
-  --accent-glow: rgba(45, 108, 244, 0.35);
+  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-glow: color-mix(in srgb, var(--accent) 35%, transparent);
   /* accent alpha scale: translucent accent variants for borders and glows */
-  --accent-a12: rgba(45, 108, 244, 0.12);
-  --accent-a18: rgba(45, 108, 244, 0.18);
-  --accent-a35: rgba(45, 108, 244, 0.35);
-  --accent-a40: rgba(45, 108, 244, 0.4);
+  --accent-a12: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-a18: color-mix(in srgb, var(--accent) 18%, transparent);
+  --accent-a35: color-mix(in srgb, var(--accent) 35%, transparent);
+  --accent-a40: color-mix(in srgb, var(--accent) 40%, transparent);
   /* text/icon color on top of solid accent fills */
   --on-accent: #ffffff;
   --green: #2fbf71;
@@ -35,7 +35,7 @@
   --backdrop: rgba(0, 0, 0, 0.65);
   --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45);
   --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.6);
-  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.7), 0 0 40px rgba(45, 108, 244, 0.06);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.7), 0 0 40px color-mix(in srgb, var(--accent) 6%, transparent);
   --grain-opacity: 0.05;
   --font-ui: "Plex", system-ui, sans-serif;
   --font-mono: "Plex Mono", ui-monospace, monospace;
@@ -130,12 +130,8 @@ html[data-theme="light"] {
   --text-faint: #636b7a;
   --accent: #2d6cf4;
   --accent-hi: #1f6ce0;
-  --accent-soft: rgba(45, 108, 244, 0.1);
-  --accent-glow: rgba(45, 108, 244, 0.22);
-  --accent-a12: rgba(45, 108, 244, 0.12);
-  --accent-a18: rgba(45, 108, 244, 0.18);
-  --accent-a35: rgba(45, 108, 244, 0.35);
-  --accent-a40: rgba(45, 108, 244, 0.4);
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-glow: color-mix(in srgb, var(--accent) 22%, transparent);
   --on-accent: #ffffff;
   --green: #1d9d5c;
   --red: #d93a40;
