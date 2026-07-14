@@ -6,11 +6,10 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Collect target files: all .js under assets/js and gallery, plus root index.js.
+# Collect target files: all .js under assets/js and gallery.
 mapfile -d '' files < <(
   find "$REPO/assets/js" "$REPO/gallery" -type f -name '*.js' -print0
 )
-files+=("$REPO/index.js")
 
 status=0
 for f in "${files[@]}"; do
