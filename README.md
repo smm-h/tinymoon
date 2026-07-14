@@ -14,8 +14,8 @@ Link the four CSS layers (tokens first) and import the ES modules — no build s
 ```
 
 ```js
-import { mountShell, createSettings, toast } from "tinymoon";
-// or import primitives standalone: import { toast } from "tinymoon/assets/js/toast.js";
+import { mountShell, createSettings, toast } from "./assets/js/index.js";
+// or import primitives standalone: import { toast } from "./assets/js/toast.js";
 
 const settings = createSettings({ storageKey: "my-app", defaults: { theme: "dark" } });
 settings.load();
@@ -29,6 +29,14 @@ const shell = mountShell({
   },
   defaultRoute: "home",
 });
+```
+
+The imports use relative paths to the vendored assets so they resolve in the browser with no build step. If you prefer the bare specifier `"tinymoon"`, add an import map to your HTML:
+
+```html
+<script type="importmap">
+{ "imports": { "tinymoon": "./assets/js/index.js" } }
+</script>
 ```
 
 `mountShell` also accepts an optional `onRoute(routeKey, sub)` callback fired after every route is handled (including the initial one), and the returned shell exposes `refreshCurrent()` to re-run the current view's `refresh()` in place.
