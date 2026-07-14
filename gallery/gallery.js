@@ -551,6 +551,25 @@ The framework dispatches exactly two events, both on \`window\`:
 `,
   },
   {
+    id: "primitive-api",
+    title: "Primitive API convention",
+    md: `
+Every tinymoon primitive follows a single convention. A factory function \`createX(opts)\` accepts an options object and returns an instance — never a raw DOM node with methods bolted on, never a class you \`new\`. The instance carries an \`.el\` property (the root \`HTMLElement\`) and named methods (\`.set(v)\`, \`.destroy()\`, etc.). Application code appends \`instance.el\` to the DOM and calls methods on the instance; the DOM node itself has no expando properties.
+
+### Required accessibility {#primitive-a11y}
+
+Primitives that represent form controls accept a \`label\` (or \`name\`, where appropriate) option. Omitting it is a hard error — the factory throws. Primitives that participate in forms use a hidden native element internally so form submission and autofill still work; the visible UI is always custom-drawn.
+
+### The destroy contract {#primitive-destroy}
+
+Every instance exposes \`.destroy()\`. Calling it removes the root element from its parent, detaches every event listener the factory registered, and releases any internal references. After \`.destroy()\`, the instance is inert — calling methods on it is a no-op or a throw, never a silent bug. Teardown is required when a primitive is removed before the page unloads (e.g. inside a single-page view that rebuilds).
+
+### Rationale {#primitive-rationale}
+
+One convention for all primitives means no per-widget learning curve. No expandos eliminates an entire class of DOM-identity bugs where the node is cloned or replaced and the methods vanish. Required accessibility params prevent silent inaccessibility. The destroy contract prevents listener leaks in long-lived single-page apps.
+`,
+  },
+  {
     id: "theming",
     title: "Tokens and theming",
     md: `
