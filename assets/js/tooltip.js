@@ -10,7 +10,7 @@
 import { el } from "./dom.js";
 import { copyButton } from "./controls.js";
 import { renderMiniMd } from "./markdown.js";
-import { cssVar } from "./settings.js";
+import { placeBelow } from "./kernel.js";
 
 let tipEl = null;
 let tipBody = null;
@@ -39,20 +39,10 @@ function showTip(target) {
   tipBody.textContent = "";
   tipBody.appendChild(renderMiniMd(text));
   // Position after content is set: below the anchor, flipped above when the
-  // viewport bottom (or the footer slot) would clip it, clamped
-  // horizontally.
+  // viewport bottom (or the footer slot) would clip it, clamped horizontally.
   t.style.left = "0px";
   t.style.top = "0px";
-  const footerH = parseFloat(cssVar("--footer-h")) || 0;
-  const r = target.getBoundingClientRect();
-  const tr = t.getBoundingClientRect();
-  let x = r.left + r.width / 2 - tr.width / 2;
-  let y = r.bottom + 8;
-  if (y + tr.height > window.innerHeight - footerH - 8) y = r.top - tr.height - 8;
-  x = Math.max(8, Math.min(x, window.innerWidth - tr.width - 8));
-  y = Math.max(8, y);
-  t.style.left = x + "px";
-  t.style.top = y + "px";
+  placeBelow(target, t);
   t.classList.add("show");
 }
 
