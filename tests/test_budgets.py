@@ -15,18 +15,44 @@ REPO = Path(__file__).resolve().parent.parent
 # headroom. Raising a ceiling is a deliberate decision that must happen in
 # this file, in review -- never as a side effect.
 #
-# Baselines (re-measured after Phase 7 responsive + RTL sweep):
-#   assets/css/*.css  54,543 bytes (4 files)  -- ceiling 57,000
-#   assets/js/*.js    101,541 bytes (19 files) -- ceiling 104,000
-#   assets/fonts/*.woff2  97,596 bytes (4 files) -- ceiling 122,000
+# Baselines (re-measured after Phase 8 module restructure):
+#   assets/css/*.css      (4 files)  -- measured elsewhere
+#   assets/fonts/*.woff2  (4 files)  -- measured elsewhere
+#
+# JS is split into core and extras tiers:
+#   Core:   93,984 bytes (15 modules)  -- ceiling 118,000
+#   Extras:  8,407 bytes (4 modules)   -- ceiling 11,000
 CSS_BUDGET_BYTES = 57_000
-JS_BUDGET_BYTES = 104_000
+CORE_JS_BUDGET_BYTES = 118_000
+EXTRAS_JS_BUDGET_BYTES = 11_000
 FONT_BUDGET_BYTES = 122_000
+
+# Core modules: dom, icons, kernel, controls, select, datepicker, modal,
+# popover, tooltip, hovercard, ctxmenu, toast, markdown, shell, index barrel.
+CORE_JS_MODULES = {
+    "controls.js", "ctxmenu.js", "datepicker.js", "dom.js", "hovercard.js",
+    "icons.js", "index.js", "kernel.js", "markdown.js", "modal.js",
+    "popover.js", "select.js", "shell.js", "toast.js", "tooltip.js",
+}
+
+# Extras modules: wiki, net, settings, extras barrel.
+EXTRAS_JS_MODULES = {
+    "extras.js", "net.js", "settings.js", "wiki.js",
+}
 
 
 def _total_bytes(pattern):
     files = sorted((REPO / "assets").glob(pattern))
     assert files, f"no files matched assets/{pattern}"
+    return sum(f.stat().st_size for f in files), files
+
+
+def _tier_bytes(names):
+    """Sum byte sizes for a set of JS module filenames."""
+    js_dir = REPO / "assets" / "js"
+    files = sorted(js_dir / n for n in names)
+    for f in files:
+        assert f.exists(), f"{f.name} not found in assets/js/"
     return sum(f.stat().st_size for f in files), files
 
 
@@ -38,12 +64,33 @@ def test_css_size_budget():
     )
 
 
-def test_js_size_budget():
-    total, files = _total_bytes("js/*.js")
-    assert total <= JS_BUDGET_BYTES, (
-        f"shipped JS is {total} bytes across {len(files)} files, over the "
-        f"{JS_BUDGET_BYTES}-byte budget -- trim before shipping"
+def test_core_js_size_budget():
+    total, files = _tier_bytes(CORE_JS_MODULES)
+    assert total <= CORE_JS_BUDGET_BYTES, (
+        f"core JS is {total} bytes across {len(files)} files, over the "
+        f"{CORE_JS_BUDGET_BYTES}-byte budget -- trim before shipping"
     )
+
+
+def test_extras_js_size_budget():
+    total, files = _tier_bytes(EXTRAS_JS_MODULES)
+    assert total <= EXTRAS_JS_BUDGET_BYTES, (
+        f"extras JS is {total} bytes across {len(files)} files, over the "
+        f"{EXTRAS_JS_BUDGET_BYTES}-byte budget -- trim before shipping"
+    )
+
+
+def test_js_tier_coverage():
+    """Every .js file in assets/js/ must belong to exactly one tier."""
+    js_dir = REPO / "assets" / "js"
+    all_js = {f.name for f in js_dir.glob("*.js")}
+    classified = CORE_JS_MODULES | EXTRAS_JS_MODULES
+    unclassified = all_js - classified
+    assert not unclassified, (
+        f"JS modules not assigned to a tier: {sorted(unclassified)}"
+    )
+    overlap = CORE_JS_MODULES & EXTRAS_JS_MODULES
+    assert not overlap, f"modules in both tiers: {sorted(overlap)}"
 
 
 def test_font_size_budget():
