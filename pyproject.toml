@@ -42,6 +42,18 @@ packages = ["tinymoon"]
 [tool.hatch.build.targets.wheel.force-include]
 "assets" = "tinymoon/assets"
 
+# Explicit sdist include: keep only the package, assets, tests, and
+# essential root files. Excludes .rlsbl/, .github/, CLAUDE.md, etc.
+[tool.hatch.build.targets.sdist]
+include = [
+    "tinymoon/",
+    "assets/",
+    "tests/",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
