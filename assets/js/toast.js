@@ -3,16 +3,7 @@
 import { el } from "./dom.js";
 import { icon } from "./icons.js";
 import { copyButton } from "./controls.js";
-
-function toastRoot() {
-  let root = document.getElementById("tm-toast-root");
-  if (!root) {
-    root = el("div");
-    root.id = "tm-toast-root";
-    document.body.appendChild(root);
-  }
-  return root;
-}
+import { ensureRoot } from "./kernel.js";
 
 let errorHook = null;
 
@@ -35,7 +26,7 @@ export function toast(msg, kind, opts) {
   t.innerHTML = icon(kind === "err" ? "warn" : "check");
   t.appendChild(el("span", "toast-msg", msg));
   t.appendChild(copyButton(() => msg, "Copy this message"));
-  toastRoot().appendChild(t);
+  ensureRoot("tm-toast-root").appendChild(t);
   const life = opts && opts.duration ? opts.duration : (kind === "err" ? 5200 : 3200);
   setTimeout(() => {
     t.classList.add("fading");
