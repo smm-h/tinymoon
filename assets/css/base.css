@@ -133,6 +133,6 @@ body::after {
     animation-iteration-count: infinite !important;
   }
   #tm-content {
-    scroll-behavior: auto;
+    scroll-behavior: auto !important;
   }
 }

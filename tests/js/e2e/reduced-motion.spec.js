@@ -3,9 +3,8 @@ import { test, expect } from "@playwright/test";
 // Verify that prefers-reduced-motion: reduce suppresses all visible
 // animation and transition durations to at most 1ms (0.01ms in practice).
 
-test.use({ reducedMotion: "reduce" });
-
 test("reduced-motion: no animation or transition exceeds 1ms", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/gallery/");
   await expect(page.locator("#tm-app")).toBeVisible();
 
@@ -45,6 +44,7 @@ test("reduced-motion: no animation or transition exceeds 1ms", async ({ page }) 
 });
 
 test("reduced-motion: scroll-behavior is auto on #tm-content", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/gallery/");
   await expect(page.locator("#tm-app")).toBeVisible();
 
