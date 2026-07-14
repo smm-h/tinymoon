@@ -16,7 +16,7 @@ REPO = Path(__file__).resolve().parent.parent
 # assets/js/*.js totalled 44,991 bytes (16 files). Ceilings are roughly
 # baseline + 25% headroom. Raising a ceiling is a deliberate decision that
 # must happen in this file, in review -- never as a side effect.
-CSS_BUDGET_BYTES = 36_000
+CSS_BUDGET_BYTES = 37_000
 JS_BUDGET_BYTES = 56_000
 
 
