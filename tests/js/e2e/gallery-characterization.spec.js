@@ -9,6 +9,7 @@ const ROUTES = [
   ["tokens", "Tokens"],
   ["type", "Typography"],
   ["widgets", "Widgets"],
+  ["forms", "Forms"],
   ["wiki", "Wiki"],
   ["custom", "Custom component"],
 ];
@@ -18,7 +19,7 @@ async function goRoute(page, key, title) {
   await expect(page.locator("#tm-page-title")).toHaveText(title);
 }
 
-test("all five gallery routes render a visible view with content", async ({ page }) => {
+test("all six gallery routes render a visible view with content", async ({ page }) => {
   await page.goto("/gallery/");
   await expect(page.locator("#tm-app")).toBeVisible();
   for (const [key, title] of ROUTES) {
