@@ -59,7 +59,7 @@ describe("icons.icon", () => {
 // registerIcons' collision guard.
 // ---------------------------------------------------------------------------
 describe("ctxmenu.registerCtx", () => {
-  it.fails("throws when the same context key is registered twice", () => {
+  it("throws when the same context key is registered twice", () => {
     registerCtx("tm-red-dup-key", () => []);
     expect(() => registerCtx("tm-red-dup-key", () => [])).toThrow();
   });

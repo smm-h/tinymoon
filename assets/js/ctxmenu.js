@@ -12,7 +12,10 @@ let ctxFooter = null;
 
 // registerCtx(key, provider): provider(el) returns
 // [{label, icon, action} | {sep: true} | {head}] items.
-export function registerCtx(key, provider) { ctxProviders[key] = provider; }
+export function registerCtx(key, provider) {
+  if (key in ctxProviders) throw new Error('registerCtx: key "' + key + '" already exists');
+  ctxProviders[key] = provider;
+}
 
 // registerCtxFooter(fn): fn() returns items appended to every context menu
 // (after a separator). No footer is shown when unregistered.
