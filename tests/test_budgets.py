@@ -11,13 +11,17 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 
-# Hard byte ceilings for shipped assets. Baselines measured when the budgets
-# were set: assets/css/*.css totalled 28,708 bytes (4 files) and
-# assets/js/*.js totalled 44,991 bytes (16 files). Ceilings are roughly
-# baseline + 25% headroom. Raising a ceiling is a deliberate decision that
-# must happen in this file, in review -- never as a side effect.
-CSS_BUDGET_BYTES = 37_000
+# Hard byte ceilings for shipped assets. Ceilings are roughly baseline + 25%
+# headroom. Raising a ceiling is a deliberate decision that must happen in
+# this file, in review -- never as a side effect.
+#
+# Baselines (re-measured after Phase 1 token/typography work):
+#   assets/css/*.css  36,290 bytes (4 files)  -- ceiling 46,000
+#   assets/js/*.js    45,789 bytes (16 files) -- ceiling 56,000
+#   assets/fonts/*.woff2  97,596 bytes (4 files) -- ceiling 122,000
+CSS_BUDGET_BYTES = 46_000
 JS_BUDGET_BYTES = 56_000
+FONT_BUDGET_BYTES = 122_000
 
 
 def _total_bytes(pattern):
@@ -39,6 +43,14 @@ def test_js_size_budget():
     assert total <= JS_BUDGET_BYTES, (
         f"shipped JS is {total} bytes across {len(files)} files, over the "
         f"{JS_BUDGET_BYTES}-byte budget -- trim before shipping"
+    )
+
+
+def test_font_size_budget():
+    total, files = _total_bytes("fonts/*.woff2")
+    assert total <= FONT_BUDGET_BYTES, (
+        f"shipped fonts are {total} bytes across {len(files)} files, over the "
+        f"{FONT_BUDGET_BYTES}-byte budget -- add a new font only with review"
     )
 
 
