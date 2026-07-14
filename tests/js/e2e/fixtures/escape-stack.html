@@ -12,10 +12,19 @@
      tests/js/e2e/fixtures/. -->
 <script type="module">
 import { openModal } from "../../../../assets/js/modal.js";
-import { Select } from "../../../../assets/js/select.js";
+import { createSelect } from "../../../../assets/js/select.js";
 
-const sel = new Select({ items: ["one", "two", "three"], value: "one" });
-openModal({ title: "Stacked overlays", body: sel.root });
+const sel = createSelect({
+  name: "stack-test",
+  label: "Stack test",
+  items: [
+    { value: "one", label: "One" },
+    { value: "two", label: "Two" },
+    { value: "three", label: "Three" },
+  ],
+  value: "one",
+});
+openModal({ title: "Stacked overlays", body: sel.el });
 
 // Signal to the test that composition is complete.
 window.__escapeStackReady = true;
