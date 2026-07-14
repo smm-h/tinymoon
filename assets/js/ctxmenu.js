@@ -5,6 +5,7 @@
 
 import { $$, el } from "./dom.js";
 import { icon } from "./icons.js";
+import { pushLayer, ensureRoot } from "./kernel.js";
 
 const ctxProviders = {};
 let ctxFooter = null;
@@ -17,19 +18,10 @@ export function registerCtx(key, provider) { ctxProviders[key] = provider; }
 // (after a separator). No footer is shown when unregistered.
 export function registerCtxFooter(fn) { ctxFooter = fn; }
 
-function ctxRoot() {
-  let menu = document.getElementById("tm-ctx-root");
-  if (!menu) {
-    menu = el("div");
-    menu.id = "tm-ctx-root";
-    menu.setAttribute("role", "menu");
-    document.body.appendChild(menu);
-  }
-  return menu;
-}
+let removeLayer = null;
 
 export function showCtxMenu(x, y, items) {
-  const menu = ctxRoot();
+  const menu = ensureRoot("tm-ctx-root", { role: "menu" });
   menu.textContent = "";
   for (const it of items) {
     if (it.sep) { menu.appendChild(el("div", "ctx-sep")); continue; }
@@ -48,9 +40,12 @@ export function showCtxMenu(x, y, items) {
   menu.style.top = y + "px";
   const first = menu.querySelector(".ctx-item");
   if (first) first.focus();
+  if (removeLayer) removeLayer();
+  removeLayer = pushLayer(() => hideCtxMenu());
 }
 
 export function hideCtxMenu() {
+  if (removeLayer) { removeLayer(); removeLayer = null; }
   const menu = document.getElementById("tm-ctx-root");
   if (menu) menu.classList.remove("open");
 }
@@ -91,7 +86,6 @@ document.addEventListener("keydown", (e) => {
   if (!menu || !menu.classList.contains("open")) return;
   const items = $$(".ctx-item", menu);
   const idx = items.indexOf(document.activeElement);
-  if (e.key === "Escape") { hideCtxMenu(); }
-  else if (e.key === "ArrowDown") { e.preventDefault(); (items[idx + 1] || items[0]).focus(); }
+  if (e.key === "ArrowDown") { e.preventDefault(); (items[idx + 1] || items[0]).focus(); }
   else if (e.key === "ArrowUp") { e.preventDefault(); (items[idx - 1] || items[items.length - 1]).focus(); }
 });
