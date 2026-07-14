@@ -20,7 +20,9 @@ import {
 } from "../assets/js/index.js";
 
 import {
+  api, post,
   createSettings,
+  renderDocMd,
   createWikiView,
 } from "../assets/js/extras.js";
 
@@ -500,6 +502,33 @@ const WidgetsView = {
     empty.appendChild(el("div", "empty-sub", "empty states pair a faint icon with a mono subline"));
     emptyPanel.appendChild(empty);
     this.root.appendChild(emptyPanel);
+
+    // net helpers (extras barrel: api + post)
+    const netPanel = panel("API helpers (extras)", "docs");
+    const netNote = el("p", null,
+      "The extras barrel exports api(path) and post(path, body, onError) for same-origin JSON APIs. No server is running, so these buttons demonstrate the error paths.");
+    netNote.style.marginTop = "0";
+    netNote.style.color = "var(--text-dim)";
+    netNote.style.fontSize = "13px";
+    netPanel.appendChild(netNote);
+    const netRow = el("div", "demo-row");
+    const getBtn = el("button", "btn", "api(\"/status\")");
+    getBtn.addEventListener("click", () => {
+      api("/status").then((d) => toast("GET /status: " + JSON.stringify(d))).catch((e) => toast(e.message, "err"));
+    });
+    const postBtn = el("button", "btn", "post(\"/echo\", {x: 1})");
+    postBtn.addEventListener("click", () => {
+      post("/echo", { x: 1 }, (msg) => toast(msg, "err")).catch(() => {});
+    });
+    netRow.appendChild(getBtn);
+    netRow.appendChild(postBtn);
+    netPanel.appendChild(netRow);
+    const mdDemo = el("div");
+    mdDemo.style.marginTop = "var(--space-12)";
+    mdDemo.appendChild(el("div", "set-title", "renderDocMd (extras)"));
+    mdDemo.appendChild(renderDocMd("A doc paragraph with **bold**, `code`, and [a link](#/wiki/view-contract).\n\n- List item one\n- List item two"));
+    netPanel.appendChild(mdDemo);
+    this.root.appendChild(netPanel);
   },
 
   refresh() {},
