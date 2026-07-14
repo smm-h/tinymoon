@@ -267,7 +267,7 @@ export function kebabButton(itemsFn, tip) {
   b.addEventListener("click", (e) => {
     e.stopPropagation();
     const r = b.getBoundingClientRect();
-    showCtxMenu(Math.max(8, r.right - 210), r.bottom + 4, itemsFn());
+    showCtxMenu(Math.max(8, r.right - 210), r.bottom + 4, itemsFn(), b);
   });
   return b;
 }
