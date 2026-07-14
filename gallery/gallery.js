@@ -852,6 +852,7 @@ const FormsView = {
 
 const themeBtn = el("button", "icon-btn");
 themeBtn.type = "button";
+themeBtn.setAttribute("aria-label", "Toggle theme");
 themeBtn.dataset.tooltip = "Toggle between the dark and light themes.";
 const paintThemeBtn = () => {
   themeBtn.innerHTML = icon(settings.get("theme") === "dark" ? "sun" : "moon");

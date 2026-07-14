@@ -142,7 +142,7 @@ export function mountShell(config) {
   topbar.appendChild(actions);
   const content = el("main");
   content.id = "tm-content";
-  content.tabIndex = -1;
+  content.tabIndex = 0;
   main.appendChild(topbar);
   main.appendChild(content);
 
