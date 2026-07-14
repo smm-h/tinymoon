@@ -135,7 +135,7 @@
   gap: var(--space-8);
 }
 .sel-opt:hover, .sel-opt.hover { background: var(--surface-3); color: var(--text); }
-.sel-opt.selected { color: var(--accent-hi); background: var(--accent-soft); }
+.sel-opt[aria-selected="true"] { color: var(--accent-hi); background: var(--accent-soft); }
 
 /* panels */
 .panel {
@@ -618,9 +618,12 @@ dialog.tm-modal::backdrop {
 .set-row .set-title { font-weight: var(--weight-medium); font-size: var(--text-sm); font-family: var(--font-ui); color: var(--text); }
 .set-row .set-desc { font-weight: var(--weight-normal); font-size: var(--text-2xs); font-family: var(--font-ui); color: var(--text-dim); margin-top: var(--space-2); }
 
-/* segmented control */
+/* segmented control + tabs — both share .seg for the outer strip styling.
+   Buttons (tabs, legacy segmented) and labels (createSegmented radios) are
+   styled uniformly. Hidden radios inside createSegmented are visually hidden
+   like the other form primitives. */
 .seg { display: inline-flex; border: 1px solid var(--border-2); }
-.seg button {
+.seg button, .seg > label {
   background: none;
   border: none;
   color: var(--text-dim);
@@ -634,10 +637,34 @@ dialog.tm-modal::backdrop {
   gap: var(--space-7);
   transition: background var(--dur-base) ease, color var(--dur-base) ease;
 }
-.seg button + button { border-inline-start: 1px solid var(--border-2); }
-.seg button svg { width: 13px; height: 13px; }
-.seg button.on { background: var(--accent); color: var(--on-accent); }
-.seg button:disabled { opacity: 0.45; cursor: default; }
+.seg button + button, .seg > label + label { border-inline-start: 1px solid var(--border-2); }
+.seg button svg, .seg > label svg { width: 13px; height: 13px; }
+.seg button.on, .seg > label.on { background: var(--accent); color: var(--on-accent); }
+.seg button:disabled, .seg > label.disabled { opacity: 0.45; cursor: default; pointer-events: none; }
+/* Hidden radios inside createSegmented labels */
+.seg > label input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+/* Focus ring for createSegmented (radio focus inside label) */
+.seg > label:has(input:focus-visible) {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+/* Focus ring for tabs (button focus-visible) */
+.seg button[role="tab"]:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
 
 /* ---------- checkbox ---------- */
 

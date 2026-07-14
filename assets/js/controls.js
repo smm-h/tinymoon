@@ -70,6 +70,7 @@ export function createSwitch(opts) {
 // segmented({items: [{value, label, icon?, disabled?, title?}], value,
 // onChange}) → .seg element with .set(v) and .value. The `title` field is a
 // tooltip (data-tooltip), never a native title attribute.
+// LEGACY — prefer createSegmented for new code.
 export function segmented(opts) {
   const wrap = el("div", "seg");
   const btns = new Map();
@@ -90,6 +91,169 @@ export function segmented(opts) {
   };
   wrap.set(opts.value);
   return wrap;
+}
+
+// createSegmented({name, label, items: [{value, label, icon?, disabled?}],
+// value?, onChange?}) → {el, set(v), value (getter), destroy()}.
+// Form-participating segmented control built on hidden radios. The fieldset
+// has role="radiogroup" and aria-label; hidden radios share `name` for
+// native arrow-key group navigation and form submission.
+export function createSegmented(opts) {
+  if (!opts || !opts.name) throw new Error("createSegmented: name is required");
+  if (!opts.label) throw new Error("createSegmented: label is required");
+  const { name, label, items, value: initial, onChange } = opts;
+  const fieldset = el("fieldset", "seg");
+  fieldset.setAttribute("role", "radiogroup");
+  fieldset.setAttribute("aria-label", label);
+  // Remove default fieldset styling
+  fieldset.style.border = "none";
+  fieldset.style.padding = "0";
+  fieldset.style.margin = "0";
+
+  const radios = new Map();    // value → input element
+  const labels = new Map();    // value → label element (the styled button)
+  const handlers = [];         // [element, event, handler] for cleanup
+
+  for (const it of items) {
+    const inp = _mkInput("radio");
+    inp.name = name;
+    inp.value = it.value;
+    if (it.disabled) inp.disabled = true;
+
+    // The label acts as the styled button; clicking it checks the radio.
+    const lbl = el("label", null);
+    if (it.icon) lbl.innerHTML = icon(it.icon);
+    lbl.appendChild(el("span", null, it.label));
+    if (it.disabled) lbl.classList.add("disabled");
+    lbl.appendChild(inp);
+
+    function onRadioChange() {
+      for (const [v, l] of labels) l.classList.toggle("on", v === it.value);
+      if (onChange) onChange(it.value);
+    }
+    inp.addEventListener("change", onRadioChange);
+    handlers.push([inp, "change", onRadioChange]);
+
+    radios.set(it.value, inp);
+    labels.set(it.value, lbl);
+    fieldset.appendChild(lbl);
+  }
+
+  let _value;
+  function set(v) {
+    _value = v;
+    const inp = radios.get(v);
+    if (inp) inp.checked = true;
+    for (const [val, lbl] of labels) lbl.classList.toggle("on", val === v);
+  }
+  if (initial !== undefined) set(initial);
+  else if (items.length > 0) set(items[0].value);
+
+  function destroy() {
+    for (const [elem, event, handler] of handlers) {
+      elem.removeEventListener(event, handler);
+    }
+    if (fieldset.parentNode) fieldset.parentNode.removeChild(fieldset);
+  }
+
+  return {
+    el: fieldset,
+    set,
+    get value() { return _value; },
+    destroy,
+  };
+}
+
+// createTabs({label, items: [{value, label, icon?}], value?, onChange?})
+// → {el, set(v), value (getter), destroy()}.
+// View-switching tabs. NOT form-participating. The container has
+// role="tablist" and aria-label; each tab is a button with role="tab"
+// and aria-selected. Arrow keys (left/right with wrap) + Home/End navigate.
+export function createTabs(opts) {
+  if (!opts || !opts.label) throw new Error("createTabs: label is required");
+  const { label, items, value: initial, onChange } = opts;
+  const wrap = el("div", "seg");
+  wrap.setAttribute("role", "tablist");
+  wrap.setAttribute("aria-label", label);
+
+  const btns = new Map();  // value → button
+  const order = [];        // value[] in DOM order
+  const handlers = [];     // [element, event, handler] for cleanup
+
+  for (const it of items) {
+    const b = el("button");
+    b.type = "button";
+    b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", "false");
+    b.tabIndex = -1;
+    if (it.icon) b.innerHTML = icon(it.icon);
+    b.appendChild(el("span", null, it.label));
+
+    function onClick() {
+      setActive(it.value);
+      if (onChange) onChange(it.value);
+    }
+    b.addEventListener("click", onClick);
+    handlers.push([b, "click", onClick]);
+
+    btns.set(it.value, b);
+    order.push(it.value);
+    wrap.appendChild(b);
+  }
+
+  function onKeydown(e) {
+    const focused = document.activeElement;
+    let idx = -1;
+    for (let i = 0; i < order.length; i++) {
+      if (btns.get(order[i]) === focused) { idx = i; break; }
+    }
+    if (idx === -1) return;
+    let next = -1;
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      const dir = e.key === "ArrowRight" ? 1 : -1;
+      next = (idx + dir + order.length) % order.length;
+    } else if (e.key === "Home") {
+      next = 0;
+    } else if (e.key === "End") {
+      next = order.length - 1;
+    }
+    if (next !== -1) {
+      e.preventDefault();
+      const val = order[next];
+      setActive(val);
+      btns.get(val).focus();
+      if (onChange) onChange(val);
+    }
+  }
+  wrap.addEventListener("keydown", onKeydown);
+  handlers.push([wrap, "keydown", onKeydown]);
+
+  let _value;
+  function setActive(v) {
+    _value = v;
+    for (const [val, b] of btns) {
+      const active = val === v;
+      b.classList.toggle("on", active);
+      b.setAttribute("aria-selected", String(active));
+      b.tabIndex = active ? 0 : -1;
+    }
+  }
+  if (initial !== undefined) setActive(initial);
+  else if (items.length > 0) setActive(items[0].value);
+
+  function destroy() {
+    for (const [elem, event, handler] of handlers) {
+      elem.removeEventListener(event, handler);
+    }
+    if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+  }
+
+  return {
+    el: wrap,
+    set: setActive,
+    get value() { return _value; },
+    destroy,
+  };
 }
 
 // kebabButton(itemsFn, tip?) → a three-vertical-dots button. Clicking it
