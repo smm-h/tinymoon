@@ -155,7 +155,14 @@ export function mountShell(config) {
       location.replace("#/" + legacyRoutes[key] + tail);
       return;
     }
-    const sub = parts.length > 1 ? parts.slice(1).map(decodeURIComponent).join("/") : "";
+    let sub;
+    try {
+      sub = parts.length > 1 ? parts.slice(1).map(decodeURIComponent).join("/") : "";
+    } catch (err) {
+      console.warn("mountShell: malformed hash ignored:", location.hash, err.message);
+      location.replace("#/" + defaultRoute);
+      return;
+    }
     const r = routes[key] || routes[defaultRoute];
     const name = routes[key] ? key : defaultRoute;
     const sameView = currentRoute === name;

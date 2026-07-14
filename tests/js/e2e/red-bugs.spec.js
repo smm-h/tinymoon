@@ -36,7 +36,6 @@ test("one Escape closes only the select menu, leaving the modal open", async ({ 
 // is handled gracefully with no uncaught error.
 // ---------------------------------------------------------------------------
 test("navigating to a malformed hash does not throw an uncaught error", async ({ page }) => {
-  test.fail(); // expected to fail until Phase 2 hardens the router
   const errors = [];
   page.on("pageerror", (err) => errors.push(err.message));
   page.on("console", (msg) => { if (msg.type() === "error") errors.push(msg.text()); });
