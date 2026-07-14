@@ -9,9 +9,12 @@
 //   brand          — {name, logoHTML}: name feeds the collapsed-sidebar
 //                    initial (--brand-initial); logoHTML is the sidebar
 //                    logo markup
-//   routes         — {key: {title, icon, view: () => viewObj, tip?,
-//                    hidden?}}. hidden routes get no nav item but stay
-//                    routable.
+//   routes         — {key: {title, icon, view, tip?, hidden?}}.
+//                    view can be:
+//                      () => viewObj   — factory returning a view object
+//                      "<h2>…</h2>"   — HTML string (wrapped automatically)
+//                      element         — a DOM Element or <template>
+//                    hidden routes get no nav item but stay routable.
 //   defaultRoute   — route key used for an empty or unknown hash
 //   legacyRoutes?  — {oldKey: "newRoute"}: old hashes redirect, deep-link
 //                    tails are preserved
@@ -31,11 +34,47 @@
 // HTML. build() must be idempotent (guard on .built); refresh() runs on
 // every visit; setSub(sub) receives the deep-link tail ("#/key/a/b" → "a/b")
 // before refresh().
+//
+// Declarative shorthand: view can also be a string (HTML fragment) or an
+// Element (e.g. a <template>'s content or any DOM node). The shell wraps
+// these in a minimal view object automatically. The full object contract
+// still works — this is an addition, not a replacement.
 
 import { $$, el } from "./dom.js";
 import { icon } from "./icons.js";
 import { ensureTooltip } from "./tooltip.js";
 import { ensureRoot } from "./kernel.js";
+
+// Wrap a declarative view value (string HTML or Element) into a view object
+// conforming to the shell's view contract. The returned object is cached per
+// route so repeated calls return the same instance.
+const _declCache = new Map();
+function resolveView(viewSpec) {
+  if (typeof viewSpec === "function") return viewSpec();
+  // declarative: string or Element — wrap once, cache by identity
+  if (_declCache.has(viewSpec)) return _declCache.get(viewSpec);
+  const wrapper = {
+    root: null,
+    built: false,
+    build() {
+      if (this.built) return;
+      this.built = true;
+      if (typeof viewSpec === "string") {
+        this.root.innerHTML = viewSpec;
+      } else if (viewSpec instanceof Element) {
+        // Clone if it's a <template>, otherwise move the node
+        if (viewSpec.content) {
+          this.root.appendChild(viewSpec.content.cloneNode(true));
+        } else {
+          this.root.appendChild(viewSpec.cloneNode(true));
+        }
+      }
+    },
+    refresh() {},
+  };
+  _declCache.set(viewSpec, wrapper);
+  return wrapper;
+}
 
 function need(cond, msg) { if (!cond) throw new Error("mountShell: " + msg); }
 
@@ -80,7 +119,7 @@ export function mountShell(config) {
   main.id = "tm-main";
   const topbar = el("header");
   topbar.id = "tm-topbar";
-  const pageTitle = el("span");
+  const pageTitle = el("h1");
   pageTitle.id = "tm-page-title";
   const pageSub = el("span");
   pageSub.id = "tm-page-sub";
@@ -101,13 +140,29 @@ export function mountShell(config) {
   topbar.appendChild(pageSub);
   topbar.appendChild(busy);
   topbar.appendChild(actions);
-  const content = el("div");
+  const content = el("main");
   content.id = "tm-content";
+  content.tabIndex = -1;
   main.appendChild(topbar);
   main.appendChild(content);
 
+  // Skip link: visually hidden until focused, jumps to main content
+  const skip = el("a", "tm-skip-link", "Skip to content");
+  skip.href = "#tm-content";
+  skip.addEventListener("click", (e) => {
+    e.preventDefault();
+    content.focus();
+  });
+
+  // Route-change announcer: screen readers announce the new page title
+  const announcer = el("div", "tm-sr-only");
+  announcer.setAttribute("aria-live", "polite");
+  announcer.setAttribute("aria-atomic", "true");
+
+  app.prepend(skip);
   app.appendChild(sidebar);
   app.appendChild(main);
+  app.appendChild(announcer);
   root.appendChild(app);
 
   // Framework overlay mount points (primitives also create these lazily via
@@ -128,6 +183,7 @@ export function mountShell(config) {
   function setTitle(title, sub) {
     pageTitle.textContent = title || "";
     pageSub.textContent = sub || "";
+    document.title = title ? title + " — " + brand.name : brand.name;
   }
 
   function setBusy(msg) {
@@ -168,10 +224,15 @@ export function mountShell(config) {
     const sameView = currentRoute === name;
     currentRoute = name;
 
-    $$(".nav-item", nav).forEach((b) => b.classList.toggle("active", b.dataset.route === name));
+    $$(".nav-item", nav).forEach((b) => {
+      const isActive = b.dataset.route === name;
+      b.classList.toggle("active", isActive);
+      if (isActive) b.setAttribute("aria-current", "page");
+      else b.removeAttribute("aria-current");
+    });
     setTitle(r.title, "");
     $$(".view", content).forEach((v) => v.classList.add("hidden"));
-    const view = r.view();
+    const view = resolveView(r.view);
     if (!view.root) {
       view.root = el("section", "view hidden");
       content.appendChild(view.root);
@@ -187,6 +248,8 @@ export function mountShell(config) {
       content.scrollTop = 0;
     }
     view.refresh();
+    // Announce the new page title to screen readers
+    announcer.textContent = r.title;
     // Last, so routing state is fully consistent when the hook observes it.
     if (onRoute) onRoute(name, sub || null);
   }
@@ -202,7 +265,7 @@ export function mountShell(config) {
     // animation. No-op before the first route or if the view isn't built.
     refreshCurrent() {
       if (!currentRoute) return;
-      const view = routes[currentRoute].view();
+      const view = resolveView(routes[currentRoute].view);
       if (view.built) view.refresh();
     },
   };
