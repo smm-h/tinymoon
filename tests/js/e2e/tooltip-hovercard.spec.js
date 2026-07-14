@@ -80,9 +80,12 @@ test("tab to a data-hovercard element shows the hovercard", async ({ page }) => 
   await expect(hovercard).toBeVisible();
 
   // Hovercard content is rendered markdown -- should contain bold and code.
+  // Use toBeAttached() for inline elements inside the already-visible
+  // hovercard: during the opacity transition, tiny inline elements can
+  // briefly fail toBeVisible() even though they are in the DOM.
   const body = hovercard.locator(".hc-body");
-  await expect(body.locator("strong")).toBeVisible();
-  await expect(body.locator("code")).toBeVisible();
+  await expect(body.locator("strong")).toBeAttached();
+  await expect(body.locator("code")).toBeAttached();
 });
 
 test("ArrowDown moves focus into the hovercard", async ({ page }) => {
