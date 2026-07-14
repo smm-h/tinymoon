@@ -43,6 +43,8 @@ const MIGRATED = [
   "createTabs",
   // select.js — createSelect(opts) -> {el, set, value, setItems, destroy}
   "createSelect",
+  // datepicker.js — createDatePicker(opts) -> {el, set, value, destroy}
+  "createDatePicker",
 ];
 
 // Non-component exports: utilities, imperative actions, registration
@@ -198,6 +200,17 @@ describe("api-convention: migrated primitives", () => {
     expect(instance.el).toBeInstanceOf(HTMLElement);
     expect(typeof instance.set).toBe("function");
     expect(typeof instance.setItems).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createDatePicker(opts) conforms to the convention", async () => {
+    const { createDatePicker } = await import("../../../assets/js/index.js");
+    const instance = createDatePicker({ name: "test", label: "Test" });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
     expect(typeof instance.destroy).toBe("function");
   });
 });
