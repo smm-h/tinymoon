@@ -27,9 +27,10 @@ import { describe, it, expect } from "vitest";
 // These must eventually conform to the createX(opts) -> {el, ...} convention.
 
 const LEGACY = [
-  // controls.js — returns bare DOM elements with expando methods
-  "copyButton",
-  "kebabButton",
+  // Empty: all component factories now conform to the convention.
+  // copyButton and kebabButton moved to NOT_COMPONENTS — they are
+  // one-shot element factories (return a pre-wired <button>, no .el
+  // wrapper, no state, no .destroy()), not stateful components.
 ];
 
 const MIGRATED = [
@@ -67,6 +68,9 @@ const NOT_COMPONENTS = [
   "toast", "setToastErrorHook",
   // modal.js — imperative action (returns close fn, not a component)
   "openModal",
+  // controls.js — one-shot element factories (return a pre-wired <button>,
+  // not a stateful {el, ...} component instance)
+  "copyButton", "kebabButton",
   // ctxmenu.js — registration + imperative actions
   "registerCtx", "registerCtxFooter", "showCtxMenu", "hideCtxMenu",
   // popover.js — imperative actions
@@ -215,10 +219,11 @@ describe("api-convention: migrated primitives", () => {
 // ---------------------------------------------------------------------------
 
 describe("api-convention: legacy inventory", () => {
-  it("legacy list is non-empty (migration incomplete)", () => {
-    // This test flips when all migrations are done: change to
-    // expect(LEGACY.length).toBe(0) to gate on full migration.
-    expect(LEGACY.length).toBeGreaterThan(0);
+  it("legacy list is empty (migration complete)", () => {
+    // All component factories now conform to the convention. copyButton
+    // and kebabButton were reclassified as NOT_COMPONENTS (one-shot element
+    // factories, not stateful components).
+    expect(LEGACY.length).toBe(0);
   });
 
   it("all legacy exports exist in the barrel", async () => {
