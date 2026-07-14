@@ -16,7 +16,7 @@
   width: var(--sidebar-w);
   flex: none;
   background: var(--surface);
-  border-right: 1px solid var(--border);
+  border-inline-end: 1px solid var(--border);
   display: flex;
   flex-direction: column;
 }
@@ -55,7 +55,7 @@
   font-size: var(--text-sm);
   font-family: var(--font-ui);
   cursor: pointer;
-  text-align: left;
+  text-align: start;
   transition: color var(--dur-base) ease, background var(--dur-base) ease, border-color var(--dur-base) ease;
   position: relative;
 }
@@ -69,7 +69,7 @@
 .nav-item.active::before {
   content: "";
   position: absolute;
-  left: -9px;
+  inset-inline-start: -9px;
   top: 6px;
   bottom: 6px;
   width: 2px;
@@ -97,7 +97,7 @@
   color: var(--text-faint);
 }
 #tm-busy {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: flex;
   align-items: center;
   gap: var(--space-8);
