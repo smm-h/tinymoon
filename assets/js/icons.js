@@ -29,7 +29,10 @@ export const ICONS = {
   user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
 };
 
-export function icon(name) { return ICONS[name] || ""; }
+export function icon(name) {
+  if (!(name in ICONS)) throw new Error('icon: unknown icon "' + name + '"');
+  return ICONS[name];
+}
 
 // registerIcons(map): merge consumer-supplied {name: svgString} icons into
 // the set. A name collision with an existing icon is a hard error — icons

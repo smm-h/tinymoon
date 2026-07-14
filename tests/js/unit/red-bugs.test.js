@@ -47,7 +47,7 @@ describe("controls.copyButton", () => {
 // future behavior: an unknown icon name is a hard error, not a silent blank.
 // ---------------------------------------------------------------------------
 describe("icons.icon", () => {
-  it.fails("throws on an unknown icon name instead of returning an empty string", () => {
+  it("throws on an unknown icon name instead of returning an empty string", () => {
     expect(() => icon("no-such-icon-name")).toThrow();
   });
 });
