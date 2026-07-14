@@ -29,6 +29,9 @@ test.describe("Forms view", () => {
 
     // File input
     await expect(view.locator(".tm-file")).toBeVisible();
+
+    // Select (combobox with listbox)
+    await expect(view.locator("button[role='combobox']")).toBeVisible();
   });
 
   test("form submission includes checkbox and radio values", async ({ page }) => {
@@ -107,5 +110,36 @@ test.describe("Forms view", () => {
     await expect(toast).toBeVisible();
     const text = await toast.textContent();
     expect(text).toContain("high");
+  });
+
+  test("select submits its value via hidden native select", async ({ page }) => {
+    const view = page.locator("#tm-content section.view:not(.hidden)");
+
+    // Submit with default select value ("us-east")
+    await view.locator("button[type='submit']").click();
+
+    const toast = page.locator(".toast").last();
+    await expect(toast).toBeVisible();
+    const text = await toast.textContent();
+    expect(text).toContain("region");
+    expect(text).toContain("us-east");
+  });
+
+  test("changing select value updates the submitted form value", async ({ page }) => {
+    const view = page.locator("#tm-content section.view:not(.hidden)");
+
+    // Open the select by clicking the combobox button
+    await view.locator("button[role='combobox']").click();
+    // Click "EU West" option
+    await view.locator("[role='option']").nth(2).click();
+
+    // Submit the form
+    await view.locator("button[type='submit']").click();
+
+    const toast = page.locator(".toast").last();
+    await expect(toast).toBeVisible();
+    const text = await toast.textContent();
+    expect(text).toContain("region");
+    expect(text).toContain("eu-west");
   });
 });
