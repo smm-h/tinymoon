@@ -73,8 +73,12 @@ describe("ctxmenu.registerCtx", () => {
 // error), keeping the framework's zero-network guarantee.
 // ---------------------------------------------------------------------------
 describe("markdown.renderMiniMd", () => {
-  it.fails("rejects a link target that is not an internal hash", () => {
-    expect(() => renderMiniMd("[click](https://evil.example)")).toThrow();
+  it("renders a non-hash link target as plain text instead of an anchor", () => {
+    const frag = renderMiniMd("[click](https://evil.example)");
+    const container = document.createElement("div");
+    container.appendChild(frag);
+    expect(container.querySelector("a")).toBeNull();
+    expect(container.textContent).toBe("click");
   });
 });
 

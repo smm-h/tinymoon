@@ -24,17 +24,23 @@ export function renderMiniMd(text) {
       else if (m[2] !== undefined) frag.appendChild(el("em", null, m[2]));
       else if (m[3] !== undefined) frag.appendChild(el("code", null, m[3]));
       else {
-        const a = el("a", "md-link", m[4]);
         const target = m[5];
-        a.href = target;
-        a.addEventListener("click", (ev) => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          hideTip();
-          closePopover();
-          location.hash = target;
-        });
-        frag.appendChild(a);
+        if (!target.startsWith("#")) {
+          // Non-hash targets violate the zero-network guarantee; render as
+          // plain text instead of creating an anchor.
+          frag.appendChild(document.createTextNode(m[4]));
+        } else {
+          const a = el("a", "md-link", m[4]);
+          a.href = target;
+          a.addEventListener("click", (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            hideTip();
+            closePopover();
+            location.hash = target;
+          });
+          frag.appendChild(a);
+        }
       }
       last = m.index + m[0].length;
     }
