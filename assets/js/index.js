@@ -1,10 +1,9 @@
-// tinymoon — barrel: every public export of the framework. Each module is
-// also importable standalone.
+// tinymoon — core barrel: primitives, controls, and infrastructure. Each
+// module is also importable standalone. For wiki, net, and settings, import
+// from "tinymoon/extras" (or "./extras.js").
 
 export { $, $$, el } from "./dom.js";
 export { ICONS, icon, registerIcons } from "./icons.js";
-export { api, post } from "./net.js";
-export { fmtTime } from "./format.js";
 export { renderMiniMd } from "./markdown.js";
 export { ensureTooltip, hideTip } from "./tooltip.js";
 export { ensureHovercard, hideHovercard } from "./hovercard.js";
@@ -15,7 +14,5 @@ export { registerCtx, registerCtxFooter, showCtxMenu, hideCtxMenu } from "./ctxm
 export { openPopover, closePopover } from "./popover.js";
 export { createSwitch, copyButton, kebabButton, createCheckbox, createRadio, createFileInput, createSegmented, createTabs } from "./controls.js";
 export { createDatePicker } from "./datepicker.js";
-export { createSettings } from "./settings.js";
 export { cssVar, ensureRoot, placeBelow, registerCopyable, unregisterCopyable, getCopyData } from "./kernel.js";
 export { mountShell } from "./shell.js";
-export { renderDocMd, createWikiView } from "./wiki.js";
