@@ -14,12 +14,16 @@ export function copyButton(getText, tipText) {
   b.dataset.tooltip = tipText || "Copy text to clipboard";
   b.addEventListener("click", (e) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(getText());
-    b.innerHTML = icon("check");
-    b.classList.add("copied");
-    setTimeout(() => {
-      if (b.isConnected) { b.innerHTML = icon("copy"); b.classList.remove("copied"); }
-    }, 900);
+    navigator.clipboard.writeText(getText()).then(() => {
+      b.innerHTML = icon("check");
+      b.classList.add("copied");
+      setTimeout(() => {
+        if (b.isConnected) { b.innerHTML = icon("copy"); b.classList.remove("copied"); }
+      }, 900);
+    }).catch(() => {
+      // Dynamic import avoids circular dependency (toast.js imports controls.js).
+      import("./toast.js").then(({ toast }) => toast("Clipboard write failed", "err"));
+    });
   });
   return b;
 }

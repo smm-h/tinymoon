@@ -19,7 +19,7 @@ import { copyButton } from "../../../assets/js/controls.js";
 // future behavior: no success state when the write fails.
 // ---------------------------------------------------------------------------
 describe("controls.copyButton", () => {
-  it.fails("does not show the success state when the clipboard write fails", () => {
+  it("does not show the success state when the clipboard write fails", () => {
     // A pre-caught rejected promise: writeText rejects, but attaching the
     // catch here prevents an unhandled-rejection warning (the SUT never
     // awaits or catches the promise itself — that is the bug).
