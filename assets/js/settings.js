@@ -3,12 +3,6 @@
 // first paint of the app shell, so the theme attribute is already on <html>
 // when content appears.
 
-// Read a CSS custom property off :root — canvas rendering and layout math
-// pull live token values from the active theme through this.
-export function cssVar(name) {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-}
-
 // createSettings({storageKey, defaults}) → {get, set, load, applyTheme}.
 // Both parameters are required: storageKey is the localStorage key, defaults
 // is the schema — its keys are the only settable keys, its values the

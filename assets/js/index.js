@@ -13,6 +13,7 @@ export { Select } from "./select.js";
 export { registerCtx, registerCtxFooter, showCtxMenu, hideCtxMenu } from "./ctxmenu.js";
 export { openPopover, closePopover } from "./popover.js";
 export { toggleWidget, segmented, copyButton, kebabButton } from "./controls.js";
-export { createSettings, cssVar } from "./settings.js";
+export { createSettings } from "./settings.js";
+export { cssVar, ensureRoot, placeBelow } from "./kernel.js";
 export { mountShell } from "./shell.js";
 export { renderDocMd, createWikiView } from "./wiki.js";
