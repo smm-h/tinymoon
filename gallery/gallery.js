@@ -344,6 +344,8 @@ const WidgetsView = {
     tBtn.addEventListener("click", () => toast("Everything is fine"));
     const teBtn = el("button", "btn", "Error toast");
     teBtn.addEventListener("click", () => toast("Something went wrong", "err"));
+    const stickyBtn = el("button", "btn", "Sticky toast");
+    stickyBtn.addEventListener("click", () => toast("This toast stays until you dismiss it", "ok", { duration: 0 }));
     const mBtn = el("button", "btn", "Modal");
     mBtn.addEventListener("click", () => {
       const body = el("div");
@@ -382,6 +384,7 @@ const WidgetsView = {
     });
     orow.appendChild(tBtn);
     orow.appendChild(teBtn);
+    orow.appendChild(stickyBtn);
     orow.appendChild(mBtn);
     orow.appendChild(pBtn);
     orow.appendChild(busyBtn);
