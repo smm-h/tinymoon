@@ -40,6 +40,12 @@ EXTRAS_JS_MODULES = {
     "extras.js", "net.js", "settings.js", "wiki.js",
 }
 
+# Dev-only modules: not shipped in any barrel, not counted in size budgets.
+# Consumers import these directly during development.
+DEV_JS_MODULES = {
+    "auditor.js",
+}
+
 
 def _total_bytes(pattern):
     files = sorted((REPO / "assets").glob(pattern))
@@ -84,7 +90,7 @@ def test_js_tier_coverage():
     """Every .js file in assets/js/ must belong to exactly one tier."""
     js_dir = REPO / "assets" / "js"
     all_js = {f.name for f in js_dir.glob("*.js")}
-    classified = CORE_JS_MODULES | EXTRAS_JS_MODULES
+    classified = CORE_JS_MODULES | EXTRAS_JS_MODULES | DEV_JS_MODULES
     unclassified = all_js - classified
     assert not unclassified, (
         f"JS modules not assigned to a tier: {sorted(unclassified)}"
