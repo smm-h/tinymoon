@@ -610,6 +610,31 @@ One convention for all primitives means no per-widget learning curve. No expando
 \`tokens.css\` is the single source of truth: every color, font, shadow, and layout measure is a custom property on \`:root\`, overridden per theme on \`html[data-theme="light"]\`. Rules everywhere else — and canvas code, via \`cssVar()\` — reference tokens only. Re-theming means overriding tokens; the identity constants (radius 0, fonts, motion timing, grain) are not tokens and cannot be opted out of.
 `,
   },
+  {
+    id: "auditor",
+    title: "Runtime auditor and CSP",
+    md: `
+### Runtime auditor {#runtime-auditor}
+
+\`assets/js/auditor.js\` is a dev-mode module that activates runtime conformance checks. Import it during development (not in production) to catch charter violations live:
+
+- **border-radius** — a \`MutationObserver\` checks every added DOM node. Any computed \`border-radius\` other than \`0px\` logs a \`console.error\` with the element reference.
+- **native controls** — added \`<select>\`, \`<dialog>\`, or \`<input type="checkbox/radio/file">\` elements that are not inside the framework's hidden-input wrapper classes trigger an error. The framework's own primitives (\`createCheckbox\`, \`createRadio\`, \`createFileInput\`, \`createSelect\`, \`createSegmented\`, \`createDatePicker\`) are exempted.
+- **external loads** — a periodic \`performance.getEntriesByType("resource")\` scan flags any off-origin network request.
+
+The auditor exposes \`window.__tmAuditorErrors\` (an array of \`{message, element}\` objects) for programmatic access in tests. It is not included in the core or extras barrel.
+
+### Content Security Policy {#csp-guidance}
+
+tinymoon is designed to work under a strict CSP with zero violations. A recommended policy for production:
+
+\`\`\`
+default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; script-src 'self'
+\`\`\`
+
+The \`'unsafe-inline'\` for \`style-src\` covers the framework's computed style assignments (element.style). The \`data:\` allowance in \`img-src\` covers the inline grain SVG. No external fonts, CDNs, or network loads are needed — everything is vendored.
+`,
+  },
 ];
 
 const WikiView = createWikiView({ route: "wiki", sections: WIKI_SECTIONS });
