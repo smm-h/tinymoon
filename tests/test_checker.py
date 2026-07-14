@@ -46,7 +46,7 @@ EXPECTED_VIOLATIONS = {
     ],
     "native-control.html": [
         (4, NATIVE_CONTROL),  # <select>
-        (5, NATIVE_CONTROL),  # <dialog>
+        # line 5 <dialog> is permitted (used by the framework's modal)
         (6, NATIVE_CONTROL),  # <input type="checkbox">
         (7, NATIVE_CONTROL),  # <input type="radio">
         (8, NATIVE_CONTROL),  # <input type="file">
@@ -54,7 +54,7 @@ EXPECTED_VIOLATIONS = {
     ],
     "native-control.js": [
         (3, NATIVE_CONTROL),  # el("select", ...)
-        (4, NATIVE_CONTROL),  # createElement("dialog")
+        # line 4 createElement("dialog") is permitted (used by the framework's modal)
         (6, NATIVE_CONTROL),  # .type = "checkbox"
         (8, NATIVE_CONTROL),  # setAttribute("type", "radio")
     ],

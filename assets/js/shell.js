@@ -112,8 +112,8 @@ export function mountShell(config) {
 
   // Framework overlay mount points (primitives also create these lazily via
   // kernel.ensureRoot; mounting them here keeps stacking order deterministic).
+  // The modal uses a native <dialog> (top-layer) created per-open — no root.
   ensureRoot("tm-ctx-root", { role: "menu" });
-  ensureRoot("tm-modal-root");
   ensureRoot("tm-toast-root");
   ensureTooltip();
 

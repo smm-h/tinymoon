@@ -17,7 +17,7 @@ test("one Escape closes only the select menu, leaving the modal open", async ({ 
   await page.goto("/tests/js/e2e/fixtures/escape-stack.html");
   await page.waitForFunction(() => window.__escapeStackReady === true);
 
-  await expect(page.locator("#tm-modal-root")).toHaveClass(/open/);
+  await expect(page.locator("dialog.tm-modal[open]")).toBeVisible();
   await page.locator(".sel-btn").click();
   await expect(page.locator(".sel")).toHaveClass(/open/);
 
@@ -25,7 +25,7 @@ test("one Escape closes only the select menu, leaving the modal open", async ({ 
 
   // Future: the modal is still open after a single Escape. Fails today because
   // the same Escape bubbles up and closes the modal too.
-  await expect(page.locator("#tm-modal-root")).toHaveClass(/open/, { timeout: 2000 });
+  await expect(page.locator("dialog.tm-modal[open]")).toBeVisible({ timeout: 2000 });
 });
 
 // ---------------------------------------------------------------------------

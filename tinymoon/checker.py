@@ -12,10 +12,10 @@ mode and no bypass:
   comments, and URLs in plain HTML prose. An optional allowlist file
   (tinymoon-allowlist.txt at the scanned dir root, one exact URL per
   line, # comments allowed) exempts exact matches.
-- native-control: no <select>, <dialog>, or <input type=checkbox|radio|file>
-  in HTML, and no JS creation of the same (el("select"...),
-  createElement("select"|"dialog"), .type = "checkbox" assignments,
-  setAttribute("type", "radio"), ...).
+- native-control: no <select> or <input type=checkbox|radio|file> in HTML,
+  and no JS creation of the same (el("select"...), createElement("select"),
+  .type = "checkbox" assignments, setAttribute("type", "radio"), ...).
+  <dialog> is permitted (used internally by the framework's modal).
 - title-attr: no title= attributes in HTML (SVG <title> child ELEMENTS are
   fine -- only the attribute is banned), and no JS `.title =` /
   setAttribute("title", ...) on elements. `document.title` is the page
@@ -342,9 +342,9 @@ _JS_FROM_SPEC_RE = re.compile(r"""\bfrom\s*(["'])([^"']+)\1""")
 _JS_BARE_IMPORT_RE = re.compile(r"""\bimport\s*(["'])([^"']+)\1""")
 _JS_CALL_URL_RE = re.compile(r"""\b(?:import|fetch)\s*\(\s*(["'])([^"']+)\1""")
 
-_JS_EL_NATIVE_RE = re.compile(r"""\bel\s*\(\s*(["'])(select|dialog)\1""")
+_JS_EL_NATIVE_RE = re.compile(r"""\bel\s*\(\s*(["'])(select)\1""")
 _JS_CREATE_NATIVE_RE = re.compile(
-    r"""\bcreateElement\s*\(\s*(["'])(select|dialog)\1""", re.IGNORECASE
+    r"""\bcreateElement\s*\(\s*(["'])(select)\1""", re.IGNORECASE
 )
 _JS_TYPE_ASSIGN_RE = re.compile(
     r"""\.\s*type\s*=(?!=)\s*(["'])(checkbox|radio|file)\1"""
@@ -562,7 +562,7 @@ class _HTMLScanner(HTMLParser):
                     )
             elif lname == "style":
                 self._scan_inline_style(value, line)
-        if tag in ("select", "dialog"):
+        if tag == "select":
             self._out.append(
                 Violation(
                     self._path,

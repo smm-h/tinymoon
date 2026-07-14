@@ -10,7 +10,8 @@ import {
   $$, el, icon,
   toast, setToastErrorHook, openModal, Select, openPopover,
   registerCtx, registerCtxFooter,
-  toggleWidget, segmented, copyButton, kebabButton,
+  createSwitch, segmented, copyButton, kebabButton,
+  createCheckbox, createRadio, createFileInput,
   createSettings, cssVar,
   mountShell, createWikiView,
 } from "../assets/js/index.js";
@@ -285,7 +286,7 @@ const WidgetsView = {
     // toggle + segmented + settings rows
     const controls = panel("Toggle, segmented, settings rows", "gear");
     const crow = el("div", "demo-row");
-    crow.appendChild(toggleWidget(true, (v) => toast("Toggle: " + (v ? "on" : "off"))));
+    crow.appendChild(createSwitch({ label: "Demo toggle", value: true, onChange: (v) => toast("Toggle: " + (v ? "on" : "off")) }).el);
     crow.appendChild(segmented({
       items: [
         { value: "list", label: "List" },
@@ -303,7 +304,7 @@ const WidgetsView = {
     t1.appendChild(el("div", "set-title", "Verbose toasts"));
     t1.appendChild(el("div", "set-desc", "A schema setting persisted via createSettings; changing it dispatches tm:setting."));
     r1.appendChild(t1);
-    r1.appendChild(toggleWidget(settings.get("verbose"), (v) => settings.set("verbose", v)));
+    r1.appendChild(createSwitch({ label: "Verbose toasts", value: settings.get("verbose"), onChange: (v) => settings.set("verbose", v) }).el);
     rows.appendChild(r1);
     const r2 = el("div", "set-row");
     const t2 = el("div", "set-text");
@@ -341,7 +342,9 @@ const WidgetsView = {
       const p = el("p", null, "Modals close on Escape, the close button, a backdrop click, or the returned close().");
       p.style.marginTop = "0";
       body.appendChild(p);
-      body.appendChild(el("textarea"));
+      const ta = el("textarea");
+      ta.setAttribute("aria-label", "Demo text area");
+      body.appendChild(ta);
       const cancel = el("button", "btn ghost", "Cancel");
       const ok = el("button", "btn primary", "Confirm");
       const close = openModal({
@@ -657,6 +660,112 @@ const CustomView = {
   },
 };
 
+// ---------- forms view ----------
+
+const FormsView = {
+  root: null,
+  built: false,
+
+  build() {
+    if (this.built) return;
+    this.built = true;
+
+    const p = panel("Form primitives", "gear");
+    const note = el("p", null,
+      "Every form control below uses a hidden native input for form participation and accessibility. The visible UI is custom-drawn. Submitting the form proves the values reach FormData.");
+    note.style.marginTop = "0";
+    note.style.color = "var(--text-dim)";
+    note.style.fontSize = "13px";
+    p.appendChild(note);
+
+    // switch (not form-participating, outside the form)
+    const switchRow = el("div", "demo-row");
+    const sw = createSwitch({ label: "Standalone switch", value: false, onChange: (v) => toast("Switch: " + (v ? "on" : "off")) });
+    switchRow.appendChild(sw.el);
+    switchRow.appendChild(el("span", "hash", "switch — role=\"switch\" button, not form-participating"));
+    p.appendChild(switchRow);
+
+    // form with checkbox, radio, file, submit
+    const form = el("form");
+    form.style.display = "flex";
+    form.style.flexDirection = "column";
+    form.style.gap = "var(--space-14)";
+
+    // checkboxes
+    const cbSection = el("div");
+    cbSection.appendChild(el("div", "set-title", "Checkboxes"));
+    const cbRow = el("div", "demo-row");
+    cbRow.style.marginTop = "var(--space-8)";
+    const cb1 = createCheckbox({ name: "notifications", label: "Enable notifications", checked: true });
+    const cb2 = createCheckbox({ name: "analytics", label: "Send analytics" });
+    cbRow.appendChild(cb1.el);
+    cbRow.appendChild(cb2.el);
+    cbSection.appendChild(cbRow);
+    form.appendChild(cbSection);
+
+    // radios
+    const radioSection = el("div");
+    radioSection.appendChild(el("div", "set-title", "Radio group"));
+    const radioRow = el("div", "demo-row");
+    radioRow.style.marginTop = "var(--space-8)";
+    const r1 = createRadio({ name: "priority", label: "Low", value: "low" });
+    const r2 = createRadio({ name: "priority", label: "Medium", value: "medium", checked: true });
+    const r3 = createRadio({ name: "priority", label: "High", value: "high" });
+    // sync radio indicators when the group changes
+    function syncRadios() {
+      for (const r of [r1, r2, r3]) {
+        const inp = r.el.querySelector("input");
+        r.el.querySelector(".tm-radio-indicator").classList.toggle("checked", inp.checked);
+      }
+    }
+    for (const r of [r1, r2, r3]) {
+      r.el.querySelector("input").addEventListener("change", syncRadios);
+    }
+    radioRow.appendChild(r1.el);
+    radioRow.appendChild(r2.el);
+    radioRow.appendChild(r3.el);
+    radioSection.appendChild(radioRow);
+    form.appendChild(radioSection);
+
+    // file input
+    const fileSection = el("div");
+    fileSection.appendChild(el("div", "set-title", "File input"));
+    const fileRow = el("div", "demo-row");
+    fileRow.style.marginTop = "var(--space-8)";
+    const fi = createFileInput({ name: "attachment", label: "Choose file", accept: ".txt,.json,.md" });
+    fileRow.appendChild(fi.el);
+    fileSection.appendChild(fileRow);
+    form.appendChild(fileSection);
+
+    // submit
+    const submitRow = el("div", "demo-row");
+    submitRow.style.marginTop = "var(--space-12)";
+    const submitBtn = el("button", "btn primary", "Submit form");
+    submitBtn.type = "submit";
+    submitRow.appendChild(submitBtn);
+    form.appendChild(submitRow);
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const entries = [];
+      for (const [k, v] of fd.entries()) {
+        if (v instanceof File) {
+          entries.push(k + ": " + (v.name || "(empty)"));
+        } else {
+          entries.push(k + ": " + v);
+        }
+      }
+      toast("FormData: " + (entries.length ? entries.join(", ") : "(empty)"));
+    });
+
+    p.appendChild(form);
+    this.root.appendChild(p);
+  },
+
+  refresh() {},
+};
+
 // ---------- mount ----------
 
 const themeBtn = el("button", "icon-btn");
@@ -696,6 +805,10 @@ shell = mountShell({
     wiki: {
       title: "Wiki", icon: "docs", view: () => WikiView,
       tip: "**Wiki** — the view contract and every extension point, with deep-linkable anchors.",
+    },
+    forms: {
+      title: "Forms", icon: "save", view: () => FormsView,
+      tip: "**Forms** — checkbox, radio, file input, and switch, all form-participating (except switch). Submit proves values reach FormData.",
     },
     custom: {
       title: "Custom component", icon: "wave", view: () => CustomView,
