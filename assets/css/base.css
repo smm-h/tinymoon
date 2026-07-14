@@ -116,3 +116,23 @@ body::after {
   outline-offset: 2px;
   box-shadow: 0 0 12px var(--accent-glow);
 }
+
+/* ---------- reduced motion ---------- */
+/* Blanket motion suppression: near-instant durations disable visible
+   animation/transition without breaking layout-dependent transforms.
+   The spinner (.spin) keeps rotating but completes instantly per cycle. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  /* The spinner must still rotate continuously (infinite), but with no
+     visible motion: near-instant duration + restored iteration. */
+  .spin {
+    animation-iteration-count: infinite !important;
+  }
+  #tm-content {
+    scroll-behavior: auto;
+  }
+}
