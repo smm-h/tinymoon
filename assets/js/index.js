@@ -7,6 +7,7 @@ export { api, post } from "./net.js";
 export { fmtTime } from "./format.js";
 export { renderMiniMd } from "./markdown.js";
 export { ensureTooltip, hideTip } from "./tooltip.js";
+export { ensureHovercard, hideHovercard } from "./hovercard.js";
 export { toast, setToastErrorHook } from "./toast.js";
 export { openModal } from "./modal.js";
 export { createSelect } from "./select.js";

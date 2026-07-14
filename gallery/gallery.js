@@ -243,10 +243,10 @@ const WidgetsView = {
     disabled.disabled = true;
     const ib = el("button", "icon-btn");
     ib.innerHTML = icon("refresh");
-    ib.dataset.tooltip = "An icon button. Hover intent is 250ms; this text is **mini-markdown**.";
+    ib.dataset.tooltip = "An icon button. Hover intent is 250ms.";
     const ibOn = el("button", "icon-btn on");
     ibOn.innerHTML = icon("bookmark");
-    ibOn.dataset.tooltip = "An icon button in its `.on` state.";
+    ibOn.dataset.tooltip = "An icon button in its .on state.";
     brow.appendChild(plain);
     brow.appendChild(primary);
     brow.appendChild(ghost);
@@ -388,12 +388,16 @@ const WidgetsView = {
     overlays.appendChild(orow);
     this.root.appendChild(overlays);
 
-    // tooltip + copy + kebab + context menu
-    const micro = panel("Tooltip, copy, kebab, context menu", "kebab");
+    // tooltip + hovercard + copy + kebab + context menu
+    const micro = panel("Tooltip, hovercard, copy, kebab, context menu", "kebab");
     micro.dataset.ctx = "gallery-demo";
     const mrow = el("div", "demo-row");
-    const tipSpan = el("span", "badge", "hover me");
-    tipSpan.dataset.tooltip = "Tooltips teach: **bold**, `code`, and [links into the wiki](#/wiki/view-contract). The hover bridge keeps this open while you reach for the copy icon.";
+    const tipSpan = el("span", "badge", "hover me (tooltip)");
+    tipSpan.dataset.tooltip = "A plain-text tooltip. No markdown, no links, no interactive content.";
+    const hcSpan = el("span", "badge", "hover me (hovercard)");
+    hcSpan.dataset.hovercard = "Hovercards teach: **bold**, `code`, and [links into the wiki](#/wiki/view-contract). The hover bridge keeps this open while you reach for a link.";
+    hcSpan.tabIndex = 0;
+    mrow.appendChild(hcSpan);
     mrow.appendChild(tipSpan);
     mrow.appendChild(copyButton(() => "copied from the gallery", "Copy a demo string"));
     mrow.appendChild(kebabButton(() => [
@@ -819,7 +823,7 @@ const FormsView = {
 
 const themeBtn = el("button", "icon-btn");
 themeBtn.type = "button";
-themeBtn.dataset.tooltip = "Toggle between the dark and light themes. The icon shows the theme it switches **to**.";
+themeBtn.dataset.tooltip = "Toggle between the dark and light themes.";
 const paintThemeBtn = () => {
   themeBtn.innerHTML = icon(settings.get("theme") === "dark" ? "sun" : "moon");
 };
@@ -841,27 +845,27 @@ shell = mountShell({
   routes: {
     tokens: {
       title: "Tokens", icon: "library", view: () => TokensView,
-      tip: "**Tokens** — every design token with its live value, read from the active theme.",
+      tip: "Tokens -- every design token with its live value, read from the active theme.",
     },
     type: {
       title: "Typography", icon: "note", view: () => TypeView,
-      tip: "**Typography** — the three-font system: brand headings, UI body, mono data.",
+      tip: "Typography -- the three-font system: brand headings, UI body, mono data.",
     },
     widgets: {
       title: "Widgets", icon: "faders", view: () => WidgetsView,
-      tip: "**Widgets** — every primitive, live: buttons, fields, select, toggles, toasts, modal, tooltips, menus, cards, tables.",
+      tip: "Widgets -- every primitive, live: buttons, fields, select, toggles, toasts, modal, tooltips, menus, cards, tables.",
     },
     wiki: {
       title: "Wiki", icon: "docs", view: () => WikiView,
-      tip: "**Wiki** — the view contract and every extension point, with deep-linkable anchors.",
+      tip: "Wiki -- the view contract and every extension point, with deep-linkable anchors.",
     },
     forms: {
       title: "Forms", icon: "save", view: () => FormsView,
-      tip: "**Forms** — segmented, checkbox, radio, file input, and switch, all form-participating (except switch). Submit proves values reach FormData.",
+      tip: "Forms -- segmented, checkbox, radio, file input, and switch, all form-participating (except switch). Submit proves values reach FormData.",
     },
     custom: {
       title: "Custom component", icon: "wave", view: () => CustomView,
-      tip: "**Custom component** — a consumer-defined view following the contract, indistinguishable from a built-in.",
+      tip: "Custom component -- a consumer-defined view following the contract, indistinguishable from a built-in.",
     },
   },
   defaultRoute: "tokens",

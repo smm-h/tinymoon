@@ -413,7 +413,7 @@ table.data tr:hover td { background: var(--surface-2); color: var(--text); }
   text-align: start;
 }
 #tm-ctx-root .ctx-item svg { width: 14px; height: 14px; flex: none; }
-#tm-ctx-root .ctx-item:hover, #tm-ctx-root .ctx-item.hover { background: var(--accent-soft); color: var(--text); }
+#tm-ctx-root .ctx-item:hover, #tm-ctx-root .ctx-item:focus-visible, #tm-ctx-root .ctx-item.hover { background: var(--accent-soft); color: var(--text); }
 #tm-ctx-root .ctx-sep { height: 1px; background: var(--border-2); margin: var(--space-4) 0; }
 
 /* ---------- modal ---------- */
@@ -456,7 +456,9 @@ dialog.tm-modal::backdrop {
 
 /* ---------- tooltips ---------- */
 
-#tm-tooltip {
+/* Tooltips are plain-text-only and non-interactive (pointer-events: none).
+   Rich content (links, buttons, markdown) belongs in hovercards. */
+[id^="tm-tooltip"] {
   position: fixed;
   z-index: var(--z-tooltip);
   max-width: 360px;
@@ -469,16 +471,40 @@ dialog.tm-modal::backdrop {
   font-family: var(--font-ui);
   padding: var(--space-6) var(--space-9);
   box-shadow: var(--shadow-pop);
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-8);
   pointer-events: none;
   opacity: 0;
   transition: opacity var(--dur-base) ease;
+  user-select: text;
 }
-#tm-tooltip.show { opacity: 1; pointer-events: auto; }
-#tm-tooltip .tip-body { min-width: 0; user-select: text; }
-#tm-tooltip .tip-body code {
+[id^="tm-tooltip"].show { opacity: 1; }
+
+/* ---------- hovercards ---------- */
+
+/* Hovercards are the interactive counterpart of tooltips: they render
+   mini-markdown (bold, code, links) and can be hovered/focused into. They
+   use the Popover API (popover="manual") for top-layer rendering. */
+.tm-hovercard {
+  position: fixed;
+  max-width: 420px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-2);
+  color: var(--text);
+  font-weight: var(--weight-normal);
+  font-size: var(--text-3xs);
+  line-height: var(--leading-normal);
+  font-family: var(--font-ui);
+  padding: var(--space-6) var(--space-9);
+  box-shadow: var(--shadow-pop);
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity var(--dur-base) ease;
+  /* Reset popover default styles */
+  margin: 0;
+  inset: auto;
+}
+.tm-hovercard.show { opacity: 1; }
+.tm-hovercard .hc-body { min-width: 0; user-select: text; }
+.tm-hovercard .hc-body code {
   font-weight: var(--weight-normal);
   font-size: var(--text-micro);
   font-family: var(--font-mono);
@@ -486,7 +512,7 @@ dialog.tm-modal::backdrop {
   border: 1px solid var(--border);
   padding: 0 var(--space-4);
 }
-#tm-tooltip .tip-body strong { font-weight: var(--weight-semibold); }
+.tm-hovercard .hc-body strong { font-weight: var(--weight-semibold); }
 
 .md-link {
   color: var(--accent-hi);
@@ -496,7 +522,7 @@ dialog.tm-modal::backdrop {
 }
 .md-link:hover { color: var(--accent); }
 
-/* copy-to-clipboard icon (tooltips + toasts) */
+/* copy-to-clipboard icon (hovercards + toasts) */
 .copy-btn {
   display: inline-flex;
   align-items: center;

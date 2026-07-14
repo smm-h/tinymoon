@@ -61,6 +61,8 @@ const NOT_COMPONENTS = [
   "renderMiniMd",
   // tooltip.js — singleton lifecycle
   "ensureTooltip", "hideTip",
+  // hovercard.js — singleton lifecycle
+  "ensureHovercard", "hideHovercard",
   // toast.js — imperative action + hook registration
   "toast", "setToastErrorHook",
   // modal.js — imperative action (returns close fn, not a component)
