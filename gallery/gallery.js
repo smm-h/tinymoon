@@ -8,10 +8,11 @@
 
 import {
   $$, el, icon,
-  toast, setToastErrorHook, openModal, Select, openPopover,
+  toast, setToastErrorHook, openModal, createSelect, openPopover,
   registerCtx, registerCtxFooter,
-  createSwitch, segmented, copyButton, kebabButton,
+  createSwitch, copyButton, kebabButton,
   createCheckbox, createRadio, createFileInput,
+  createSegmented, createTabs,
   createSettings, cssVar,
   mountShell, createWikiView,
 } from "../assets/js/index.js";
@@ -267,13 +268,19 @@ const WidgetsView = {
     frow.appendChild(f1);
     const f2 = el("div", "field");
     f2.appendChild(el("label", null, "Custom select"));
-    const sel = new Select({
-      items: ["alpha", "beta", "gamma", "delta"],
+    const sel = createSelect({
+      name: "widget-demo-select",
+      label: "Custom select",
+      items: [
+        { value: "alpha", label: "Alpha" },
+        { value: "beta", label: "Beta" },
+        { value: "gamma", label: "Gamma" },
+        { value: "delta", label: "Delta" },
+      ],
       value: "beta",
-      labels: { alpha: "Alpha", beta: "Beta", gamma: "Gamma", delta: "Delta" },
       onChange: (v) => toast("Select picked: " + v),
     });
-    f2.appendChild(sel.root);
+    f2.appendChild(sel.el);
     frow.appendChild(f2);
     fields.appendChild(frow);
     const ta = el("textarea");
@@ -287,15 +294,15 @@ const WidgetsView = {
     const controls = panel("Toggle, segmented, settings rows", "gear");
     const crow = el("div", "demo-row");
     crow.appendChild(createSwitch({ label: "Demo toggle", value: true, onChange: (v) => toast("Toggle: " + (v ? "on" : "off")) }).el);
-    crow.appendChild(segmented({
+    crow.appendChild(createTabs({
+      label: "View mode",
       items: [
         { value: "list", label: "List" },
         { value: "grid", label: "Grid", icon: "library" },
-        { value: "off", label: "Off", disabled: true },
       ],
       value: "grid",
-      onChange: (v) => toast("Segmented: " + v),
-    }));
+      onChange: (v) => toast("Tabs: " + v),
+    }).el);
     controls.appendChild(crow);
     const group = el("div", "set-group");
     const rows = el("div", "set-rows");
@@ -311,7 +318,8 @@ const WidgetsView = {
     t2.appendChild(el("div", "set-title", "Theme"));
     t2.appendChild(el("div", "set-desc", "Dark instrument panel or light paper-and-ink. Applied via tm:theme."));
     r2.appendChild(t2);
-    const themeSeg = segmented({
+    const themeTabs = createTabs({
+      label: "Theme",
       items: [
         { value: "dark", label: "Dark", icon: "moon" },
         { value: "light", label: "Light", icon: "sun" },
@@ -321,9 +329,9 @@ const WidgetsView = {
     });
     // stay in sync when the theme is changed elsewhere (topbar, ctx menu)
     window.addEventListener("tm:setting", (e) => {
-      if (e.detail.key === "theme") themeSeg.set(e.detail.value);
+      if (e.detail.key === "theme") themeTabs.set(e.detail.value);
     });
-    r2.appendChild(themeSeg);
+    r2.appendChild(themeTabs.el);
     rows.appendChild(r2);
     group.appendChild(rows);
     controls.appendChild(group);
@@ -727,6 +735,28 @@ const FormsView = {
     radioSection.appendChild(radioRow);
     form.appendChild(radioSection);
 
+    // segmented (form-participating)
+    const segSection = el("div");
+    segSection.appendChild(el("div", "set-title", "Segmented control"));
+    const segRow = el("div", "demo-row");
+    segRow.style.marginTop = "var(--space-8)";
+    const seg = createSegmented({
+      name: "size",
+      label: "Size",
+      items: [
+        { value: "s", label: "S" },
+        { value: "m", label: "M" },
+        { value: "l", label: "L" },
+        { value: "xl", label: "XL" },
+      ],
+      value: "m",
+      onChange: (v) => toast("Segmented: " + v),
+    });
+    segRow.appendChild(seg.el);
+    segRow.appendChild(el("span", "hash", "segmented — hidden radios, form-participating"));
+    segSection.appendChild(segRow);
+    form.appendChild(segSection);
+
     // file input
     const fileSection = el("div");
     fileSection.appendChild(el("div", "set-title", "File input"));
@@ -736,6 +766,25 @@ const FormsView = {
     fileRow.appendChild(fi.el);
     fileSection.appendChild(fileRow);
     form.appendChild(fileSection);
+
+    // select
+    const selSection = el("div");
+    selSection.appendChild(el("div", "set-title", "Select"));
+    const selRow = el("div", "demo-row");
+    selRow.style.marginTop = "var(--space-8)";
+    const formSel = createSelect({
+      name: "region",
+      label: "Region",
+      items: [
+        { value: "us-east", label: "US East" },
+        { value: "us-west", label: "US West" },
+        { value: "eu-west", label: "EU West" },
+      ],
+      value: "us-east",
+    });
+    selRow.appendChild(formSel.el);
+    selSection.appendChild(selRow);
+    form.appendChild(selSection);
 
     // submit
     const submitRow = el("div", "demo-row");
@@ -808,7 +857,7 @@ shell = mountShell({
     },
     forms: {
       title: "Forms", icon: "save", view: () => FormsView,
-      tip: "**Forms** — checkbox, radio, file input, and switch, all form-participating (except switch). Submit proves values reach FormData.",
+      tip: "**Forms** — segmented, checkbox, radio, file input, and switch, all form-participating (except switch). Submit proves values reach FormData.",
     },
     custom: {
       title: "Custom component", icon: "wave", view: () => CustomView,
