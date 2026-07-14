@@ -6,6 +6,7 @@
 /* ---------- tokens ---------- */
 
 :root {
+  color-scheme: dark;
   --bg: #0a0a0a;
   --surface: #141414;
   --surface-2: #191919;
@@ -119,6 +120,7 @@
    accent. Surfaces go white/light-gray, text goes near-black, shadows and
    glows soften. */
 html[data-theme="light"] {
+  color-scheme: light;
   --bg: #eef0f3;
   --surface: #ffffff;
   --surface-2: #f4f5f8;
