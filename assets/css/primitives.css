@@ -56,7 +56,9 @@
 .icon-btn:hover { color: var(--text); border-color: var(--border-2); background: var(--surface-2); }
 .icon-btn.on { color: var(--accent-hi); border-color: var(--accent-a40); background: var(--accent-soft); }
 
-input[type="text"] {
+/* All text-like input types. Number is excluded — it will get its own
+   treatment when restyled in Phase 3 (stepper arrows, constrained width). */
+:is(input[type="text"], input[type="password"], input[type="email"], input[type="url"], input[type="search"], input[type="tel"]) {
   background: var(--input-bg);
   border: 1px solid var(--border-2);
   color: var(--text);
@@ -67,9 +69,9 @@ input[type="text"] {
   transition: border-color var(--dur-base) ease, box-shadow var(--dur-base) ease;
   user-select: text;
 }
-input[type="text"]:hover { border-color: var(--hover-border); }
-input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-a18); outline: none; }
-input[type="text"]::placeholder { color: var(--text-faint); }
+:is(input[type="text"], input[type="password"], input[type="email"], input[type="url"], input[type="search"], input[type="tel"]):hover { border-color: var(--hover-border); }
+:is(input[type="text"], input[type="password"], input[type="email"], input[type="url"], input[type="search"], input[type="tel"]):focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-a18); }
+:is(input[type="text"], input[type="password"], input[type="email"], input[type="url"], input[type="search"], input[type="tel"])::placeholder { color: var(--text-faint); }
 
 .field { display: flex; flex-direction: column; gap: var(--space-5); }
 .field > label {
@@ -455,19 +457,7 @@ table.data tr:hover td { background: var(--surface-2); color: var(--text); }
   padding: var(--space-12) var(--space-18);
   border-top: 1px solid var(--border);
 }
-.modal textarea {
-  width: 100%;
-  min-height: 90px;
-  background: var(--input-bg);
-  border: 1px solid var(--border-2);
-  color: var(--text);
-  font-weight: var(--weight-normal);
-  font-size: var(--text-xs);
-  font-family: var(--font-ui);
-  padding: var(--space-10);
-  resize: vertical;
-}
-.modal textarea:focus { border-color: var(--accent); outline: none; }
+.modal textarea { width: 100%; min-height: 90px; }
 
 /* ---------- tooltips ---------- */
 
@@ -560,14 +550,11 @@ table.data tr:hover td { background: var(--surface-2); color: var(--text); }
   animation: toast-in var(--dur-slow) ease;
   pointer-events: auto;
 }
-.toast svg { width: 14px; height: 14px; flex: none; color: var(--accent-hi); }
+.toast > svg { width: 14px; height: 14px; flex: none; color: var(--accent-hi); }
 .toast .toast-msg { min-width: 0; user-select: text; }
 .toast .copy-btn { margin-left: var(--space-2); }
-.toast .copy-btn svg { color: var(--text-faint); }
-.toast .copy-btn:hover svg { color: var(--text); }
-.toast .copy-btn.copied svg { color: var(--green); }
 .toast.err { border-left-color: var(--red); }
-.toast.err svg { color: var(--red); }
+.toast.err > svg { color: var(--red); }
 /* Coupled with toast.js's removal timeout (200ms): this transition must stay
    shorter than the JS removal delay. */
 .toast.fading { opacity: 0; transform: translateX(8px); transition: opacity var(--dur-slow) ease, transform var(--dur-slow) ease; }
@@ -576,8 +563,7 @@ table.data tr:hover td { background: var(--surface-2); color: var(--text); }
 /* ---------- topbar action buttons ---------- */
 
 #tm-topbar-actions { display: flex; align-items: center; gap: var(--space-4); margin-left: auto; }
-#tm-busy + #tm-topbar-actions { margin-left: var(--space-16); }
-#tm-busy.hidden + #tm-topbar-actions { margin-left: auto; }
+#tm-busy:not(.hidden) + #tm-topbar-actions { margin-left: var(--space-16); }
 #tm-topbar-actions .icon-btn svg { width: 16px; height: 16px; }
 
 /* ---------- toggle switch ---------- */
