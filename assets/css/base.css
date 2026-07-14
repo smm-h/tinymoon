@@ -84,6 +84,10 @@ body {
   -webkit-font-smoothing: antialiased;
   user-select: none;
 }
+/* Wiki/doc prose is the one content carve-out: selectable text so users can
+   highlight and copy passages. Everything else (chrome, nav, controls) stays
+   unselectable via body's user-select: none. */
+.doc-body { user-select: text; }
 ::selection { background: var(--accent-soft); color: var(--text); }
 .mono { font-family: var(--font-mono); }
 .hidden { display: none !important; }
@@ -134,5 +138,39 @@ body::after {
   }
   #tm-content {
     scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- print ---------- */
+/* Counters the Firefox first-page-only bug with overflow:hidden shells:
+   everything becomes static and visible so the full content area prints.
+   Sidebar, topbar, and footer are hidden — only the main content prints. */
+@media print {
+  body {
+    overflow: visible !important;
+    user-select: text !important;
+  }
+  #tm-content {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    position: static !important;
+  }
+  #tm-sidebar,
+  #tm-topbar,
+  .gallery-footer,
+  #tm-toast-root,
+  #tm-ctx-root {
+    display: none !important;
+  }
+  /* Remove fixed/absolute positioning from shell chrome so content flows */
+  #tm-app {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  /* Grain overlay must not print */
+  body::after {
+    display: none !important;
   }
 }
