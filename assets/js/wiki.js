@@ -61,7 +61,10 @@ export function createWikiView({ route, sections } = {}) {
   return {
     root: null,
     built: false,
-    focus: "",
+    // Persistent: the currently active anchor (for TOC highlight on refresh).
+    _anchor: "",
+    // One-shot: set by setSub, consumed by refresh to scroll into view.
+    _pendingScroll: "",
 
     build() {
       if (this.built) return;
@@ -107,16 +110,22 @@ export function createWikiView({ route, sections } = {}) {
       this.root.appendChild(layout);
     },
 
-    setSub(sub) { this.focus = sub; },
+    setSub(sub) {
+      this._anchor = sub;
+      this._pendingScroll = sub;
+    },
 
     refresh() {
-      const anchor = this.focus;
-      this.focus = "";
+      // Highlight the TOC entry for the current anchor (persists across
+      // refreshCurrent() calls — not cleared after use).
       $$(".docs-toc-item", this.toc).forEach((t) =>
-        t.classList.toggle("active", t.dataset.anchor === anchor));
-      if (!anchor) return;
-      const target = this.main.querySelector('[data-anchor="' + CSS.escape(anchor) + '"]');
-      if (target) target.scrollIntoView({ block: "start" });
+        t.classList.toggle("active", t.dataset.anchor === this._anchor));
+      // Scroll only on first visit to this anchor (one-shot).
+      if (this._pendingScroll) {
+        const target = this.main.querySelector('[data-anchor="' + CSS.escape(this._pendingScroll) + '"]');
+        if (target) target.scrollIntoView({ block: "start" });
+        this._pendingScroll = "";
+      }
     },
   };
 }
