@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>escape-stack fixture</title>
+</head>
+<body>
+<!-- Fixture for the "Escape multi-close" red test. It composes a Select
+     INSIDE an open modal, using the shipped framework modules directly.
+     Served by the repo-root webServer, so the relative asset paths resolve to
+     /assets/js/*. The paths are four levels up because this file lives at
+     tests/js/e2e/fixtures/. -->
+<script type="module">
+import { openModal } from "../../../../assets/js/modal.js";
+import { Select } from "../../../../assets/js/select.js";
+
+const sel = new Select({ items: ["one", "two", "three"], value: "one" });
+openModal({ title: "Stacked overlays", body: sel.root });
+
+// Signal to the test that composition is complete.
+window.__escapeStackReady = true;
+</script>
+</body>
+</html>
