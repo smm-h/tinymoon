@@ -1,7 +1,8 @@
-// tinymoon — overlay kernel: shared infrastructure for all floating overlays
-// (tooltip, popover, context menu, select, modal, toast). Centralizes escape
-// key handling (layer stack), viewport-aware positioning, root element
-// creation, and CSS custom property reading.
+// tinymoon — overlay kernel and copy infrastructure: shared infrastructure for
+// all floating overlays (tooltip, popover, context menu, select, modal, toast)
+// and the object-copy system. Centralizes escape key handling (layer stack),
+// viewport-aware positioning, root element creation, CSS custom property
+// reading, and the copyable registry (registerCopyable/unregisterCopyable).
 
 // ---------------------------------------------------------------------------
 // cssVar — read a live CSS custom property off :root
@@ -85,16 +86,18 @@ export function placeBelow(anchor, panel, opts) {
 // ---------------------------------------------------------------------------
 
 // ensureRoot(id, attrs?) → gets or creates a div#id on document.body. The
-// optional attrs object sets attributes (e.g. {role: "menu"}).
+// optional attrs object sets attributes (e.g. {role: "menu"}) on every call,
+// whether the element is freshly created or already exists. This guarantees
+// required attributes are present even when an earlier caller omitted them.
 export function ensureRoot(id, attrs) {
   let node = document.getElementById(id);
   if (!node) {
     node = document.createElement("div");
     node.id = id;
-    if (attrs) {
-      for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
-    }
     document.body.appendChild(node);
+  }
+  if (attrs) {
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
   }
   return node;
 }
