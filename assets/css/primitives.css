@@ -605,11 +605,11 @@ dialog.tm-modal::backdrop {
 .toast.err > svg { color: var(--red); }
 /* Coupled with toast.js's removal timeout (200ms): this transition must stay
    shorter than the JS removal delay. */
-/* RTL: translateX is direction-insensitive — slides toward inline-end in LTR
-   but toward inline-start in RTL. No CSS logical equivalent exists; needs
-   JS dir-aware logic or :dir() overrides. Tracked for Phase 7. */
 .toast.fading { opacity: 0; transform: translateX(8px); transition: opacity var(--dur-slow) ease, transform var(--dur-slow) ease; }
+.toast.fading:dir(rtl) { transform: translateX(-8px); }
 @keyframes toast-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+@keyframes toast-in-rtl { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+.toast:dir(rtl) { animation-name: toast-in-rtl; }
 
 /* ---------- topbar action buttons ---------- */
 
