@@ -2,16 +2,7 @@
 
 import { el } from "./dom.js";
 import { icon } from "./icons.js";
-
-function modalRoot() {
-  let root = document.getElementById("tm-modal-root");
-  if (!root) {
-    root = el("div");
-    root.id = "tm-modal-root";
-    document.body.appendChild(root);
-  }
-  return root;
-}
+import { pushLayer, ensureRoot } from "./kernel.js";
 
 // The currently open modal's close(), so opening over an open modal can run
 // the previous modal's full close (listeners removed, its onClose fired).
@@ -23,7 +14,7 @@ let currentClose = null;
 // while a modal is already open closes the previous one first.
 export function openModal({ title, body, actions, onClose }) {
   if (currentClose) currentClose();
-  const root = modalRoot();
+  const root = ensureRoot("tm-modal-root");
   root.textContent = "";
   const m = el("div", "modal");
   const head = el("div", "modal-head");
@@ -45,19 +36,19 @@ export function openModal({ title, body, actions, onClose }) {
   root.appendChild(m);
   root.classList.add("open");
 
+  let removeLayer = null;
   const close = () => {
     if (currentClose === close) currentClose = null;
+    if (removeLayer) { removeLayer(); removeLayer = null; }
     root.classList.remove("open");
     root.textContent = "";
-    document.removeEventListener("keydown", onKey);
     root.removeEventListener("pointerdown", onDown);
     if (onClose) onClose();
   };
-  const onKey = (e) => { if (e.key === "Escape") close(); };
   const onDown = (e) => { if (e.target === root) close(); };
-  document.addEventListener("keydown", onKey);
   root.addEventListener("pointerdown", onDown);
   x.addEventListener("click", close);
+  removeLayer = pushLayer(() => close());
   currentClose = close;
   return close;
 }
