@@ -16,6 +16,9 @@ test.describe("Forms view", () => {
     // Switch
     await expect(view.locator("button[role='switch']")).toBeVisible();
 
+    // Segmented control (fieldset with role=radiogroup)
+    await expect(view.locator("fieldset[role='radiogroup']")).toBeVisible();
+
     // Checkboxes (hidden native inputs inside labels)
     const checkboxes = view.locator(".tm-checkbox");
     await expect(checkboxes).toHaveCount(2);
@@ -59,6 +62,36 @@ test.describe("Forms view", () => {
     const text = await toast.textContent();
     // notifications should NOT be in the FormData (was unchecked)
     expect(text).not.toContain("notifications");
+  });
+
+  test("segmented control submits its value in the form", async ({ page }) => {
+    const view = page.locator("#tm-content section.view:not(.hidden)");
+
+    // Submit with default segmented value ("m")
+    await view.locator("button[type='submit']").click();
+
+    const toast1 = page.locator(".toast").last();
+    await expect(toast1).toBeVisible();
+    const text1 = await toast1.textContent();
+    expect(text1).toContain("size");
+    expect(text1).toContain("m");
+  });
+
+  test("clicking a segmented option changes the submitted value", async ({ page }) => {
+    const view = page.locator("#tm-content section.view:not(.hidden)");
+
+    // Click the "XL" segmented option (last label in the fieldset)
+    const segFieldset = view.locator("fieldset[role='radiogroup']");
+    await segFieldset.locator("label").last().click();
+
+    // Submit
+    await view.locator("button[type='submit']").click();
+
+    const toast = page.locator(".toast").last();
+    await expect(toast).toBeVisible();
+    const text = await toast.textContent();
+    expect(text).toContain("size");
+    expect(text).toContain("xl");
   });
 
   test("selecting a different radio changes the submitted value", async ({ page }) => {
