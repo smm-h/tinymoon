@@ -24,6 +24,13 @@
     "rlsbl"
   ],
   "scripts": {
-    "test": "echo \"no tests\" && exit 0"
+    "test": "./scripts/check-js-syntax.sh && vitest run",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.61.1",
+    "happy-dom": "^20.10.6",
+    "vitest": "^4.1.10"
   }
 }
