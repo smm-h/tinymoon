@@ -47,17 +47,16 @@ const MIGRATED = [
 ];
 
 // Non-component exports: utilities, imperative actions, registration
-// functions, store factories, constants. These do not produce component
-// instances and are not subject to the convention.
+// functions, constants. These do not produce component instances and are
+// not subject to the convention.
+//
+// Only core barrel exports are listed here. Extras (wiki, net, settings)
+// live in extras.js and are covered by the extras barrel test below.
 const NOT_COMPONENTS = [
   // dom.js — query helpers and element factory
   "$", "$$", "el",
   // icons.js — icon data and helpers
   "ICONS", "icon", "registerIcons",
-  // net.js — fetch wrappers
-  "api", "post",
-  // format.js — pure formatters
-  "fmtTime",
   // markdown.js — rendering
   "renderMiniMd",
   // tooltip.js — singleton lifecycle
@@ -72,15 +71,11 @@ const NOT_COMPONENTS = [
   "registerCtx", "registerCtxFooter", "showCtxMenu", "hideCtxMenu",
   // popover.js — imperative actions
   "openPopover", "closePopover",
-  // settings.js — store factory (not a UI component)
-  "createSettings",
   // kernel.js — infrastructure + copyable registry
   "cssVar", "ensureRoot", "getCopyData", "placeBelow",
   "registerCopyable", "unregisterCopyable",
   // shell.js — app shell
   "mountShell",
-  // wiki.js — rendering + view factory
-  "renderDocMd", "createWikiView",
 ];
 
 // ---------------------------------------------------------------------------
@@ -231,5 +226,26 @@ describe("api-convention: legacy inventory", () => {
     for (const name of LEGACY) {
       expect(barrel[name], name + " should be exported").toBeDefined();
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Extras barrel coverage
+// ---------------------------------------------------------------------------
+
+const EXTRAS_EXPORTS = [
+  // net.js — fetch wrappers
+  "api", "post",
+  // settings.js — store factory
+  "createSettings",
+  // wiki.js — rendering + view factory
+  "renderDocMd", "createWikiView",
+];
+
+describe("api-convention: extras barrel coverage", () => {
+  it("extras barrel exports exactly the expected names", async () => {
+    const extras = await import("../../../assets/js/extras.js");
+    const exportNames = Object.keys(extras).sort();
+    expect(exportNames).toEqual([...EXTRAS_EXPORTS].sort());
   });
 });
