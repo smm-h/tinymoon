@@ -112,6 +112,8 @@
   --z-ctx: 360;
   --z-popover: 370;
   --z-toast: 380;
+  /* Grain is page texture — overlays float above it (enforced by
+     top-layer migration in Phase 3). */
   --z-grain: 400;
   --z-tooltip: 500;
 }
