@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>selector-hygiene fixture</title>
+<!-- Framework CSS — paths are four levels up from tests/js/e2e/fixtures/ -->
+<link rel="stylesheet" href="../../../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../../../assets/css/base.css">
+<link rel="stylesheet" href="../../../../assets/css/primitives.css">
+</head>
+<body>
+<!-- "Consumer-authored content" — exercises scoping, input coverage,
+     and focus ring correctness. None of these elements use framework
+     classes, so they should receive only the base reset, not component
+     styling (e.g. SVG color should NOT be accent-hi). -->
+
+<div id="consumer-content">
+  <svg id="consumer-svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="10"/>
+  </svg>
+
+  <table id="consumer-table">
+    <tr><th>Key</th><th>Value</th></tr>
+    <tr><td>alpha</td><td>1</td></tr>
+  </table>
+
+  <p id="consumer-para">Paragraph text.</p>
+  <a id="consumer-link" href="#">A link</a>
+  <h2 id="consumer-heading">A heading</h2>
+</div>
+
+<!-- Input type coverage: every text-like type that the framework styles,
+     plus one unstyled type (number) for contrast. -->
+<div id="input-types">
+  <input id="in-text"     type="text"     placeholder="text">
+  <input id="in-password" type="password" placeholder="password">
+  <input id="in-email"    type="email"    placeholder="email">
+  <input id="in-url"      type="url"      placeholder="url">
+  <input id="in-search"   type="search"   placeholder="search">
+  <input id="in-tel"      type="tel"      placeholder="tel">
+  <input id="in-number"   type="number"   placeholder="number">
+</div>
+
+<!-- Focusable elements for focus-ring testing. -->
+<div id="focusables">
+  <button id="focus-btn" class="btn">Button</button>
+  <a id="focus-link" href="#">Link</a>
+  <textarea id="focus-textarea"></textarea>
+  <input id="focus-input" type="text" placeholder="text input">
+  <input id="focus-email" type="email" placeholder="email input">
+</div>
+
+<!-- Toast with nested copy-btn SVG — verifies scoped selector. -->
+<div id="toast-test">
+  <div class="toast" id="test-toast">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+    </svg>
+    <span class="toast-msg">Test toast</span>
+    <button class="copy-btn" id="toast-copy-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="0" ry="0"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+// Signal readiness to Playwright.
+window.__selectorHygieneReady = true;
+</script>
+</body>
+</html>
