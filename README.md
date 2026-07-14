@@ -1,116 +1,186 @@
 # tinymoon
 
-A lean web framework that turns plain, semantic web content into a polished-looking web app.
+A content-first web framework: you bring plain, semantic content and small view objects; tinymoon brings the app -- shell, typography, widgets, motion. Everything ships as native ES modules and plain CSS with zero dependencies, zero build steps, and zero network loads.
 
-## Usage
+tinymoon's palette is its identity. Consumer CSS must not redefine framework tokens.
 
-Link the four CSS layers (tokens first) and import the ES modules — no build step, no bundler:
+## Install
+
+npm (core + extras):
+
+```
+npm install tinymoon
+```
+
+The npm package exports two barrels: `"tinymoon"` (core primitives) and `"tinymoon/extras"` (wiki, networking, settings). Assets are available at `"tinymoon/assets/*"`.
+
+PyPI (assets + conformance checker CLI):
+
+```
+pip install tinymoon
+```
+
+`tinymoon.assets_path()` returns the directory containing `css/`, `js/`, and `fonts/`.
+
+Go (embedded filesystem):
+
+```go
+import "github.com/smm-h/tinymoon"
+
+// tinymoon.Assets  — embed.FS rooted at the repo root
+// tinymoon.FS()    — fs.FS rooted at the assets directory
+// tinymoon.Handler() — http.Handler serving the assets
+```
+
+## Quick start
+
+Link the four CSS layers (tokens first) and import the ES modules -- no build step, no bundler:
 
 ```html
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/base.css">
 <link rel="stylesheet" href="assets/css/shell.css">
 <link rel="stylesheet" href="assets/css/primitives.css">
-```
 
-```js
-import { mountShell, createSettings, toast } from "./assets/js/index.js";
-// or import primitives standalone: import { toast } from "./assets/js/toast.js";
+<script type="module">
+import { mountShell, toast } from "./assets/js/index.js";
+import { createSettings } from "./assets/js/extras.js";
 
-const settings = createSettings({ storageKey: "my-app", defaults: { theme: "dark" } });
+const settings = createSettings({
+  storageKey: "my-app",
+  defaults: { theme: "dark" },
+});
 settings.load();
 settings.applyTheme();
 
 const shell = mountShell({
   root: document.body,
-  brand: { name: "myapp", logoHTML: '<div class="wordmark">my<b>app</b></div>' },
+  brand: {
+    name: "myapp",
+    logoHTML: '<div class="wordmark">my<b>app</b></div>',
+  },
   routes: {
-    home: { title: "Home", icon: "library", view: () => HomeView },
+    home: {
+      title: "Home",
+      icon: "library",
+      view: () => HomeView,
+    },
   },
   defaultRoute: "home",
 });
-```
-
-The imports use relative paths to the vendored assets so they resolve in the browser with no build step. If you prefer the bare specifier `"tinymoon"`, add an import map to your HTML:
-
-```html
-<script type="importmap">
-{ "imports": { "tinymoon": "./assets/js/index.js" } }
 </script>
 ```
 
-`mountShell` also accepts an optional `onRoute(routeKey, sub)` callback fired after every route is handled (including the initial one), and the returned shell exposes `refreshCurrent()` to re-run the current view's `refresh()` in place.
+With npm, use bare specifiers by adding an import map:
 
-Consumer apps can extend the built-in icon set with `registerIcons({name: svgString})` — colliding with an existing icon name is a hard error, never a silent overwrite. Error toasts can be mirrored into a log with `setToastErrorHook(fn)` — the hook receives each error toast's message and its opts object (`{}` when the caller passed none), and registering a second hook is a hard error.
-
-Views are plain objects following the contract `{root, built, build(), refresh(), setSub?}` — the [gallery](gallery/) is a complete working app and documents every token, primitive, and extension point (serve the repo root with a static server and open `/gallery/`).
-
-From Go, the assets ship as an embedded filesystem:
-
-```go
-import "github.com/smm-h/tinymoon" // tinymoon.Assets, tinymoon.FS(), tinymoon.Handler()
+```html
+<script type="importmap">
+{ "imports": { "tinymoon": "./node_modules/tinymoon/assets/js/index.js",
+               "tinymoon/extras": "./node_modules/tinymoon/assets/js/extras.js" } }
+</script>
 ```
 
-From Python, the wheel carries the assets; `tinymoon.assets_path()` returns their directory.
+## Primitives
 
-## Philosophy
+### Core (`tinymoon`)
 
-**Content-first.** You bring plain, semantic content; tinymoon brings the app: shell, typography, widgets, motion. A page of tables and forms dropped into the shell should look like a finished product before you write a line of custom CSS.
+**Shell and DOM:**
 
-**Zero build, zero dependencies, zero network.** Native ES modules and plain CSS. No bundler, no transpiler, no framework runtime, no `npm install` to use it, no CDN, no external fonts — everything is vendored. These are enforced by tests, not promised.
+- `mountShell(opts)` -- mount the app shell with sidebar, topbar, router, and footer slot
+- `el(tag, cls?, text?)` -- element factory
+- `$(sel, root?)` -- querySelector shorthand
+- `$$(sel, root?)` -- querySelectorAll (returns array)
 
-**No overhead — as a number, not a vibe.** No virtual DOM, no reactivity engine, no diffing. Views build their DOM once and mutate data in place; expensive work is cached and lazily loaded. Size budgets are checked in CI so the framework can never quietly bloat.
+**Controls:**
 
-**Gorgeous and coherent — by constraint, not by option.** The visual identity is a short list of non-negotiables: sharp corners everywhere, no native browser widgets, a three-font system with monospace for data, a restrained glow language, motion limited to 100–180ms eases. Design tokens let you re-theme and re-accent; they do not let you opt out of the identity. Coherence survives because these are not configurable.
+- `createSwitch(opts)` -- role="switch" toggle button (not form-participating)
+- `createCheckbox(opts)` -- hidden-native checkbox facade (form-participating)
+- `createRadio(opts)` -- hidden-native radio facade (form-participating)
+- `createFileInput(opts)` -- hidden-native file input facade (form-participating)
+- `createSegmented(opts)` -- segmented control with hidden radios (form-participating)
+- `createTabs(opts)` -- tab bar (not form-participating)
+- `createSelect(opts)` -- custom dropdown select
+- `createDatePicker(opts)` -- calendar date picker
+- `copyButton(getText, tip?)` -- one-click clipboard copy button
+- `kebabButton(itemsFn, tip?)` -- three-dot menu button
 
-**Modular and DRY.** Every primitive is an independently importable ES module. Design tokens are the single source of truth for color, spacing, and type — including inside canvas rendering.
+**Overlays:**
 
-**You define components; tinymoon defines the language.** tinymoon is not a component library you exhaust — it is a component language: an element factory, tokens, a small view contract, a namespaced event bus, and explicit extension points (routes, context-menu providers, settings schema, footer slot). A well-written consumer component is indistinguishable from a built-in.
+- `toast(msg, level?, opts?)` -- toast notification ("ok", "err", or plain)
+- `setToastErrorHook(fn)` -- mirror error toasts into a custom hook
+- `openModal(opts)` -- modal dialog (returns close function)
+- `openPopover(anchor, builder)` / `closePopover()` -- positioned popover
+- `registerCtx(key, provider)` / `registerCtxFooter(fn)` -- context menu regions
+- `showCtxMenu(x, y, items, anchor?)` / `hideCtxMenu()` -- programmatic context menu
+- `ensureTooltip(el, text)` / `hideTip()` -- tooltip lifecycle
+- `ensureHovercard(el, md)` / `hideHovercard()` -- rich hovercard with markdown
 
-**Very strict.** Hard errors over warnings, no escape hatches, fewer options and more opinions. tinymoon ships a conformance checker that consumer projects run as a hard CI gate — external URLs, native widgets, `title=` attributes, rounded corners, and off-token colors are build failures, not style suggestions. Strictness is what keeps consumer-defined components coherent.
+**Data and utilities:**
 
-## Conformance
+- `ICONS` -- built-in icon set (26 icons)
+- `icon(name)` -- render an icon as an SVG string
+- `registerIcons(map)` -- merge consumer icons (collisions are hard errors)
+- `renderMiniMd(text)` -- inline markdown to DOM fragment (bold, code, links)
+- `cssVar(name)` -- read a computed CSS custom property value
+- `ensureRoot()` -- ensure the root element exists
+- `placeBelow(anchor, el)` -- position an element below an anchor
+- `registerCopyable(el, fn)` / `unregisterCopyable(el)` -- register elements for the copy system
+- `getCopyData(el)` -- retrieve copy data from a registered element
 
-`tinymoon check` scans a directory's `.html`, `.css`, and `.js` files and enforces the framework's non-negotiables as hard errors:
+### Extras (`tinymoon/extras`)
 
-- **external-url** — no network loads: no `http://`, `https://`, or protocol-relative `//host` URLs in HTML `src`/`href`/`srcset`, CSS `url()`/`@import`, or JS import specifiers and `fetch()`/`import()` literals (XML namespace identifiers and URLs in comments/prose are fine).
-- **native-control** — no native `<select>`, `<dialog>`, or `<input type=checkbox|radio|file>`, in markup or created from JS; use the framework's primitives.
-- **title-attr** — no `title=` attributes (SVG `<title>` child elements are fine); use the tooltip primitive instead.
-- **border-radius** — no `border-radius` (or `borderRadius` in JS) other than `0`/`0px`; corners are sharp everywhere.
-- **raw-color** — no color literals (hex, `rgb()`/`rgba()`/`hsl()`/`hsla()`/`oklch()`) outside custom-property definitions in `:root`/`html[data-theme=...]` blocks; everything else goes through `var(--token)` or `cssVar()`. (Named CSS colors are not checked.)
+- `api(path)` -- GET JSON from a same-origin path
+- `post(path, body, onError?)` -- POST JSON to a same-origin path
+- `createSettings(opts)` -- localStorage-backed settings store with schema validation
+- `createWikiView(opts)` -- wiki view factory with table of contents and deep-linkable sections
+- `renderDocMd(md)` -- block-level markdown to DOM (paragraphs, subheadings, lists)
 
-Run it against your project's web directory:
+## Identity
+
+The visual identity is enforced by constraint, not offered as options:
+
+- **Sharp corners everywhere** -- `border-radius` is 0; no exceptions.
+- **Three-font system** -- brand headings (Space Grotesk), UI body (IBM Plex Sans), monospace for data (IBM Plex Mono). All vendored, no network loads.
+- **Glow language** -- accent glows on active cards, focused inputs, and modals. Restrained and consistent.
+- **Grain** -- a subtle SVG noise overlay on the background.
+- **Motion timing** -- all transitions are 100--180ms one-shot eases. The spinner is the only continuous animation.
+- **No native browser controls** -- checkbox, radio, select, file input, and date picker are all custom-drawn with hidden native elements for form participation and accessibility.
+- **AA contrast** -- every text-on-background token pair passes WCAG AA 4.5:1. Enforced by CI.
+- **Reduced motion** -- `prefers-reduced-motion: reduce` suppresses all animation and transition durations to near-zero. Enforced by E2E tests.
+
+Design tokens let you re-theme and re-accent; they do not let you opt out of the identity.
+
+## Conformance checker
+
+`tinymoon check` scans `.html`, `.css`, and `.js` files and enforces the framework's non-negotiables as hard errors:
+
+- **external-url** -- no network loads (no `http://`, `https://`, or `//host` URLs in HTML, CSS, or JS)
+- **native-control** -- no native `<select>`, `<dialog>`, or `<input type=checkbox|radio|file>`
+- **title-attr** -- no `title=` attributes (use the tooltip primitive)
+- **border-radius** -- no `border-radius` other than `0`/`0px`
+- **raw-color** -- no color literals outside `:root`/`html[data-theme]` token definitions
 
 ```
 uvx tinymoon check --dir ./web
 ```
 
-or install it once with `uv tool install tinymoon` and run `tinymoon check --dir ./web`. The `--dir` flag is required — the checker never scans the current directory implicitly.
+One line per violation, exit non-zero on any finding. No `--skip`, `--ignore`, or warning mode. Exempt specific URLs by adding them to `tinymoon-allowlist.txt` at the scanned directory root.
 
-It prints one line per violation (`path:line: [rule-id] message`) plus a summary, and exits non-zero if anything is found. There is deliberately no `--skip`, `--ignore`, warning mode, or any other bypass — a violation is a build failure.
+## App model
 
-If a specific URL genuinely must be exempt, add it to a `tinymoon-allowlist.txt` file at the scanned directory root — one exact URL per line, `#` comments allowed. The allowlist is a reviewable file in your repo, not a CLI flag.
+**Copy system.** `registerCopyable(el, fn)` marks any element as copyable -- clicking it copies the value returned by `fn()` to the clipboard, with a toast confirmation. The `copyButton` helper wires a standalone copy button. `getCopyData(el)` retrieves registered copy data programmatically.
 
-Use it as a hard gate in CI:
+**Selection model.** Elements declare tooltips via `data-tooltip` (plain text) and hovercards via `data-hovercard` (markdown with bold, code, links). The framework manages hover intent, positioning, and the hover bridge automatically.
 
-```yaml
-- run: uvx tinymoon check --dir ./web
-```
+**View contract.** Routes map to view objects `{root, built, build(), refresh(), setSub?}`. The shell's router owns the lifecycle: `build()` constructs the DOM once (idempotent), `refresh()` runs on every visit, `setSub(sub)` receives deep-link tails. A string value instead of a view factory activates the content-first path -- plain HTML styled automatically with zero framework classes.
 
-The step fails the build on any violation; there is nothing to configure and nothing to bypass.
+## Gallery
 
-## Install
-
-npm:
+The gallery is a complete tinymoon app that documents every design token and primitive. Serve the repo root with a static server and open `/gallery/`:
 
 ```
-npm install tinymoon
-```
-
-PyPI:
-
-```
-pip install tinymoon
+python3 -m http.server
+# open http://localhost:8000/gallery/
 ```
 
 ## License
