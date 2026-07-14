@@ -14,10 +14,15 @@ import {
   createCheckbox, createRadio, createFileInput,
   createSegmented, createTabs,
   createDatePicker,
-  createSettings, cssVar,
-  mountShell, createWikiView,
+  cssVar,
+  mountShell,
   registerCopyable,
 } from "../assets/js/index.js";
+
+import {
+  createSettings,
+  createWikiView,
+} from "../assets/js/extras.js";
 
 // ---------- settings ----------
 
