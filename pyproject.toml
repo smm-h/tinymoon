@@ -14,7 +14,6 @@ authors = [
 ]
 keywords = ["ui", "framework", "vanilla-js", "css", "zero-dependency", "rlsbl"]
 classifiers = [
-    "Development Status :: 4 - Beta",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
