@@ -7,7 +7,7 @@ fonts) inside the wheel and exposes their location via assets_path().
 from importlib import resources
 from pathlib import Path
 
-__version__ = "0.3.1"
+__version__ = "0.4.0"
 
 
 def assets_path() -> Path:

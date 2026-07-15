@@ -2,6 +2,61 @@
 
 # Changelog
 
+## 0.4.0
+
+The redesign release: unified primitive API, full accessibility, design token system, object-copy model, responsive mobile support, and a guarantee-grade conformance checker.
+
+<details>
+<summary>Context</summary>
+
+A comprehensive external critique identified structural gaps in the framework:
+no custom form controls, no ARIA semantics, hardcoded CSS values, no mobile
+support, no RTL readiness, and a conformance checker that could be bypassed.
+
+A 12-phase charter addressed every finding. The primitive API was unified
+around factory functions returning {el, methods, destroy()}. A kernel module
+centralized escape-stack and overlay management. Design tokens replaced all
+raw literals. The barrel was split into core and extras for tree-shakeable
+imports. Every primitive was rebuilt with APG-compliant keyboard and ARIA
+patterns. A runtime auditor and expanded conformance checker close the loop
+on charter guarantees.
+
+</details>
+
+### Breaking
+
+- **Breaking.** Unified primitive API: `toggleWidget` replaced by `createSwitch`, `Select` class replaced by `createSelect`, `segmented` replaced by `createSegmented`/`createTabs`. All primitives now return `{el, methods, destroy()}`.
+- **Breaking.** Gallery migrated to `createTabs`; `Select` class replaced by `createSelect` factory with full APG combobox pattern; dead legacy `segmented()` function removed.
+- **Breaking.** Barrel split: core (`tinymoon`) and extras (`tinymoon/extras`). `createSettings`, `createWikiView`, `api`, `post`, `renderDocMd` moved to extras. `fmtTime` removed. Root `index.js` re-export shim deleted.
+- **Breaking.** `cssVar` moved from `settings.js` to `kernel.js`. New kernel module centralizes escape-stack, overlay placement, root-element creation, and CSS variable access.
+
+### Features
+
+- **New primitives.** `createCheckbox`, `createRadio`, `createFileInput`, `createDatePicker` (APG grid pattern), `createTabs` -- all form-participating (except tabs), with full ARIA semantics. Tooltip split into plain-text tooltip and rich hovercard.
+- **Accessibility.** Modal rebuilt on native `<dialog>` with focus trap, Escape, `aria-labelledby`. Toast gets `aria-live`, dismiss button, pause-on-hover, stack cap. Context menu gets `role=menuitem`, Shift+F10 keyboard entry, focus restore. Shell gets skip link, route announcer, `aria-current`.
+- **Design tokens.** Rem-based type and spacing scales, duration tokens, z-index tokens, line-height and font-weight tokens. Single accent hue via `color-mix()` derivation. All raw CSS literals replaced with token references.
+- **Object-copy system.** Focusable data objects with Ctrl+C support, automatic context-menu Copy entries, selection model (`.doc-body user-select: text`), and print stylesheet.
+- **Content-first.** All semantic HTML styled by default with identity tokens. Declarative string-view path for the shell. Sidebar drawer JS toggle for mobile hamburger menu.
+- **Responsive and i18n.** Full mobile support with drawer nav, dvh, 44px touch targets. Logical CSS properties for RTL. Non-Latin font fallback policy. `color-scheme` declarations for native UI matching.
+- **Conformance checker.** Template-literal URLs, importmaps, additional attributes, color functions, WebSocket schemes, encoding errors -- 6 bypass classes closed and 3 false-positive classes fixed.
+- **Runtime conformance auditor.** Dev-mode module checking border-radius, native controls, and network loads at runtime.
+- **Selector hygiene.** CSS rules scoped, deduplicated, and unified across all stylesheets.
+- **TypeScript declarations.** `index.d.ts` for core barrel.
+- **Top layer and input styling.** Context menu and popover promoted to top layer via `popover=manual`. Number and range input styling added.
+- **Test infrastructure.** Playwright + vitest + axe-core test suite. Zero-network, reduced-motion, responsive, RTL, and accessibility CI. Go embed/Handler tests. Characterization baselines and red-green bug tests.
+
+### Fixes
+
+- **Fix.** Escape multi-close bug: pressing Escape in a Select inside a modal no longer closes both.
+- **Fix.** `copyButton` now awaits clipboard write before showing success state.
+- **Fix.** `icon()` now throws on unknown name instead of silently returning empty string.
+- **Fix.** `registerCtx` throws on duplicate key; `renderMiniMd` renders non-hash links as plain text; `api()` checks `r.ok` and `post()` no longer silently coerces bad JSON; router catches malformed percent-encoding in hash.
+- **Fix.** WCAG AA contrast: `--text-faint`, `--on-accent`, `--border-2` adjusted to pass 4.5:1 / 3:1 in both themes.
+- **Fix.** `prefers-reduced-motion` support: blanket suppression of transitions and animations, scroll-behavior override.
+- **Fix.** RTL layout: switch knob and toast `translateX` flipped for `:dir(rtl)`.
+- **Fix.** `ensureRoot` now applies attributes even if element already exists. Wiki deep-link highlight no longer persists after `refreshCurrent()`.
+- **Fix.** Axe violations: `aria-label` on theme button, `tabindex=0` on scrollable main.
+
 ## 0.3.1
 
 Toast error hook receives the toast opts for per-call metadata.
