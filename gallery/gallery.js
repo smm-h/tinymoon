@@ -1980,6 +1980,8 @@ const DataView = {
     chart.el.dataset.testid = "data-chart";
     chart.el.style.height = "160px";
     this.chart = chart;
+    // Repaint on theme change so the token-read bar colors never go stale.
+    window.addEventListener("tm:theme", () => chart.redraw());
     chp.appendChild(chart.el);
     this.root.appendChild(chp);
 
