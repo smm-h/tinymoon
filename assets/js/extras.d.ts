@@ -43,6 +43,24 @@ export interface SettingsStore<T extends Record<string, unknown>> {
    * Setting `theme` also re-applies it. Requires a `theme` key in the schema.
    */
   set<K extends keyof T>(key: K, value: T[K]): void;
+  /**
+   * Subscribe to a specific setting. Identical contract to
+   * `createStore.subscribe`: `cb(value, previousValue, key)`, skipped when
+   * `Object.is(old, value)`. Additive to the `tm:setting` window event, which
+   * still fires. Returns an unsubscribe. Throws on unknown keys.
+   */
+  subscribe<K extends keyof T>(
+    key: K,
+    cb: (value: T[K], previousValue: T[K], key: K) => void,
+  ): () => void;
+  /**
+   * Subscribe to ANY setting change with `null`:
+   * `cb(value, previousValue, key)`. Returns an unsubscribe.
+   */
+  subscribe(
+    key: null,
+    cb: <K extends keyof T>(value: T[K], previousValue: T[K], key: K) => void,
+  ): () => void;
   /** Mirror the `theme` value onto `<html data-theme>` and dispatch `tm:theme`. */
   applyTheme(): void;
 }
