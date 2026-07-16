@@ -230,9 +230,17 @@ def _is_framework_own(path):
         return False
     try:
         Path(path).resolve().relative_to(root)
-        return True
     except (ValueError, OSError):
         return False
+    # The packaged conformance corpus lives inside the assets tree but is
+    # fixture data, not a framework module: it must NOT receive the
+    # framework-own native-control allowance, so a reimplementation running its
+    # own native-control detector over the corpus sees the same violations the
+    # expectations record.
+    conf_root = _framework_conformance_root()
+    if conf_root is not None and _is_within(path, conf_root):
+        return False
+    return True
 
 
 # The framework ships a portable conformance CORPUS -- fixture data with
