@@ -9,6 +9,7 @@
       "clean.js": [],
       "embed-abuse.html": [],
       "embed-boundary.html": [],
+      "native-hidden.html": [],
       "navigation.html": []
     },
     "violations": {
@@ -158,6 +159,32 @@
           "external-url"
         ]
       ],
+      "native-control-js-types.js": [
+        [
+          8,
+          "native-control"
+        ],
+        [
+          10,
+          "native-control"
+        ],
+        [
+          12,
+          "native-control"
+        ],
+        [
+          13,
+          "native-control"
+        ],
+        [
+          14,
+          "native-control"
+        ],
+        [
+          16,
+          "native-control"
+        ]
+      ],
       "native-control.html": [
         [
           4,
@@ -178,6 +205,10 @@
         [
           8,
           "native-control"
+        ],
+        [
+          9,
+          "native-control"
         ]
       ],
       "native-control.js": [
@@ -195,6 +226,56 @@
         ],
         [
           8,
+          "native-control"
+        ]
+      ],
+      "native-input-types.html": [
+        [
+          4,
+          "native-control"
+        ],
+        [
+          5,
+          "native-control"
+        ],
+        [
+          6,
+          "native-control"
+        ],
+        [
+          7,
+          "native-control"
+        ],
+        [
+          8,
+          "native-control"
+        ],
+        [
+          9,
+          "native-control"
+        ],
+        [
+          10,
+          "native-control"
+        ],
+        [
+          11,
+          "native-control"
+        ],
+        [
+          12,
+          "native-control"
+        ],
+        [
+          13,
+          "native-control"
+        ],
+        [
+          14,
+          "native-control"
+        ],
+        [
+          15,
           "native-control"
         ]
       ],

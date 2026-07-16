@@ -13,11 +13,22 @@
   "banned_input_types": [
     "checkbox",
     "radio",
-    "file"
+    "file",
+    "range",
+    "text",
+    "password",
+    "email",
+    "url",
+    "search",
+    "tel",
+    "number",
+    "time",
+    "date"
   ],
   "banned_native_tags": [
     "dialog",
-    "select"
+    "select",
+    "textarea"
   ],
   "source_exts": [
     ".css",
