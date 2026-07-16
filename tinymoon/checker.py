@@ -173,6 +173,29 @@ _SHA256_RE = re.compile(r"[0-9a-fA-F]{64}")
 
 _BANNED_INPUT_TYPES = ("checkbox", "radio", "file")
 
+# HTML attribute load/navigation semantics -- the single source of truth for
+# which attributes are RESOURCE LOADS (subject to external-url) and on which
+# elements. Consumed by _HTMLScanner._check_tag (the scanner) and mirrored
+# verbatim into the portable rules.json artifact by
+# scripts/gen_conformance_json.py, so the scanner and the artifact can never
+# diverge.
+#
+# `href` is a load on every element EXCEPT the navigation elements below: on
+# <a> and <area> it is a hyperlink the user FOLLOWS (a NAVIGATION), which
+# fetches nothing into the current page and is always legal.
+NAV_HREF_TAGS = ("a", "area")
+# Single-URL load attributes -- a load on ANY element that carries them. `src`
+# fetches bytes; `action`/`formaction` ship user data off-origin on submit
+# (a load-class concern); `poster` fetches a video still.
+SINGLE_URL_LOAD_ATTRS = ("src", "action", "poster", "formaction")
+# Element-scoped load attributes: attr -> the tags on which it is a load.
+ELEMENT_SCOPED_LOAD_ATTRS = {"data": ("object",)}
+# Whitespace-separated URL list attributes (each token is a load).
+SPACE_LIST_LOAD_ATTRS = ("ping",)
+# srcset-style attributes: a comma-separated candidate list; the first token of
+# each candidate is the URL (the rest is a density/width descriptor).
+SRCSET_LOAD_ATTRS = ("srcset",)
+
 # The static marker attribute that roots a tm-embed isolation boundary in HTML
 # source. See the BOUNDARY CONTRACT section of the module docstring.
 TM_EMBED_MARKER = "data-tm-embed"
@@ -210,6 +233,53 @@ def _is_framework_own(path):
         return True
     except (ValueError, OSError):
         return False
+
+
+# The framework ships a portable conformance CORPUS -- fixture data with
+# DELIBERATE rule violations, plus rules.json/expectations.json -- under its own
+# packaged assets at ``<assets>/conformance`` (see
+# scripts/gen_conformance_json.py). That corpus is a self-conformance test
+# payload for reimplementations, NOT identity surface, so scanning the framework
+# assets from above must not fail on the corpus's intentional violations --
+# exactly as tests/fixtures/ is simply never scanned as identity surface. The
+# treatment mirrors the framework-own native-control allowance: keyed on
+# LOCATION (the framework's own packaged assets), never on the directory name,
+# so a consumer's same-named ``conformance/`` directory is scanned normally and
+# can never become a bypass.
+CONFORMANCE_DIRNAME = "conformance"
+
+
+@lru_cache(maxsize=1)
+def _framework_conformance_root():
+    """Resolve tinymoon's OWN packaged conformance corpus directory
+    (``<assets>/conformance``), or None if the assets root cannot be located."""
+    root = _framework_assets_root()
+    if root is None:
+        return None
+    return root / CONFORMANCE_DIRNAME
+
+
+def _is_within(path, base):
+    """True if ``path`` is ``base`` itself or lies inside it (resolved)."""
+    try:
+        Path(path).resolve().relative_to(Path(base).resolve())
+        return True
+    except (ValueError, OSError):
+        return False
+
+
+def _skip_conformance(root):
+    """Whether to skip the framework's own conformance corpus for this scan.
+
+    The corpus is skipped only when the scan ``root`` is ABOVE it (e.g. a
+    self-scan of ``assets``). When the corpus, or a scan root within it, is the
+    EXPLICIT target, it is scanned normally so reimplementations and the sync
+    tests can run the rules over the fixtures. Returns the corpus root to skip,
+    or None."""
+    conf_root = _framework_conformance_root()
+    if conf_root is None or _is_within(root, conf_root):
+        return None
+    return conf_root
 
 
 @dataclass(frozen=True, order=True)
@@ -792,32 +862,37 @@ class _HTMLScanner(HTMLParser):
                 continue
             if lname == "xmlns" or lname.startswith("xmlns:"):
                 continue  # namespace identifiers, not loads
+            if lname == "style":
+                self._scan_inline_style(value, line, local)
+                continue
+            # RESOURCE-LOAD attributes (external-url). The semantics -- which
+            # attributes are loads, on which elements -- come from the shared
+            # constants above so the scanner and the rules.json artifact can
+            # never drift apart.
             if lname == "href":
-                # href on <a>/<area> is a NAVIGATION (a hyperlink the user
-                # follows), not a resource load -- always legal. On any other
-                # element (<link>, SVG <use>, ...) href fetches bytes into the
-                # page and stays a load.
-                if tag not in ("a", "area"):
+                # A NAVIGATION on <a>/<area> (a hyperlink the user follows),
+                # a load on every other element (<link>, SVG <use>, ...).
+                if tag not in NAV_HREF_TAGS:
                     _check_external_url(
                         value, line, self._path, self._allowlist, local
                     )
-            elif lname in ("src", "action", "poster", "formaction"):
-                # src is a load; action/formaction ship user data off-origin
-                # on submit -- treated as a load-class concern.
+            elif lname in SINGLE_URL_LOAD_ATTRS:
                 _check_external_url(
                     value, line, self._path, self._allowlist, local
                 )
-            elif lname == "data" and tag == "object":
+            elif (
+                lname in ELEMENT_SCOPED_LOAD_ATTRS
+                and tag in ELEMENT_SCOPED_LOAD_ATTRS[lname]
+            ):
                 _check_external_url(
                     value, line, self._path, self._allowlist, local
                 )
-            elif lname == "ping":
-                # ping= is space-separated list of URLs
+            elif lname in SPACE_LIST_LOAD_ATTRS:
                 for url in value.split():
                     _check_external_url(
                         url, line, self._path, self._allowlist, local
                     )
-            elif lname == "srcset":
+            elif lname in SRCSET_LOAD_ATTRS:
                 for candidate in value.split(","):
                     candidate = candidate.strip()
                     if not candidate:
@@ -826,8 +901,6 @@ class _HTMLScanner(HTMLParser):
                     _check_external_url(
                         url, line, self._path, self._allowlist, local
                     )
-            elif lname == "style":
-                self._scan_inline_style(value, line, local)
         if tag == "select":
             local.append(
                 Violation(
@@ -955,8 +1028,11 @@ def iter_source_files(root):
     by the ordinary rule scanners.
     """
     root = Path(root)
+    skip_conf = _skip_conformance(root)
     for p in sorted(root.rglob("*")):
         if not p.is_file() or p.suffix.lower() not in SOURCE_EXTS:
+            continue
+        if skip_conf is not None and _is_within(p, skip_conf):
             continue
         rel = p.relative_to(root)
         if any(part in SKIP_DIRS for part in rel.parts[:-1]):
@@ -975,8 +1051,11 @@ def iter_quarantine_dirs(root):
     Quarantine dirs inside skipped trees (node_modules, dist, ...) are ignored.
     """
     root = Path(root)
+    skip_conf = _skip_conformance(root)
     for p in sorted(root.rglob(QUARANTINE_DIRNAME)):
         if not p.is_dir():
+            continue
+        if skip_conf is not None and _is_within(p, skip_conf):
             continue
         rel = p.relative_to(root)
         if any(part in SKIP_DIRS for part in rel.parts[:-1]):
