@@ -1,1 +1,2 @@
 {"id":"18c2d22a39795b7d1d41f4f8cd1f42b4a19b8d2aeded30ef","commits":["30c9f9be864aabb4d8179b13e4d7df521351bf2d"],"user_facing":false}
+{"id":"18c2d32438a294776c94f4c3c0884c7a9c28ac29157f6fdf","commits":["f36a585741b8b3d0f17e1658706366ea5075f716"],"user_facing":true,"description":"**Date/time picker dismissal.** Date and time picker popovers now close cleanly when their toggle button is pressed again, and no longer conflict with an enclosing overlay's dismissal (e.g. a picker inside a drawer closes only itself).","type":"fix"}
