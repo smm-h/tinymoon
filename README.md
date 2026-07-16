@@ -224,7 +224,24 @@ No overhead -- as a number, not a vibe. Shipped CSS, JS, and fonts have hard byt
 `tinymoon check` scans `.html`, `.css`, and `.js` files and enforces the framework's non-negotiables as hard errors:
 
 - **external-url** -- no external resource loads (no `http://`, `https://`, or `//host` URLs fetched into the page from HTML, CSS, or JS; form `action`/`formaction` count as loads). Plain `<a>`/`<area>` hyperlink navigations are legal
-- **native-control** -- no native `<select>`, `<dialog>`, or `<input type=checkbox|radio|file>`; use the framework primitives (`createSelect`, `openModal`, ...). tinymoon's own modules that legitimately wrap these natives (e.g. `openModal` builds on a native `<dialog>`) are exempt via the framework-own allowance, keyed on location so a consumer's `<dialog>` always fires
+- **native-control** -- no native `<select>`, `<dialog>`, `<textarea>`, or `<input>` of a type that has a shipped replacement factory. A bare `<input>` with no `type` also fires (a typeless input defaults to `text`). Every banned control maps to a framework primitive:
+
+  | Banned native | Replacement factory |
+  | --- | --- |
+  | `<input type=text\|password\|email\|url\|search\|tel>` | `createInput` |
+  | `<input>` (typeless -- defaults to text) | `createInput` |
+  | `<input type=number>` | `createNumber` |
+  | `<input type=range>` | `createSlider` |
+  | `<input type=time>` | `createTimePicker` |
+  | `<input type=date>` | `createDatePicker` |
+  | `<input type=checkbox>` | `createCheckbox` |
+  | `<input type=radio>` | `createRadio` |
+  | `<input type=file>` | `createFileInput` |
+  | `<textarea>` | `createTextarea` |
+  | `<select>` | `createSelect` |
+  | `<dialog>` | `openModal` |
+
+  `type="hidden"` stays legal (it renders nothing, so it has no identity surface -- the datepicker/timepicker/combobox carry their value in one). `type="color"` also stays legal for now: there is no replacement factory yet, and a ban may never ship without its replacement (when a color primitive ships, `color` joins the ban). tinymoon's own modules that legitimately create these natives (e.g. `openModal` builds on a native `<dialog>`; `createInput` wraps a visible native `<input>`) are exempt via the framework-own allowance, keyed on location so a consumer's `<dialog>` or bare `<input>` always fires. JS creation is caught for element tags and explicit `type` literals; a bare `el("input")`/`createElement("input")` with no literal type assignment is a known JS bypass (the tree-sitter rewrite closes it)
 - **title-attr** -- no `title=` attributes (use the tooltip primitive)
 - **border-radius** -- no `border-radius` other than `0`/`0px`
 - **raw-color** -- no color literals outside `:root`/`html[data-theme]` token definitions
