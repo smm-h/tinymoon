@@ -11,3 +11,4 @@
 {"id":"18c2b49e79c05a8cab7148a224f4475e8449e1ee9575cb27","commits":["0e1ac57819721b2af8ab5731b39654d3286f4fe1"],"user_facing":true,"description":"**Documentation.** New README and wiki sections cover the `tinymoon/chrome` barrel (async-state blocks, lazyMount, shortcuts, command palette), the toast action button, and the tri-state theme with its no-flash boot snippet.","type":"feature"}
 {"id":"18c2b4de341d35ca81121bf80fcf4519b361631699d2b59b","commits":["01d2bc10ba60574e6cb8f7a2b000ba129b44f724"],"user_facing":false}
 {"id":"18c2b4f724666067ed46a64849ef405fa0eb1086ebe45968","commits":["2920ec57588c7d60d4d641e9cc44337be9237d50"],"user_facing":false}
+{"id":"18c2b57b42d7a98f0f37781bb1414baba1cfb8d0fc1c7503","commits":["ba5a39469ffc75ad24c3a81ea386290037fc8ffa"],"user_facing":false}
