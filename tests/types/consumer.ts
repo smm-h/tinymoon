@@ -67,6 +67,9 @@ import {
 import {
   api,
   post,
+  put,
+  patch,
+  del,
   ApiError,
   setAuthHeader,
   sse,
@@ -141,7 +144,7 @@ ref(
   createAccordion, cssVar, ensureRoot, placeBelow, registerCopyable,
   unregisterCopyable, getCopyData, mountShell, announce, createView, openDrawer,
   createTabPanels, createGrid, iconButton,
-  api, post, ApiError, setAuthHeader, sse, socket,
+  api, post, put, patch, del, ApiError, setAuthHeader, sse, socket,
   fmtTime, relativeTime, liveRelativeTime,
   createSettings, cycleTheme, THEME_BOOT_SNIPPET, renderDocMd, createWikiView,
   loadingBlock, emptyBlock, errorBlock, renderAsync, lazyMount,
@@ -338,6 +341,28 @@ async function fetchThings(): Promise<void> {
   ref(users, created);
 }
 ref(fetchThings);
+
+// put/patch/del mirror post: generic over the response body, an optional
+// pre-throw onError hook, and per-request options.
+async function mutateThings(): Promise<void> {
+  const replaced = await put<{ ok: boolean }>(
+    "/api/users/1",
+    { name: "y" },
+    (msg: string, status: number, path: string) => ref(msg, status, path),
+  );
+  const patched = await patch<{ ok: boolean }>(
+    "/api/users/1",
+    { name: "z" },
+    undefined,
+    { signal: new AbortController().signal },
+  );
+  const removed = await del<{ ok: boolean }>(
+    "/api/users/1",
+    (msg: string, status: number, path: string) => ref(msg, status, path),
+  );
+  ref(replaced, patched, removed);
+}
+ref(mutateThings);
 
 // api/post accept per-request options (signal + headers); ApiError carries the
 // response metadata; setAuthHeader registers a headers getter.

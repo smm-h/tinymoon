@@ -165,6 +165,9 @@ With npm, use bare specifiers by adding an import map:
 
 - `api(path)` -- GET JSON from a same-origin path
 - `post(path, body, onError?)` -- POST JSON to a same-origin path
+- `put(path, body, onError?)` -- PUT JSON to a same-origin path (mirrors `post`)
+- `patch(path, body, onError?)` -- PATCH JSON to a same-origin path (mirrors `post`)
+- `del(path, onError?)` -- DELETE a same-origin path (no body; mirrors `post`'s error handling)
 - `createSettings(opts)` -- localStorage-backed settings store with schema validation (the returned store exposes `.subscribe(key, cb)` like any state store)
 - `cycleTheme(store)` -- cycle a settings store's theme `dark -> light -> system` (the tri-state theme: `applyTheme()` resolves a stored `"system"` to the OS light/dark preference and re-resolves live on OS change, while storing `"system"`)
 - `THEME_BOOT_SNIPPET` -- an exported inline pre-paint script string; drop it into a `<script>` in `<head>` **before** your stylesheets so `<html data-theme>` is set before the first paint (no light/dark flash). It resolves a stored `"system"` value against the OS and assumes the default storage key `"tm-settings"` (replace that one literal if your `storageKey` differs). Touches only `localStorage`/`matchMedia`/`documentElement` -- nothing the conformance scanners flag.
@@ -256,7 +259,7 @@ No overhead -- as a number, not a vibe. Shipped CSS, JS, and fonts have hard byt
   | `<dialog>` | `openModal` |
 
   `type="hidden"` stays legal (it renders nothing, so it has no identity surface -- the datepicker/timepicker/combobox carry their value in one). `type="color"` also stays legal for now: there is no replacement factory yet, and a ban may never ship without its replacement (when a color primitive ships, `color` joins the ban). tinymoon's own modules that legitimately create these natives (e.g. `openModal` builds on a native `<dialog>`; `createInput` wraps a visible native `<input>`) are exempt via the framework-own allowance, keyed on location so a consumer's `<dialog>` or bare `<input>` always fires. JS creation is caught for element tags and explicit `type` literals; a bare `el("input")`/`createElement("input")` with no literal type assignment is a known JS bypass (the tree-sitter rewrite closes it)
-- **title-attr** -- no `title=` attributes (use the tooltip primitive)
+- **title-attr** -- no `title=` attributes (use the tooltip primitive). The JS `.title =` detector is a conservative regex with no flow analysis, so a plain-object field write like `fields.title = x` is a known false positive (an unknown receiver deliberately fires -- better a false positive than a missed tooltip). Write the property with bracket notation -- `fields["title"] = x` -- which the dot-based regex never matches and is always legal, while `element.title = "tip"` on a real DOM node still fires.
 - **border-radius** -- no `border-radius` other than `0`/`0px`
 - **raw-color** -- no color literals outside `:root`/`html[data-theme]` token definitions
 
