@@ -75,9 +75,26 @@ import {
   relativeTime,
   liveRelativeTime,
   createSettings,
+  cycleTheme,
+  THEME_BOOT_SNIPPET,
   renderDocMd,
   createWikiView,
 } from "tinymoon/extras";
+
+// -- chrome barrel ("tinymoon/chrome") ----------------------------------------
+
+import {
+  loadingBlock,
+  emptyBlock,
+  errorBlock,
+  renderAsync,
+  lazyMount,
+  registerShortcut,
+  registerPaletteSource,
+  openPalette,
+  installPalette,
+  score,
+} from "tinymoon/chrome";
 
 // -- state barrel ("tinymoon/state") ------------------------------------------
 
@@ -124,7 +141,9 @@ ref(
   createTabPanels, createGrid, iconButton,
   api, post, ApiError, setAuthHeader, sse, socket,
   fmtTime, relativeTime, liveRelativeTime,
-  createSettings, renderDocMd, createWikiView,
+  createSettings, cycleTheme, THEME_BOOT_SNIPPET, renderDocMd, createWikiView,
+  loadingBlock, emptyBlock, errorBlock, renderAsync, lazyMount,
+  registerShortcut, registerPaletteSource, openPalette, installPalette, score,
   createStore, bindStore, reconcile,
   badge, createStat, renderStats, createTable, createVirtualList, windowRange,
   createTree, createFilterBar, createChips, createLoadMore, createBreadcrumbs,
@@ -375,7 +394,10 @@ const theme: string = settings.get("theme");
 const compact: boolean = settings.get("compact");
 settings.set("theme", "light");
 settings.applyTheme();
-ref(theme, compact);
+// Tri-state theme helpers.
+const nextTheme: string = cycleTheme(settings);
+const bootScript: string = THEME_BOOT_SNIPPET;
+ref(theme, compact, nextTheme, bootScript);
 
 // -- exercise a handful of typed calls (state) --------------------------------
 
@@ -551,3 +573,54 @@ feed.prepend({ line: "first" });
 feed.setItems([{ line: "a" }, { line: "b" }]);
 feed.destroy();
 ref(feed.el);
+
+// -- exercise a handful of typed calls (chrome) -------------------------------
+
+// state blocks: one-shot elements; errorBlock takes an onRetry.
+const loading: HTMLElement = loadingBlock({ label: "Loading…" });
+const empty: HTMLElement = emptyBlock({ title: "Nothing here", sub: "add one" });
+const errBlock: HTMLElement = errorBlock({ message: "Failed", onRetry: () => ref("retry") });
+ref(loading, empty, errBlock);
+
+// renderAsync: generic over the resolved data; onData decides the outcome.
+const asyncHost: HTMLElement = el("div");
+const asyncDone: Promise<{ n: number }[] | undefined> = renderAsync(
+  asyncHost,
+  Promise.resolve([{ n: 1 }]),
+  {
+    loading: { label: "Fetching" },
+    empty: { title: "Empty" },
+    error: { onRetry: () => ref("again") },
+    onData: (rows) => rows.length > 0,
+  },
+);
+ref(asyncDone);
+
+// lazyMount: gated loader over one or many elements; returns cancel().
+const cancelLazy: () => void = lazyMount(
+  [el("img"), el("img")],
+  (node: Element) => Promise.resolve(ref(node)),
+  { rootMargin: "300px", concurrency: 4, root: null },
+);
+cancelLazy();
+
+// registerShortcut: combo + handler + opts; returns unregister.
+const offShortcut: () => void = registerShortcut(
+  "mod+k",
+  (e: KeyboardEvent) => ref(e.key),
+  { global: true, allowInInputs: true },
+);
+offShortcut();
+
+// palette: source registration, ranker, imperative open, opt-in install.
+const offPaletteSource: () => void = registerPaletteSource((query: string) =>
+  [{ label: "Go home", hint: "#/", icon: "home", run: () => ref(query) }],
+);
+const rankScore: number | null = score("apple", "app");
+const paletteHandle = openPalette();
+paletteHandle.close();
+ref(paletteHandle.el);
+const uninstallPalette: () => void = installPalette({ shortcut: "mod+k" });
+uninstallPalette();
+offPaletteSource();
+ref(offShortcut, cancelLazy, rankScore);
