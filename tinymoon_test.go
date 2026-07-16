@@ -12,6 +12,7 @@ import (
 // non-empty. Paths are relative to the assets root exposed by FS().
 var requiredAssets = []string{
 	"css/tokens.css",
+	"tokens.json",
 	"css/base.css",
 	"css/shell.css",
 	"css/primitives.css",
