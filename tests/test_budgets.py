@@ -169,9 +169,11 @@ BUDGETS = [
     # shortcuts, command palette, and the chrome barrel). Ceiling raised ONCE for
     # 6B: measured new baseline 35,035 bytes (was 13,404 across 5 modules);
     # ceiling is new-baseline + 25% rounded clean (44,000) -- ~25% headroom.
+    # Current actual is 35,625 bytes (post-baseline growth, far under the ceiling);
+    # the 44,000 ceiling is unchanged.
     # Core stays frozen -- the 6B modules ship from the "tinymoon/chrome" barrel,
     # not the core index barrel, since core has no headroom for re-export lines.
-    BudgetRow("chrome-js", "js", _CHROME_JS, 44_000, True),  # baseline 35,035
+    BudgetRow("chrome-js", "js", _CHROME_JS, 44_000, True),  # actual 35,625 (ceiling unchanged)
     BudgetRow("dev-js", "js", _DEV_JS, None, False),
     # css: raised ONCE for the Phase 3 form-control additions (number stepper,
     # time picker, combobox, multi-select, accordion). Measured new baseline

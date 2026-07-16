@@ -1033,7 +1033,7 @@ It resolves to the data on success. On rejection it also resolves (to \`undefine
 \`registerShortcut(combo, handler, {allowInInputs?, global?})\` → \`unregister\` binds a shortcut on ONE shared module-level keydown listener.
 
 - **Combo syntax** is \`"mod+k"\` style: \`+\`-joined tokens, the last is the key. \`mod\` resolves to Cmd on Apple platforms and Ctrl elsewhere, so one registration is correct on every OS. For a single-character key the shift state is implied by the character itself (\`"?"\` already means Shift+/), so shift is not part of the signature there.
-- **Overlay suppression** — while a modal overlay (a modal, a modal drawer, or the command palette) is open, ordinary shortcuts are suppressed; only \`{global: true}\` shortcuts fire. That is what lets the palette's own toggle close it while it is open. Transient light-dismiss overlays (popover, menu, select) are Escape-dismissable and do not suppress shortcuts.
+- **Overlay suppression** — while a modal overlay (a modal, a modal drawer, or the command palette) is open, ordinary shortcuts are suppressed; only \`{global: true}\` shortcuts fire. That is what lets the palette's own toggle close it while it is open. Documented limitation: shortcuts are not suppressed while these light-dismiss overlays are open: popover, context menu, select menu, non-modal drawer. They are Escape-dismissable and short-lived, so ordinary shortcuts stay live underneath them.
 - **Text entry** — a bare single-key combo does not fire inside an input/textarea/contenteditable unless \`allowInInputs\` is set; modifier combos always fire.
 - **No silent override** — registering an already-active combo is a hard error; unregister the first before rebinding.
 `,
