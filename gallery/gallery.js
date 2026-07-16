@@ -19,6 +19,11 @@ import {
   createAccordion,
   cssVar,
   mountShell,
+  createView,
+  openDrawer,
+  createTabPanels,
+  createGrid,
+  iconButton,
   registerCopyable,
 } from "../assets/js/index.js";
 
@@ -159,14 +164,10 @@ function panel(title, iconName) {
   return p;
 }
 
-const TokensView = {
-  root: null,
-  built: false,
-
-  build() {
-    if (this.built) return;
-    this.built = true;
-
+// Migrated to createView (dogfood): build/refresh receive ctx {root, setSub}.
+// createView manages `built` and the idempotent build guard for us.
+const TokensView = createView({
+  build(ctx) {
     for (const group of classifyTokens()) {
       const p = panel(group.title, group.icon);
 
@@ -184,7 +185,7 @@ const TokensView = {
           grid.appendChild(sw);
         }
         p.appendChild(grid);
-        this.root.appendChild(p);
+        ctx.root.appendChild(p);
         continue;
       }
 
@@ -211,18 +212,20 @@ const TokensView = {
         }
         p.appendChild(row);
       }
-      this.root.appendChild(p);
+      ctx.root.appendChild(p);
     }
   },
 
   // Values are read live from the computed style, so theme switches show the
-  // real resolved values.
-  refresh() {
-    $$("[data-token]", this.root).forEach((n) => {
-      n.textContent = cssVar(n.dataset.token);
-    });
+  // real resolved values. ctx.setSub writes the topbar subtitle without ever
+  // touching #tm-page-sub directly — but only while this view is on screen (the
+  // theme event fires refresh() even on other routes).
+  refresh(ctx) {
+    const nodes = $$("[data-token]", ctx.root);
+    nodes.forEach((n) => { n.textContent = cssVar(n.dataset.token); });
+    if (!ctx.root.classList.contains("hidden")) ctx.setSub(nodes.length + " tokens");
   },
-};
+});
 window.addEventListener("tm:theme", () => { if (TokensView.built) TokensView.refresh(); });
 
 // ---------- typography view ----------
@@ -234,14 +237,9 @@ function typeSample(label, node) {
   return box;
 }
 
-const TypeView = {
-  root: null,
-  built: false,
-
-  build() {
-    if (this.built) return;
-    this.built = true;
-
+// Migrated to createView (dogfood): a build-only view — no refresh needed.
+const TypeView = createView({
+  build(ctx) {
     const p = panel("Type system", "note");
     p.appendChild(typeSample("h1 — brand font", el("h1", null, "Instrument panel, paper and ink")));
     p.appendChild(typeSample("h2 — brand font", el("h2", null, "Three fonts, one identity")));
@@ -252,7 +250,7 @@ const TypeView = {
     body.appendChild(a);
     p.appendChild(typeSample("body — UI font", body));
     p.appendChild(typeSample("mono — data font", el("div", "mono", "0x2D7FF9 · 44100 Hz · 0:42 · every number is mono")));
-    this.root.appendChild(p);
+    ctx.root.appendChild(p);
 
     const doc = panel("Doc text", "docs");
     const docBody = el("div", "doc-body");
@@ -263,7 +261,7 @@ const TypeView = {
     para.appendChild(document.createTextNode(" gets a bordered chip. Doc sections use this measure for comfortable reading."));
     docBody.appendChild(para);
     doc.appendChild(docBody);
-    this.root.appendChild(doc);
+    ctx.root.appendChild(doc);
 
     const badges = panel("Badges + hashes", "info");
     const row = el("div", "demo-row");
@@ -278,11 +276,9 @@ const TypeView = {
     registerCopyable(hashSpan, () => ({ text: "3f9c1a7e0b2d" }));
     row.appendChild(hashSpan);
     badges.appendChild(row);
-    this.root.appendChild(badges);
+    ctx.root.appendChild(badges);
   },
-
-  refresh() {},
-};
+});
 
 // ---------- widgets view ----------
 
@@ -703,6 +699,51 @@ A route's view is a plain object: \`{root, built, build(), refresh(), setSub?}\`
 - **setSub(sub)** — optional. A deep link \`#/key/a/b\` delivers \`"a/b"\` before \`refresh()\` runs.
 
 Routing to a different view retriggers the 180ms entry animation and resets the content scroll; revisiting the same view does neither.
+
+### createView {#create-view}
+
+Writing the raw contract by hand is repetitive. \`createView({build, refresh?, setSub?})\` returns a conforming view object with \`built\` and the idempotent build guard managed for you. Your \`build(ctx)\` and \`refresh(ctx)\` receive a **ctx** \`{root, setSub(text)}\`:
+
+- **ctx.root** — the view's section element (assigned before the first build; the same node across callbacks).
+- **ctx.setSub(text)** — write the topbar page subtitle (\`#tm-page-sub\`) without ever touching that node directly. The Tokens page uses it to show its live token count.
+
+The factory's own optional \`setSub(sub, ctx)\` is the deep-link handler (the contract's \`setSub\`), distinct from \`ctx.setSub\`. Plain object views still work unchanged — createView is additive sugar over the same contract.
+
+### Eager routes {#eager-routes}
+
+A route marked \`eager: true\` has its root created and \`build()\` run at mount time (hidden), instead of lazily on first visit — useful for a route whose first paint must be instant. Because \`build()\` is idempotent, the router's later build on first visit is a no-op. The **Shell & chrome** route is eager.
+
+### shell.announce {#announce}
+
+\`shell.announce(msg)\` (also the standalone \`announce\` export) pushes a message into the shell's polite \`aria-live\` region — the same one route changes announce through — so app events reach screen readers without minting a new live region.
+`,
+  },
+  {
+    id: "shell-chrome",
+    title: "Shell & chrome primitives",
+    md: `
+Phase 6A adds structural shell-and-chrome primitives, budgeted in their own \`chrome-js\` tier so the frozen core stays frozen (only the barrel re-export lines touch core). See them live on the **Shell & chrome** route.
+
+### openDrawer {#open-drawer}
+
+\`openDrawer({title, body, side?, modal?, onClose?})\` → \`{el, close()}\` opens an edge-anchored overlay on the kernel layer stack. Two variants share one API:
+
+- **modal: false** (default) — a light-dismiss drawer: Escape (via the kernel layer stack) or an outside pointerdown closes it, and the page behind stays interactive (\`role="dialog"\`, \`aria-modal="false"\`).
+- **modal: true** — a native \`<dialog>\` (showModal): focus trap, inert background, and a dimmed backdrop, exactly like \`openModal\`.
+
+Both restore focus to the previously-focused element on close and slide in from \`side\` (\`"right"\` default | \`"left"\`) using motion tokens (reduced-motion safe). The shell's mobile nav drawer reuses the same swipe-to-close gesture: drag it toward its edge past a threshold to dismiss.
+
+### createTabPanels {#create-tabpanels}
+
+\`createTabPanels({label, items: [{value, label, build(panel)}], value?})\` → \`{el, set, value, destroy}\` composes the \`createTabs\` bar with a panel region, completing the APG tabs pattern (\`aria-controls\` ↔ \`aria-labelledby\`, arrow-key navigation). Each panel's \`build(panel)\` runs lazily on first activation and never again; switching **hides** inactive panels rather than destroying them, so scroll position and form state survive.
+
+### createGrid {#create-grid}
+
+\`createGrid({preset, slots?})\` → \`{el, slots, setPreset, destroy}\` is a CSS-first rectangular layout primitive. The four presets — \`1x1\`, \`2x1\`, \`1x2\`, \`2x2\` (columns×rows) — are plain \`.tm-grid[data-preset]\` classes, so a grid can be authored in HTML with no JS. It is a **content** primitive, not a shell mode. No preset switcher is baked in; compose \`createSegmented\` with \`grid.setPreset()\` (as the demo does).
+
+### iconButton {#icon-button}
+
+\`iconButton({icon, tip, onClick, active?})\` → \`{el, setActive, setIcon, destroy}\` is the reusable, stateful topbar icon button. Unlike \`copyButton\`/\`kebabButton\` (one-shot elements), it returns an instance you can toggle (\`setActive\`, mirrored to \`aria-pressed\` and the shared \`.on\` class) and re-icon (\`setIcon\`) at runtime. \`topbarActions\` accepts Nodes, so wire it in by passing \`iconButton(...).el\`.
 `,
   },
   {
@@ -2125,6 +2166,109 @@ const DataView = {
 
 // ---------- mount ----------
 
+// ---------- chrome view (Phase 6A: shell & chrome primitives) ----------
+
+// Built with createView. Demos openDrawer, createTabPanels, createGrid, and
+// iconButton — plus shell.announce via the aria-live route announcer.
+const ChromeView = createView({
+  build(ctx) {
+    // -- iconButton: instance-returning topbar buttons (setActive/setIcon) --
+    const ib = panel("Icon buttons", "faders");
+    const ibRow = el("div", "demo-row");
+    const pin = iconButton({ icon: "bookmark", tip: "Pin (toggle)", active: false });
+    pin.el.addEventListener("click", () => pin.setActive(!pin.el.classList.contains("on")));
+    let playing = false;
+    const play = iconButton({ icon: "wave", tip: "Play/pause (setIcon)" });
+    play.el.addEventListener("click", () => { playing = !playing; play.setIcon(playing ? "check" : "wave"); play.setActive(playing); });
+    ibRow.appendChild(pin.el);
+    ibRow.appendChild(play.el);
+    ib.appendChild(ibRow);
+    ib.appendChild(el("p", "demo-note", "iconButton returns an {el, setActive, setIcon, destroy} instance — the topbar theme toggle above is a plain icon-btn; these are stateful."));
+    ctx.root.appendChild(ib);
+
+    // -- openDrawer: light-dismiss (left) and modal (right) --
+    const dp = panel("Drawers", "compare");
+    const dRow = el("div", "demo-row");
+    const openLight = el("button", "btn", "Open light drawer (left)");
+    openLight.type = "button";
+    openLight.dataset.testid = "open-light-drawer";
+    openLight.addEventListener("click", () => {
+      const body = el("div");
+      body.appendChild(el("p", null, "A non-modal drawer: click outside, press Escape, or use the close button. The page behind stays interactive."));
+      openDrawer({ title: "Filters", body, side: "left", modal: false });
+    });
+    const openModalD = el("button", "btn", "Open dialog drawer (right)");
+    openModalD.type = "button";
+    openModalD.dataset.testid = "open-modal-drawer";
+    openModalD.addEventListener("click", () => {
+      const body = el("div");
+      body.appendChild(el("p", null, "A modal drawer built on a native <dialog>: focus is trapped and the background is inert."));
+      openDrawer({ title: "Details", body, side: "right", modal: true });
+    });
+    dRow.appendChild(openLight);
+    dRow.appendChild(openModalD);
+    dp.appendChild(dRow);
+    ctx.root.appendChild(dp);
+
+    // -- createTabPanels: APG tabs + lazy state-preserving panels --
+    const tp = panel("Tab panels", "docs");
+    const panels = createTabPanels({
+      label: "Chrome demo sections",
+      items: [
+        { value: "overview", label: "Overview", build: (p) => p.appendChild(el("p", null, "Panels build lazily on first activation and are hidden (not destroyed) on switch, so state survives.")) },
+        { value: "form", label: "Form", build: (p) => {
+          const f = createInput({ name: "demo-tab-field", label: "Type here, switch away, come back" });
+          p.appendChild(f.el);
+        } },
+        { value: "count", label: "Counter", build: (p) => {
+          let n = 0;
+          const out = el("p", null, "clicks: 0");
+          const btn = el("button", "btn", "increment");
+          btn.type = "button";
+          btn.addEventListener("click", () => { n++; out.textContent = "clicks: " + n; });
+          p.appendChild(out);
+          p.appendChild(btn);
+        } },
+      ],
+      value: "overview",
+    });
+    tp.appendChild(panels.el);
+    ctx.root.appendChild(tp);
+
+    // -- createGrid: preset layouts + createSegmented switcher composition --
+    const gp = panel("Grid presets", "library");
+    const grid = createGrid({ preset: "2x2" });
+    const paint = () => grid.slots.forEach((s, i) => { s.innerHTML = ""; s.appendChild(el("div", "grid-cell mono", "slot " + (i + 1))); });
+    paint();
+    const switcher = createSegmented({
+      name: "grid-preset",
+      label: "Grid preset",
+      items: [
+        { value: "1x1", label: "1×1" },
+        { value: "2x1", label: "2×1" },
+        { value: "1x2", label: "1×2" },
+        { value: "2x2", label: "2×2" },
+      ],
+      value: "2x2",
+      onChange: (v) => { grid.setPreset(v); paint(); },
+    });
+    gp.appendChild(switcher.el);
+    gp.appendChild(grid.el);
+    gp.appendChild(el("p", "demo-note", "No switcher is baked into createGrid — this composes createSegmented with grid.setPreset(). createGrid is a content layout primitive, not a shell mode."));
+    ctx.root.appendChild(gp);
+
+    // -- shell.announce: push a message into the aria-live route announcer --
+    const ap = panel("Announce", "info");
+    const announceBtn = el("button", "btn", "Announce to screen readers");
+    announceBtn.type = "button";
+    announceBtn.dataset.testid = "announce-btn";
+    announceBtn.addEventListener("click", () => shell.announce("Chrome demo announcement at " + new Date().toLocaleTimeString()));
+    ap.appendChild(announceBtn);
+    ap.appendChild(el("p", "demo-note", "shell.announce(msg) reuses the shell's polite aria-live region — the same one route changes use."));
+    ctx.root.appendChild(ap);
+  },
+});
+
 const themeBtn = el("button", "icon-btn");
 themeBtn.type = "button";
 themeBtn.setAttribute("aria-label", "Toggle theme");
@@ -2137,6 +2281,11 @@ themeBtn.addEventListener("click", () => {
 });
 window.addEventListener("tm:setting", (e) => { if (e.detail.key === "theme") paintThemeBtn(); });
 paintThemeBtn();
+
+// Dogfood iconButton in the real topbar: a stateful "pin" toggle alongside the
+// theme button (topbarActions accepts Nodes, so we pass the instance's .el).
+const pinBtn = iconButton({ icon: "bookmark", tip: "Pin this page (demo toggle)", active: false });
+pinBtn.el.addEventListener("click", () => pinBtn.setActive(!pinBtn.el.classList.contains("on")));
 
 const footerNode = el("footer", "gallery-footer");
 footerNode.appendChild(el("span", null, "footer slot demo — the shell sets --footer-h from footer.height"));
@@ -2171,6 +2320,10 @@ shell = mountShell({
     custom: {
       title: "Custom component", icon: "wave", view: () => CustomView,
       tip: "Custom component -- a consumer-defined view following the contract, indistinguishable from a built-in.",
+    },
+    chrome: {
+      title: "Shell & chrome", icon: "faders", view: () => ChromeView, eager: true,
+      tip: "Shell & chrome -- the Phase 6A structural primitives: openDrawer (light + modal), createTabPanels, createGrid presets, iconButton, and shell.announce. Eager route: built at mount.",
     },
     state: {
       title: "State", icon: "faders", view: () => StateView,
@@ -2218,6 +2371,6 @@ shell = mountShell({
   },
   defaultRoute: "tokens",
   legacyRoutes: { docs: "wiki" },
-  topbarActions: [themeBtn],
+  topbarActions: [pinBtn.el, themeBtn],
   footer: { height: "40px", node: footerNode },
 });
