@@ -36,13 +36,14 @@ import "github.com/smm-h/tinymoon"
 
 ## Quick start
 
-Link the four CSS layers (tokens first) and import the ES modules -- no build step, no bundler:
+Link the CSS layers (tokens first) and import the ES modules -- no build step, no bundler:
 
 ```html
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/base.css">
 <link rel="stylesheet" href="assets/css/shell.css">
 <link rel="stylesheet" href="assets/css/primitives.css">
+<link rel="stylesheet" href="assets/css/widgets.css">
 
 <script type="module">
 import { mountShell, toast } from "./assets/js/index.js";
@@ -72,6 +73,8 @@ const shell = mountShell({
 });
 </script>
 ```
+
+`widgets.css` is the data-display layer -- it styles badges, cards, stats, data tables, and the empty state. Only apps that render those widgets need it; content-first apps and pure-control apps can omit it and link just the first four sheets. When you do link it, keep it fifth, after `primitives.css`.
 
 With npm, use bare specifiers by adding an import map:
 
