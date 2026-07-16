@@ -459,12 +459,17 @@ describe("api-convention: state barrel coverage", () => {
 
 const WIDGETS_COMPONENT_EXPORTS = [
   "createStat", "renderStats", "createTable", "createVirtualList",
+  // Phase 5B completion — all createX(opts) -> {el, ..., destroy} components.
+  "createTree", "createFilterBar", "createChips", "createLoadMore",
+  "createBreadcrumbs", "createSparkline", "createChartContainer", "createFeed",
 ];
 const WIDGETS_NON_COMPONENT_EXPORTS = [
   // badge.js — one-shot element factory (bare <span>, not an instance).
   "badge",
   // virtuallist.js — pure windowing-math utility.
   "windowRange",
+  // sparkline.js — pure geometry utility (like windowRange).
+  "sparklinePoints",
 ];
 
 describe("api-convention: widgets barrel coverage", () => {
@@ -529,5 +534,85 @@ describe("api-convention: widgets barrel coverage", () => {
     const r = windowRange(0, 100, 20, 1000, 3);
     expect(r).toHaveProperty("start");
     expect(r).toHaveProperty("end");
+  });
+
+  it("createTree(opts) conforms to the component convention", async () => {
+    const { createTree } = await import("../../../assets/js/widgets.js");
+    const instance = createTree({ nodes: [{ id: "a", label: "A" }] });
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.setNodes).toBe("function");
+    expect(typeof instance.expand).toBe("function");
+    expect(typeof instance.collapse).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createFilterBar(opts) conforms to the component convention", async () => {
+    const { createFilterBar } = await import("../../../assets/js/widgets.js");
+    const instance = createFilterBar({ slots: [] });
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.setSlots).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createChips(opts) conforms to the component convention", async () => {
+    const { createChips } = await import("../../../assets/js/widgets.js");
+    const instance = createChips({ items: ["a"] });
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.setItems).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createLoadMore(opts) conforms to the component convention", async () => {
+    const { createLoadMore } = await import("../../../assets/js/widgets.js");
+    const instance = createLoadMore({
+      fetchPage: async () => ({ items: [], nextCursor: null }),
+      onItems: () => {},
+    });
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.reset).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createBreadcrumbs(opts) conforms to the component convention", async () => {
+    const { createBreadcrumbs } = await import("../../../assets/js/widgets.js");
+    const instance = createBreadcrumbs({ items: [{ label: "Home" }] });
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.setItems).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createSparkline(opts) conforms to the component convention", async () => {
+    const { createSparkline } = await import("../../../assets/js/widgets.js");
+    const instance = createSparkline({ values: [1, 2, 3] });
+    expect(typeof instance).toBe("object");
+    expect(typeof instance.setData).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("sparklinePoints is a pure function, not a component", async () => {
+    const { sparklinePoints } = await import("../../../assets/js/widgets.js");
+    expect(typeof sparklinePoints).toBe("function");
+    const pts = sparklinePoints([0, 1], 100, 40);
+    expect(Array.isArray(pts)).toBe(true);
+  });
+
+  it("createChartContainer(opts) conforms to the component convention", async () => {
+    const { createChartContainer } = await import("../../../assets/js/widgets.js");
+    const instance = createChartContainer({ label: "Demo", render: () => {} });
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.redraw).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createFeed(opts) conforms to the component convention", async () => {
+    const { createFeed } = await import("../../../assets/js/widgets.js");
+    const instance = createFeed({ renderItem: (x) => document.createTextNode(String(x)) });
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.append).toBe("function");
+    expect(typeof instance.prepend).toBe("function");
+    expect(typeof instance.setItems).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
   });
 });

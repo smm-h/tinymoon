@@ -145,3 +145,251 @@ export function windowRange(
   itemCount: number,
   overscan?: number,
 ): { start: number; end: number };
+
+// -- tree.js ------------------------------------------------------------------
+
+export interface TreeNode {
+  /** Stable key; expand/collapse address nodes by it. */
+  id: string | number;
+  /** The row's text label. */
+  label: string;
+  /** Nested child nodes (synchronous only — no lazy/async loading). */
+  children?: TreeNode[];
+  /** Seed the initial expanded state of a parent node. */
+  open?: boolean;
+}
+
+export interface TreeOptions {
+  /** The recursive node forest (required). */
+  nodes: TreeNode[];
+  /** Optional accessible name for the role="tree" container. */
+  label?: string;
+  /** Called when a treeitem is activated (Enter/Space or a row click). */
+  onSelect?(node: TreeNode): void;
+}
+
+export interface Tree {
+  /** The `<ul role="tree">` element. */
+  el: HTMLElement;
+  /** Rebuild the tree from a new node forest. */
+  setNodes(nodes: TreeNode[]): void;
+  /** Expand a node by id, or by a path (array of ids from the root). */
+  expand(idOrPath: string | number | Array<string | number>): void;
+  /** Collapse a node by id, or by a path (array of ids from the root). */
+  collapse(idOrPath: string | number | Array<string | number>): void;
+  /** Remove listeners and detach the tree. */
+  destroy(): void;
+}
+
+/** Create a keyboard-navigable APG TreeView. */
+export function createTree(opts: TreeOptions): Tree;
+
+// -- filterbar.js -------------------------------------------------------------
+
+/** A filter-bar slot: a DOM node or a component instance carrying an `.el`. */
+export type FilterSlot = Node | { el: Node };
+
+export interface FilterBarOptions {
+  /** The controls to lay out (existing tabs/segmented/combobox/etc.). */
+  slots?: FilterSlot[];
+  /** Optional accessible name for the group. */
+  label?: string;
+}
+
+export interface FilterBar {
+  /** The `.tm-filterbar` strip element. */
+  el: HTMLElement;
+  /** Replace the laid-out controls. */
+  setSlots(slots: FilterSlot[]): void;
+  /** Detach the bar. */
+  destroy(): void;
+}
+
+/** Create a layout-only filter strip (owns no filter state — that is app state). */
+export function createFilterBar(opts?: FilterBarOptions): FilterBar;
+
+/** A chip item: a plain string, a `{ label }`, or a `{ key, value }` pair. */
+export type ChipItem = string | { label: string } | { key: string; value: string };
+
+export interface ChipsOptions {
+  /** Initial chip items. */
+  items?: ChipItem[];
+  /** Called when a chip's × is activated. The caller updates state + setItems. */
+  onRemove?(item: ChipItem, index: number): void;
+  /** Called when Clear-all is activated (shown only when >1 chip). */
+  onClearAll?(): void;
+}
+
+export interface Chips {
+  /** The `.tm-chips` strip element. */
+  el: HTMLElement;
+  /** Replace the chips from a new items array. */
+  setItems(items: ChipItem[]): void;
+  /** Detach the strip. */
+  destroy(): void;
+}
+
+/** Create presentation-only removable chips over caller state. */
+export function createChips(opts?: ChipsOptions): Chips;
+
+// -- paginate.js --------------------------------------------------------------
+
+export interface Page<Item = unknown> {
+  /** This page's items. */
+  items: Item[];
+  /** The cursor for the next page, or null at the end. */
+  nextCursor: unknown;
+}
+
+export interface LoadMoreOptions<Item = unknown> {
+  /** Fetch a page for the given cursor (null on the first page). */
+  fetchPage(cursor: unknown, pageSize?: number): Promise<Page<Item>>;
+  /** Receives each page's items in order. */
+  onItems(items: Item[]): void;
+  /** Optional page-size hint forwarded to fetchPage. */
+  pageSize?: number;
+}
+
+export interface LoadMore {
+  /** The `.tm-loadmore` control element. */
+  el: HTMLElement;
+  /** Return to the first-page state (does not fetch). */
+  reset(): void;
+  /** Remove listeners and detach the control. */
+  destroy(): void;
+}
+
+/** Create a transport-agnostic "Load more" control. */
+export function createLoadMore<Item = unknown>(opts: LoadMoreOptions<Item>): LoadMore;
+
+// -- breadcrumbs.js -----------------------------------------------------------
+
+export interface Crumb {
+  /** The crumb's label. */
+  label: string;
+  /** Optional href; present → rendered as a link. */
+  href?: string;
+}
+
+export interface BreadcrumbsOptions {
+  /** The trail (required). The last item is the current page. */
+  items: Crumb[];
+  /** Called when a crumb is activated (never preventDefaults). */
+  onNavigate?(item: Crumb, index: number): void;
+}
+
+export interface Breadcrumbs {
+  /** The `<nav aria-label="Breadcrumb">` element. */
+  el: HTMLElement;
+  /** Replace the trail. */
+  setItems(items: Crumb[]): void;
+  /** Detach the nav. */
+  destroy(): void;
+}
+
+/** Create a router-agnostic breadcrumb trail with middle-ellipsis collapse. */
+export function createBreadcrumbs(opts: BreadcrumbsOptions): Breadcrumbs;
+
+// -- sparkline.js -------------------------------------------------------------
+
+export interface SparklineOptions {
+  /** The data series. */
+  values?: number[];
+  /** SVG viewBox width in user units (default 120). */
+  width?: number;
+  /** SVG viewBox height in user units (default 32). */
+  height?: number;
+  /** Add a filled area under the line. */
+  area?: boolean;
+  /** Accessible label; present → role="img", absent → aria-hidden. */
+  label?: string;
+}
+
+export interface Sparkline {
+  /** The inline `<svg>` element. */
+  el: SVGElement;
+  /** Repaint from a new series. */
+  setData(values: number[]): void;
+  /** Detach the SVG. */
+  destroy(): void;
+}
+
+/** Create a tiny inline-SVG trend line (all colors from tokens via CSS). */
+export function createSparkline(opts?: SparklineOptions): Sparkline;
+
+/** Pure geometry: map a series to evenly-spaced {x, y} points in the viewBox. */
+export function sparklinePoints(
+  values: number[],
+  width: number,
+  height: number,
+): Array<{ x: number; y: number }>;
+
+// -- chart.js -----------------------------------------------------------------
+
+export interface ChartMargin {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export interface ChartContext {
+  /** The element to draw into. */
+  root: HTMLElement;
+  /** Current content-box width. */
+  width: number;
+  /** Current content-box height. */
+  height: number;
+  /** Margin read from the --chart-margin-* tokens on the container. */
+  margin: ChartMargin;
+  /** Read a token resolved against the container. */
+  cssVar(name: string): string;
+}
+
+export interface ChartContainerOptions {
+  /** Full draw callback; runs on first paint and on redraw(). */
+  render(ctx: ChartContext): void;
+  /** Lighter resize-path callback; falls back to render when absent. */
+  update?(ctx: ChartContext): void;
+  /** Accessible name (required). */
+  label: string;
+}
+
+export interface ChartContainer {
+  /** The `.tm-chart` container element. */
+  el: HTMLElement;
+  /** Force a full render immediately. */
+  redraw(): void;
+  /** Disconnect the observer and detach the container. */
+  destroy(): void;
+}
+
+/** Create a renderer-agnostic chart lifecycle (ships no charting). */
+export function createChartContainer(opts: ChartContainerOptions): ChartContainer;
+
+// -- feed.js ------------------------------------------------------------------
+
+export interface FeedOptions<Item = unknown> {
+  /** Build a row node for an item (set data-level to color by severity). */
+  renderItem(item: Item): Node;
+  /** Buffer cap; overflow prunes from the far end (default 200). */
+  cap?: number;
+  /** Called with pruned items when the cap overflows. */
+  onPrune?(items: Item[]): void;
+}
+
+export interface Feed<Item = unknown> {
+  /** The scrolling `.tm-feed` container. */
+  el: HTMLElement;
+  /** Append an item to the bottom (autoscrolls when stuck to bottom). */
+  append(item: Item): void;
+  /** Prepend an item to the top. */
+  prepend(item: Item): void;
+  /** Replace the buffer wholesale (keeps the last `cap` items). */
+  setItems(items: Item[]): void;
+  /** Remove listeners and detach the feed. */
+  destroy(): void;
+}
+
+/** Create a presentation-only live feed / log viewer (no transport coupling). */
+export function createFeed<Item = unknown>(opts: FeedOptions<Item>): Feed<Item>;

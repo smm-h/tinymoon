@@ -90,6 +90,15 @@ import {
   createTable,
   createVirtualList,
   windowRange,
+  createTree,
+  createFilterBar,
+  createChips,
+  createLoadMore,
+  createBreadcrumbs,
+  createSparkline,
+  sparklinePoints,
+  createChartContainer,
+  createFeed,
 } from "tinymoon/widgets";
 
 // Reference every import so the fixture is a genuine consumer. `unknownRef`
@@ -111,6 +120,8 @@ ref(
   createSettings, renderDocMd, createWikiView,
   createStore, bindStore, reconcile,
   badge, createStat, renderStats, createTable, createVirtualList, windowRange,
+  createTree, createFilterBar, createChips, createLoadMore, createBreadcrumbs,
+  createSparkline, sparklinePoints, createChartContainer, createFeed,
 );
 
 // -- exercise a handful of typed calls (core) ---------------------------------
@@ -396,3 +407,82 @@ vlist.scrollToIndex(0);
 vlist.destroy();
 const range: { start: number; end: number } = windowRange(0, 200, 28, 1000, 4);
 ref(vlist.el, range.start, range.end);
+
+// createTree: recursive nodes, expand/collapse by id or path, onSelect(node).
+const tree = createTree({
+  label: "Files",
+  nodes: [
+    { id: "src", label: "src", open: true, children: [{ id: "app", label: "app.js" }] },
+    { id: "docs", label: "docs" },
+  ],
+  onSelect: (node) => ref(node.id, node.label),
+});
+tree.expand("src");
+tree.expand(["src", "app"]);
+tree.collapse("src");
+tree.setNodes([{ id: "x", label: "X" }]);
+tree.destroy();
+ref(tree.el);
+
+// createFilterBar: layout-only; slots are nodes or instances with `.el`.
+const filterBar = createFilterBar({ slots: [el("div"), { el: el("span") }] });
+filterBar.setSlots([el("div")]);
+filterBar.destroy();
+
+// createChips: string / {label} / {key,value} items, remove + clear-all hooks.
+const chips = createChips({
+  items: ["draft", { label: "open" }, { key: "owner", value: "me" }],
+  onRemove: (item, index) => ref(item, index),
+  onClearAll: () => {},
+});
+chips.setItems(["a", "b"]);
+chips.destroy();
+ref(filterBar.el, chips.el);
+
+// createLoadMore: transport-agnostic; fetchPage returns {items, nextCursor}.
+const loadMore = createLoadMore<{ id: number }>({
+  pageSize: 20,
+  fetchPage: async (cursor) => ({ items: [{ id: 1 }], nextCursor: cursor == null ? "c2" : null }),
+  onItems: (items) => ref(items.length),
+});
+loadMore.reset();
+loadMore.destroy();
+ref(loadMore.el);
+
+// createBreadcrumbs: {label, href?} trail, onNavigate.
+const crumbs = createBreadcrumbs({
+  items: [{ label: "Home", href: "#/" }, { label: "Reports", href: "#/reports" }, { label: "Q3" }],
+  onNavigate: (item, index) => ref(item.label, index),
+});
+crumbs.setItems([{ label: "Home", href: "#/" }]);
+crumbs.destroy();
+ref(crumbs.el);
+
+// createSparkline: inline SVG; setData; sparklinePoints is pure geometry.
+const spark = createSparkline({ values: [1, 3, 2, 5], area: true, label: "trend" });
+spark.setData([2, 4, 6]);
+const spts: Array<{ x: number; y: number }> = sparklinePoints([1, 2, 3], 100, 40);
+spark.destroy();
+ref(spark.el, spts[0]?.x);
+
+// createChartContainer: renderer-agnostic; ctx carries root/size/margin/cssVar.
+const chart = createChartContainer({
+  label: "Load over time",
+  render: (ctx) => ref(ctx.root, ctx.width, ctx.height, ctx.margin.left, ctx.cssVar("--accent")),
+  update: (ctx) => ref(ctx.width),
+});
+chart.redraw();
+chart.destroy();
+ref(chart.el);
+
+// createFeed: presentation-only; append/prepend/setItems, cap + onPrune.
+const feed = createFeed<{ line: string }>({
+  cap: 100,
+  renderItem: (item) => el("div", "row", item.line),
+  onPrune: (items) => ref(items.length),
+});
+feed.append({ line: "hello" });
+feed.prepend({ line: "first" });
+feed.setItems([{ line: "a" }, { line: "b" }]);
+feed.destroy();
+ref(feed.el);
