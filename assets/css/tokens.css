@@ -137,7 +137,7 @@ html[data-theme="light"] {
   --text-dim: #565b66;
   --text-faint: #636b7a;
   --accent: #2d6cf4;
-  --accent-hi: #1f6ce0;
+  --accent-hi: #0a4bb0;
   --accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
   --accent-glow: color-mix(in srgb, var(--accent) 22%, transparent);
   --on-accent: #ffffff;

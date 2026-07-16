@@ -128,7 +128,20 @@ UI_PAIRS = [
     ("border-2", "input-bg", 3.0),
 ]
 
-ALL_PAIRS = TEXT_PAIRS + UI_PAIRS
+# Accent differentiation pairs: --accent-hi is a second accent shade rendered
+# adjacent to (and sometimes over) the solid --accent -- links, active/highlight
+# states. This is not a WCAG legibility pair (neither shade is body text on the
+# other); it is a differentiation floor that keeps the two shades tellable apart.
+# The dark theme achieves ~1.69:1 here and reads as clearly distinct, so a 1.5:1
+# floor locks that invariant in both themes. It also forbids the light-theme
+# collision from recurring: after --accent was darkened to #2d6cf4, the light
+# --accent-hi sat at ~1.03:1 against --accent (illegible highlight-on-accent);
+# this floor makes that regression a hard test failure.
+DIFFERENTIATION_PAIRS = [
+    ("accent-hi", "accent", 1.5),
+]
+
+ALL_PAIRS = TEXT_PAIRS + UI_PAIRS + DIFFERENTIATION_PAIRS
 
 
 # ---------------------------------------------------------------------------
