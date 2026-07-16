@@ -4,19 +4,22 @@
     "pypi",
     "go"
   ],
-  "private": false,
+  "publish_mode": "ci",
   "pipelines": {
     "npm": {
       "type": "npm",
+      "target": "npm",
       "local": false,
       "provenance": true
     },
     "pypi": {
       "type": "pypi",
+      "target": "pypi",
       "local": false
     },
     "go": {
       "type": "go",
+      "target": "go",
       "local": false
     }
   }
