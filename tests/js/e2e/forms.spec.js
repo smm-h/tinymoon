@@ -132,8 +132,9 @@ test.describe("Forms view", () => {
 
     // Open the select by clicking the combobox button
     await view.locator("button[role='combobox']").click();
-    // Click "EU West" option
-    await view.locator("[role='option']").nth(2).click();
+    // Click "EU West" option. Scoped to the select's own listbox: the Forms
+    // view now also hosts combobox/multi-select/time-picker options.
+    await view.locator(".sel-menu [role='option']").nth(2).click();
 
     // Submit the form
     await view.locator("button[type='submit']").click();
