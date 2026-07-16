@@ -68,19 +68,24 @@ export async function api(path, opts) {
   return r.json();
 }
 
-// post(path, body, onError?, {signal?, headers?}) → parsed JSON body of a JSON
-// POST. On a non-OK response it throws an ApiError; when onError(msg, status,
-// path) is given it is called with the error's message BEFORE the throw, so
-// callers can surface the failure (e.g. a toast) without wrapping every call
-// site in try/catch. `signal` aborts; `headers` merge over the auth-hook
-// headers and the Content-Type. Absolute URLs pass through mechanically (see
-// api()).
-export async function post(path, body, onError, opts) {
+// Shared implementation for the JSON mutation verbs. `hasBody` distinguishes
+// the body-carrying writes (POST/PUT/PATCH) from bodyless DELETE: only a
+// body-carrying request sets Content-Type and serializes `body`. On a non-OK
+// response it throws an ApiError; when onError(msg, status, path) is given it is
+// called with the error's message BEFORE the throw, so callers can surface the
+// failure (e.g. a toast) without wrapping every call site in try/catch. `signal`
+// aborts; `headers` merge over the auth-hook headers (and the Content-Type).
+// Absolute URLs pass through mechanically (see api()).
+async function send(method, path, body, onError, opts, hasBody) {
   const { signal, headers } = opts || {};
   const r = await fetch(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders(), ...(headers || {}) },
-    body: JSON.stringify(body),
+    method,
+    headers: {
+      ...(hasBody ? { "Content-Type": "application/json" } : {}),
+      ...authHeaders(),
+      ...(headers || {}),
+    },
+    ...(hasBody ? { body: JSON.stringify(body) } : {}),
     signal,
   });
   if (!r.ok) {
@@ -89,4 +94,22 @@ export async function post(path, body, onError, opts) {
     throw err;
   }
   return r.json();
+}
+
+// post/put/patch(path, body, onError?, {signal?, headers?}) → parsed JSON body
+// of a JSON write with the matching HTTP method. del(path, onError?, opts?)
+// mirrors them but sends no request body (DELETE). All four share send()'s
+// semantics exactly: ApiError on non-OK, the pre-throw onError hook, the auth
+// header hook, merged headers, and the abort signal.
+export function post(path, body, onError, opts) {
+  return send("POST", path, body, onError, opts, true);
+}
+export function put(path, body, onError, opts) {
+  return send("PUT", path, body, onError, opts, true);
+}
+export function patch(path, body, onError, opts) {
+  return send("PATCH", path, body, onError, opts, true);
+}
+export function del(path, onError, opts) {
+  return send("DELETE", path, undefined, onError, opts, false);
 }

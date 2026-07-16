@@ -429,7 +429,7 @@ describe("api-convention: legacy inventory", () => {
 
 const EXTRAS_EXPORTS = [
   // net.js — fetch wrappers + error type + auth hook
-  "api", "post", "ApiError", "setAuthHeader",
+  "api", "post", "put", "patch", "del", "ApiError", "setAuthHeader",
   // realtime.js — SSE + WebSocket wrappers
   "sse", "socket",
   // format.js — media-duration + relative-time helpers

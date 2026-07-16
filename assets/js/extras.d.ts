@@ -21,7 +21,7 @@ export class ApiError extends Error {
   constructor(status: number, statusText: string, path: string, detail?: string);
 }
 
-/** Per-request options common to {@link api} and {@link post}. */
+/** Per-request options common to {@link api}, {@link post}, {@link put}, {@link patch}, and {@link del}. */
 export interface RequestOpts {
   /** An `AbortSignal` to cancel the request. */
   signal?: AbortSignal;
@@ -46,6 +46,39 @@ export function api<T = unknown>(path: string, opts?: RequestOpts): Promise<T>;
 export function post<T = unknown>(
   path: string,
   body: unknown,
+  onError?: (msg: string, status: number, path: string) => void,
+  opts?: RequestOpts,
+): Promise<T>;
+
+/**
+ * PUT `body` as JSON to `path` and return the parsed JSON response. Mirrors
+ * {@link post} exactly (ApiError on non-OK, the pre-throw `onError` hook, the
+ * auth-header hook, merged headers, and the abort signal), with the PUT method.
+ */
+export function put<T = unknown>(
+  path: string,
+  body: unknown,
+  onError?: (msg: string, status: number, path: string) => void,
+  opts?: RequestOpts,
+): Promise<T>;
+
+/**
+ * PATCH `body` as JSON to `path` and return the parsed JSON response. Mirrors
+ * {@link post} exactly, with the PATCH method.
+ */
+export function patch<T = unknown>(
+  path: string,
+  body: unknown,
+  onError?: (msg: string, status: number, path: string) => void,
+  opts?: RequestOpts,
+): Promise<T>;
+
+/**
+ * DELETE `path` and return the parsed JSON response. Mirrors {@link post}'s
+ * error handling and options, but sends no request body (and no Content-Type).
+ */
+export function del<T = unknown>(
+  path: string,
   onError?: (msg: string, status: number, path: string) => void,
   opts?: RequestOpts,
 ): Promise<T>;

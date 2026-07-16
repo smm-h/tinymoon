@@ -22,7 +22,7 @@ function fakeResponse({ ok = true, status = 200, statusText = "OK", body = {} } 
 }
 
 describe("net", () => {
-  let api, post, ApiError, setAuthHeader, fetchMock;
+  let api, post, put, patch, del, ApiError, setAuthHeader, fetchMock;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -31,6 +31,9 @@ describe("net", () => {
     const mod = await import("../../../assets/js/net.js");
     api = mod.api;
     post = mod.post;
+    put = mod.put;
+    patch = mod.patch;
+    del = mod.del;
     ApiError = mod.ApiError;
     setAuthHeader = mod.setAuthHeader;
   });
@@ -119,6 +122,59 @@ describe("net", () => {
     expect(seen).toEqual([["Nope", 422, "/x"]]);
     expect(err).toBeInstanceOf(ApiError);
     expect(err.detail).toBe("Nope");
+  });
+
+  // -- put / patch / del mirror post() --
+
+  it("put() and patch() send JSON with the matching method and return the body", async () => {
+    for (const [fn, method] of [[put, "PUT"], [patch, "PATCH"]]) {
+      fetchMock.mockResolvedValue(fakeResponse({ body: { ok: true } }));
+      const out = await fn("/echo", { a: 1 });
+      expect(out).toEqual({ ok: true });
+      const [, init] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+      expect(init.method).toBe(method);
+      expect(init.body).toBe(JSON.stringify({ a: 1 }));
+      expect(init.headers["Content-Type"]).toBe("application/json");
+    }
+  });
+
+  it("del() sends DELETE with no body and no Content-Type", async () => {
+    fetchMock.mockResolvedValue(fakeResponse({ body: { gone: true } }));
+    const out = await del("/thing/1");
+    expect(out).toEqual({ gone: true });
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.method).toBe("DELETE");
+    expect(init.body).toBeUndefined();
+    expect(init.headers["Content-Type"]).toBeUndefined();
+  });
+
+  it("put/patch/del call onError(msg, status, path) BEFORE throwing, like post()", async () => {
+    for (const fn of [put, patch]) {
+      fetchMock.mockResolvedValue(
+        fakeResponse({ ok: false, status: 422, statusText: "Unprocessable", body: { error: "Nope" } }),
+      );
+      const seen = [];
+      const err = await fn("/x", { a: 1 }, (msg, status, path) => seen.push([msg, status, path])).catch((e) => e);
+      expect(seen).toEqual([["Nope", 422, "/x"]]);
+      expect(err).toBeInstanceOf(ApiError);
+    }
+    fetchMock.mockResolvedValue(
+      fakeResponse({ ok: false, status: 404, statusText: "Not Found", body: { detail: "Missing" } }),
+    );
+    const seen = [];
+    const err = await del("/x", (msg, status, path) => seen.push([msg, status, path])).catch((e) => e);
+    expect(seen).toEqual([["Missing", 404, "/x"]]);
+    expect(err).toBeInstanceOf(ApiError);
+  });
+
+  it("del() passes an AbortSignal and merges auth-hook headers", async () => {
+    fetchMock.mockResolvedValue(fakeResponse({ body: {} }));
+    setAuthHeader(() => ({ Authorization: "Bearer tok" }));
+    const ctrl = new AbortController();
+    await del("/thing/1", undefined, { signal: ctrl.signal });
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.signal).toBe(ctrl.signal);
+    expect(init.headers.Authorization).toBe("Bearer tok");
   });
 
   // -- abort signal passthrough --
