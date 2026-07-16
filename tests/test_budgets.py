@@ -35,7 +35,7 @@ REPO = Path(__file__).resolve().parent.parent
 #   Core:    93,984 bytes (15 modules)  -- ceiling 118,000
 #   Extras:  25,115 bytes (6 modules)   -- ceiling 32,000
 #   State:   10,281 bytes (2 modules)   -- ceiling 13,000
-#   Widgets: 55,776 bytes (12 modules)  -- ceiling 70,000
+#   Widgets: 56,565 bytes (12 modules)  -- ceiling 70,000
 #
 # Each row is a BudgetRow:
 #   name     -- human-readable tier/sheet name; names the test parameter
@@ -93,8 +93,8 @@ _STATE_JS = frozenset({
 # presentation-only live feed. All exported from the separate "tinymoon/widgets"
 # barrel (and per-module subpaths), never the core barrel, so they budget in
 # their own tier. Ceiling raised ONCE for the Phase 5B data-display completion:
-# measured new baseline 55,776 bytes (was 19,783); ceiling is new-baseline + 25%
-# rounded clean (70,000).
+# measured new baseline 56,565 bytes (was 19,783); ceiling is +25% of the
+# initial 55,776 measurement, rounded clean (70,000) -- ~24% headroom retained.
 _WIDGETS_JS = frozenset({
     "badge.js", "stats.js", "table.js", "virtuallist.js", "widgets.js",
     "tree.js", "filterbar.js", "paginate.js", "breadcrumbs.js",
@@ -119,8 +119,8 @@ _CSS_SHEETS = frozenset({
 # and the Phase 5B additions (tree, filter bar + chips, load-more, breadcrumbs,
 # sparkline, chart container, live feed). Optional fifth sheet -- linked after
 # primitives.css only by apps that render these widgets. Ceiling raised again
-# for the Phase 5B data-display completion. Measured new baseline 17,740 bytes
-# (was 9,893); ceiling is new-baseline + 25% rounded clean (23,000).
+# for the Phase 5B data-display completion. Measured new baseline 18,059 bytes
+# (was 9,893); ceiling is +25% clean of the 17,740 measurement (23,000).
 _WIDGETS_CSS = frozenset({"widgets.css"})
 
 BUDGETS = [
@@ -141,16 +141,16 @@ BUDGETS = [
     BudgetRow("state-js", "js", _STATE_JS, 13_000, True),  # baseline 10,281
     # widgets-js: Phase 5A + 5B data-display widgets. Raised ONCE for the
     # Phase 5B completion (tree, filterbar+chips, load-more, breadcrumbs,
-    # sparkline, chart container, feed). Measured new baseline 55,776 bytes;
-    # ceiling is new-baseline + 25% rounded clean. Its own tier -- core stays
-    # frozen.
-    BudgetRow("widgets-js", "js", _WIDGETS_JS, 70_000, True),  # baseline 55,776
+    # sparkline, chart container, feed). Measured new baseline 56,565 bytes;
+    # ceiling is +25% clean of the initial 55,776 measurement. Its own tier --
+    # core stays frozen.
+    BudgetRow("widgets-js", "js", _WIDGETS_JS, 70_000, True),  # baseline 56,565
     BudgetRow("dev-js", "js", _DEV_JS, None, False),
     # css: raised ONCE for the Phase 3 form-control additions (number stepper,
     # time picker, combobox, multi-select, accordion). Measured new baseline
     # 62,999 bytes (was 54,407); ceiling is new-baseline + 25% rounded clean.
     BudgetRow("css", "css", _CSS_SHEETS, 79_000, True),  # baseline 62,999
-    BudgetRow("widgets-css", "css", _WIDGETS_CSS, 23_000, True),  # baseline 17,740
+    BudgetRow("widgets-css", "css", _WIDGETS_CSS, 23_000, True),  # baseline 18,059
     BudgetRow("fonts", "font", "fonts/*.woff2", 122_000, True),
 ]
 
