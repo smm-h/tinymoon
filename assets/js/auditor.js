@@ -3,8 +3,12 @@
 // Import this module during development to activate runtime checks that
 // mirror the static charter rules:
 //   - border-radius must be 0 everywhere
-//   - no native browser controls (select, checkbox, radio, file, dialog)
-//     outside the framework's hidden-input pattern
+//   - no native browser controls: <select>, <dialog>, <textarea>, and
+//     <input> of any banned type (checkbox, radio, file, range, text,
+//     password, email, url, search, tel, number, time, date; a typeless
+//     input defaults to text) outside the framework's own wrapper classes.
+//     type="hidden" and type="color" are allowed (no identity surface / no
+//     replacement factory yet).
 //   - no external network loads
 //
 // NOT shipped in the core or extras barrel. Consumers import it directly:
@@ -38,10 +42,16 @@ const FRAMEWORK_WRAPPERS = new Set([
   "tm-radio",
   "tm-file",
   "seg",           // createSegmented wraps hidden radios in a .seg
-  "tm-datepicker", // datepicker wraps a hidden text input
+  "tm-datepicker", // createDatePicker wraps a visible text input + hidden input
+  "tm-timepicker", // createTimePicker wraps a visible text input + hidden input
+  "tm-combobox",   // createComboBox wraps a visible text input + hidden input
   "sel",           // createSelect wraps a hidden input for form participation
-  "tm-slider",     // createSlider wraps a native range (future-proofing)
-  "tm-multiselect", // createMultiSelect wraps a hidden <select multiple>
+  "tm-slider",     // createSlider wraps a native <input type=range>
+  "tm-multiselect", // createMultiSelect wraps a text input + hidden <select multiple>
+  "tm-palette",    // openPalette's dialog wraps a visible text search input
+  // createInput/createNumber/createTextarea wrap their visible native
+  // <input>/<input type=number>/<textarea> in a bare .field column.
+  "field",
 ]);
 
 function isInsideFrameworkWrapper(node) {
@@ -57,9 +67,16 @@ function isInsideFrameworkWrapper(node) {
   return false;
 }
 
-// Tags and input types that are banned in consumer code.
-const BANNED_TAGS = new Set(["SELECT", "DIALOG"]);
-const BANNED_INPUT_TYPES = new Set(["checkbox", "radio", "file"]);
+// Tags and input types that are banned in consumer code. Mirrors the static
+// checker's native-control ban (see checker._BANNED_INPUT_TYPES and its native
+// tag alternation). "hidden" (no identity surface) and "color" (no replacement
+// factory yet) are deliberately NOT banned. A typeless <input> defaults to
+// "text" (see checkNode), so it fires too unless inside a framework wrapper.
+const BANNED_TAGS = new Set(["SELECT", "DIALOG", "TEXTAREA"]);
+const BANNED_INPUT_TYPES = new Set([
+  "checkbox", "radio", "file", "range", "text", "password", "email", "url",
+  "search", "tel", "number", "time", "date",
+]);
 
 // tm-embed allowance (runtime mirror of the checker's boundary waiver).
 //
