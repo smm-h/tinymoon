@@ -686,6 +686,14 @@ dialog.tm-drawer::backdrop { background: var(--backdrop); backdrop-filter: blur(
   box-shadow: 0 0 12px var(--accent-glow);
 }
 
+/* createTabPanels: the tab bar composed with a panel region. */
+.tm-tabpanels { display: flex; flex-direction: column; gap: var(--space-14); }
+.tm-tabpanel { padding: var(--space-4) 0; }
+.tm-tabpanel:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ---------- checkbox ---------- */
 
 .tm-checkbox {

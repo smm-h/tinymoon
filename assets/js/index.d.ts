@@ -135,6 +135,30 @@ export interface TabsInstance {
 }
 export function createTabs(opts: TabsOpts): TabsInstance;
 
+// -- tabpanels.js -------------------------------------------------------------
+
+export interface TabPanelItem {
+  value: string;
+  label: string;
+  icon?: string;
+  /** Build the panel body once, on first activation (lazy + idempotent). */
+  build?(panel: HTMLElement): void;
+}
+export interface TabPanelsOpts {
+  label: string;
+  items: TabPanelItem[];
+  value?: string;
+}
+export interface TabPanelsInstance {
+  el: HTMLElement;
+  set(value: string): void;
+  readonly value: string;
+  destroy(): void;
+}
+/** Tab bar (createTabs) composed with an APG-wired panel region: lazy per-panel
+ * build, state-preserving hide on switch. */
+export function createTabPanels(opts: TabPanelsOpts): TabPanelsInstance;
+
 /** Copy-to-clipboard icon button. */
 export function copyButton(getText: () => string, tipText?: string): HTMLElement;
 /** Kebab (three-dot) menu button. */

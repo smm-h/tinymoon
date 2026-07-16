@@ -56,6 +56,7 @@
     "./stats": "./assets/js/stats.js",
     "./store": "./assets/js/store.js",
     "./table": "./assets/js/table.js",
+    "./tabpanels": "./assets/js/tabpanels.js",
     "./timepicker": "./assets/js/timepicker.js",
     "./toast": "./assets/js/toast.js",
     "./tooltip": "./assets/js/tooltip.js",

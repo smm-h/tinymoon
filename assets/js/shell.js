@@ -1,45 +1,32 @@
 // tinymoon — app shell: builds the sidebar/nav/topbar/content frame, mounts
 // the framework overlay roots, and runs the hash router.
 //
-// mountShell(config) → {navigate(route), setBusy(msg), setTitle(title, sub),
-// refreshCurrent()}
-//
-// config (required unless marked optional):
-//   root           — container element the shell frame is appended to
-//   brand          — {name, logoHTML}: name feeds the collapsed-sidebar
-//                    initial (--brand-initial); logoHTML is the sidebar
-//                    logo markup
-//   routes         — {key: {title, icon, view, tip?, hidden?, eager?}}.
-//                    view can be:
-//                      () => viewObj   — factory returning a view object
-//                      "<h2>…</h2>"   — HTML string (wrapped automatically)
-//                      element         — a DOM Element or <template>
-//                    hidden routes get no nav item but stay routable.
-//                    eager: true builds the view (hidden) at mount.
-//   defaultRoute   — route key used for an empty or unknown hash
-//   legacyRoutes?  — {oldKey: "newRoute"}: old hashes redirect, deep-link
-//                    tails are preserved
-//   topbarActions? — array of nodes or {icon, tip, onClick} specs rendered
-//                    into #tm-topbar-actions
-//   footer?        — {height, node}: sets --footer-h and appends node to
-//                    the body. Without it --footer-h stays 0.
-//   onRoute?       — fn(routeKey, sub): called after the router finishes
-//                    handling a route (view built, setSub applied, refresh
-//                    run, title set), including the initial route during
-//                    mount. routeKey is the resolved route key (post
-//                    legacy-redirect); sub is the deep-link tail or null.
+// mountShell(config) → {navigate, setBusy, setTitle, refreshCurrent, announce}.
+// Full option/type docs live in index.d.ts; the highlights:
+//   root           — container the shell frame is appended to
+//   brand          — {name, logoHTML}: name feeds --brand-initial
+//   routes         — {key: {title, icon, view, tip?, hidden?, eager?}}. view is
+//                    a () => viewObj factory, an HTML string, or an Element.
+//                    hidden routes stay routable with no nav item; eager: true
+//                    builds the view (hidden) at mount.
+//   defaultRoute   — route key for an empty or unknown hash
+//   legacyRoutes?  — {oldKey: "newRoute"}: old hashes redirect, tails preserved
+//   topbarActions? — nodes or {icon, tip, onClick} specs for #tm-topbar-actions
+//   footer?        — {height, node}: sets --footer-h and appends node to body
+//   onRoute?       — fn(routeKey, sub): runs after each route is handled
+//                    (view built, setSub applied, refresh run, title set),
+//                    including the initial mount route.
 //
 // View contract: {root, built, build(), refresh(), setSub?(sub)}. The router
-// creates each view's section element (section.view) inside #tm-content and
-// assigns it to view.root before the first build() — views never pre-declare
-// HTML. build() must be idempotent (guard on .built); refresh() runs on
-// every visit; setSub(sub) receives the deep-link tail ("#/key/a/b" → "a/b")
-// before refresh().
+// creates each view's section.view inside #tm-content and assigns view.root
+// before the first build() (views never pre-declare HTML). build() must be
+// idempotent (guard on .built); refresh() runs every visit; setSub(sub) gets
+// the deep-link tail ("#/key/a/b" → "a/b") before refresh(). The createView
+// factory (view.js) builds a conforming object for you.
 //
-// Declarative shorthand: view can also be a string (HTML fragment) or an
-// Element (e.g. a <template>'s content or any DOM node). The shell wraps
-// these in a minimal view object automatically. The full object contract
-// still works — this is an addition, not a replacement.
+// Declarative shorthand: view can also be an HTML string or an Element (e.g. a
+// <template>'s content); the shell wraps it in a minimal view object. Additive
+// — the full object contract still works.
 
 import { $$, el } from "./dom.js";
 import { icon } from "./icons.js";

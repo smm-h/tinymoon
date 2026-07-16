@@ -57,6 +57,7 @@ import {
   announce,
   createView,
   openDrawer,
+  createTabPanels,
 } from "tinymoon";
 
 // -- extras barrel ("tinymoon/extras") ----------------------------------------
@@ -118,6 +119,7 @@ ref(
   createDatePicker, createTimePicker, createCombobox, createMultiSelect,
   createAccordion, cssVar, ensureRoot, placeBelow, registerCopyable,
   unregisterCopyable, getCopyData, mountShell, announce, createView, openDrawer,
+  createTabPanels,
   api, post, ApiError, setAuthHeader, sse, socket,
   fmtTime, relativeTime, liveRelativeTime,
   createSettings, renderDocMd, createWikiView,
@@ -196,6 +198,19 @@ const filters = openDrawer({
 });
 ref(filters.el);
 filters.close();
+
+// createTabPanels: tab bar + lazy panels; build(panel) receives the container.
+const panels = createTabPanels({
+  label: "Sections",
+  items: [
+    { value: "one", label: "One", build: (panel) => panel.appendChild(el("p", null, "1")) },
+    { value: "two", label: "Two", icon: "docs", build: (panel) => ref(panel) },
+  ],
+  value: "one",
+});
+panels.set("two");
+ref(panels.el, panels.value);
+panels.destroy();
 
 const volume = createSlider({
   name: "volume",

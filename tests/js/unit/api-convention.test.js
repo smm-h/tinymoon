@@ -41,6 +41,8 @@ const MIGRATED = [
   "createFileInput",
   "createSegmented",
   "createTabs",
+  // tabpanels.js — createTabPanels(opts) -> {el, set, value, destroy}
+  "createTabPanels",
   // inputs.js — createX(opts) -> {el, ...} convention
   "createInput",
   "createTextarea",
@@ -205,6 +207,19 @@ describe("api-convention: migrated primitives", () => {
       items: [{ value: "a", label: "A" }, { value: "b", label: "B" }],
     });
     expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createTabPanels(opts) conforms to the convention", async () => {
+    const { createTabPanels } = await import("../../../assets/js/index.js");
+    const instance = createTabPanels({
+      label: "Test",
+      items: [{ value: "a", label: "A", build() {} }, { value: "b", label: "B", build() {} }],
+    });
     expect(typeof instance).toBe("object");
     expect(instance).not.toBeInstanceOf(HTMLElement);
     expect(instance.el).toBeInstanceOf(HTMLElement);
