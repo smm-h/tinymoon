@@ -58,6 +58,7 @@ import {
   createView,
   openDrawer,
   createTabPanels,
+  createGrid,
 } from "tinymoon";
 
 // -- extras barrel ("tinymoon/extras") ----------------------------------------
@@ -119,7 +120,7 @@ ref(
   createDatePicker, createTimePicker, createCombobox, createMultiSelect,
   createAccordion, cssVar, ensureRoot, placeBelow, registerCopyable,
   unregisterCopyable, getCopyData, mountShell, announce, createView, openDrawer,
-  createTabPanels,
+  createTabPanels, createGrid,
   api, post, ApiError, setAuthHeader, sse, socket,
   fmtTime, relativeTime, liveRelativeTime,
   createSettings, renderDocMd, createWikiView,
@@ -211,6 +212,12 @@ const panels = createTabPanels({
 panels.set("two");
 ref(panels.el, panels.value);
 panels.destroy();
+
+// createGrid: preset layout; slots is the live slot-element array.
+const grid = createGrid({ preset: "2x2", slots: [el("div"), el("div")] });
+grid.setPreset("1x2");
+ref(grid.el, grid.slots.length);
+grid.destroy();
 
 const volume = createSlider({
   name: "volume",

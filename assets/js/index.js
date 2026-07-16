@@ -25,3 +25,4 @@ export { mountShell, announce } from "./shell.js";
 export { createView } from "./view.js";
 export { openDrawer } from "./drawer.js";
 export { createTabPanels } from "./tabpanels.js";
+export { createGrid } from "./grid.js";

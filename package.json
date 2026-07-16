@@ -38,6 +38,7 @@
     "./feed": "./assets/js/feed.js",
     "./filterbar": "./assets/js/filterbar.js",
     "./format": "./assets/js/format.js",
+    "./grid": "./assets/js/grid.js",
     "./hovercard": "./assets/js/hovercard.js",
     "./icons": "./assets/js/icons.js",
     "./inputs": "./assets/js/inputs.js",

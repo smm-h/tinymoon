@@ -694,6 +694,33 @@ dialog.tm-drawer::backdrop { background: var(--backdrop); backdrop-filter: blur(
   outline-offset: 2px;
 }
 
+/* ---------- grid presets (createGrid content primitive) ---------- */
+
+/* CSS-first rectangular layouts. Author in HTML with .tm-grid[data-preset] or
+   build with createGrid(). Presets are columns×rows via grid-template-areas.
+   A content primitive, NOT a shell mode — it lays out view content only. */
+.tm-grid { display: grid; gap: var(--space-16); align-content: start; }
+.tm-grid[data-preset="1x1"] { grid-template-areas: "a"; }
+.tm-grid[data-preset="2x1"] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas: "a b";
+}
+.tm-grid[data-preset="1x2"] {
+  grid-template-columns: 1fr;
+  grid-template-areas: "a" "b";
+}
+.tm-grid[data-preset="2x2"] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas: "a b" "c d";
+}
+/* Narrow screens collapse multi-column presets to a single stacked column. */
+@media (max-width: 640px) {
+  .tm-grid[data-preset="2x1"], .tm-grid[data-preset="2x2"] {
+    grid-template-columns: 1fr;
+    grid-template-areas: none;
+  }
+}
+
 /* ---------- checkbox ---------- */
 
 .tm-checkbox {

@@ -43,6 +43,8 @@ const MIGRATED = [
   "createTabs",
   // tabpanels.js — createTabPanels(opts) -> {el, set, value, destroy}
   "createTabPanels",
+  // grid.js — createGrid(opts) -> {el, slots, setPreset, destroy}
+  "createGrid",
   // inputs.js — createX(opts) -> {el, ...} convention
   "createInput",
   "createTextarea",
@@ -224,6 +226,16 @@ describe("api-convention: migrated primitives", () => {
     expect(instance).not.toBeInstanceOf(HTMLElement);
     expect(instance.el).toBeInstanceOf(HTMLElement);
     expect(typeof instance.set).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createGrid(opts) conforms to the convention", async () => {
+    const { createGrid } = await import("../../../assets/js/index.js");
+    const instance = createGrid({ preset: "2x2" });
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.setPreset).toBe("function");
     expect(typeof instance.destroy).toBe("function");
   });
 

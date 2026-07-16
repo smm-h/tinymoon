@@ -159,6 +159,25 @@ export interface TabPanelsInstance {
  * build, state-preserving hide on switch. */
 export function createTabPanels(opts: TabPanelsOpts): TabPanelsInstance;
 
+// -- grid.js ------------------------------------------------------------------
+
+/** Rectangular grid presets (columns×rows). */
+export type GridPreset = "1x1" | "2x1" | "1x2" | "2x2";
+export interface GridOpts {
+  preset: GridPreset;
+  /** Nodes placed into the grid slots in order. */
+  slots?: Node[];
+}
+export interface GridInstance {
+  el: HTMLElement;
+  /** The live slot elements (grows/shrinks when the preset changes). */
+  slots: HTMLElement[];
+  setPreset(preset: GridPreset): void;
+  destroy(): void;
+}
+/** A CSS-first preset grid layout (content primitive, not a shell mode). */
+export function createGrid(opts: GridOpts): GridInstance;
+
 /** Copy-to-clipboard icon button. */
 export function copyButton(getText: () => string, tipText?: string): HTMLElement;
 /** Kebab (three-dot) menu button. */
