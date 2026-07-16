@@ -182,6 +182,31 @@ uvx tinymoon check --dir ./web
 
 One line per violation, exit non-zero on any finding. No `--skip`, `--ignore`, or warning mode. Exempt specific URLs by adding them to `tinymoon-allowlist.txt` at the scanned directory root.
 
+### Vendored third-party code
+
+Sometimes you must vendor a third-party file verbatim -- a foreign stylesheet or script you did not write and cannot rewrite to obey the charter (it may use rounded corners, raw colors, or a native control). Rewriting it would fork it; leaving it in the tree would fail the checker.
+
+Put such files in a directory named `third_party/` (the fixed conventional name -- there is no flag) and pin each one in a manifest at `third_party/PROVENANCE.toml` that sits beside them:
+
+```toml
+[[file]]
+path = "foreign-widget.css"                 # relative to third_party/
+origin = "https://example.com/widget@2.1"   # a URL or name; informational
+sha256 = "a6d96b3a999b17010ce541dcf9c427648e9e929f5e5c89b96047e6c4c46a294f"
+```
+
+A quarantined file is exempt from all five rules **if and only if** it is pinned and its bytes still hash to the recorded `sha256`. The exemption is earned by provenance: the hash proves the bytes are unmodified third-party code. First-party code cannot hide here -- the moment you edit a quarantined file to make it yours, the hash stops matching and the check fails.
+
+Every other state is a hard `unpinned-vendor` error (no bypass): a file present with no manifest entry (or no manifest at all), a manifest entry whose file is missing, a hash mismatch, or an entry whose path is absolute or escapes the directory with `..`. A quarantine directory nested anywhere inside the scanned tree is honored as long as its own `PROVENANCE.toml` sits beside it, so scanning a repo root and scanning a sub-tree agree.
+
+Generate the `sha256` for an entry with coreutils:
+
+```
+sha256sum third_party/foreign-widget.css
+```
+
+The gallery is the mechanism's own first consumer: its Embed route's garish foreign CSS lives in `gallery/third_party/foreign-widget.css`, pinned by `gallery/third_party/PROVENANCE.toml`, and is loaded into a shadow root where its styling is sealed.
+
 ## App model
 
 **Copy system.** `registerCopyable(el, fn)` marks any element as copyable -- clicking it copies the value returned by `fn()` to the clipboard, with a toast confirmation. The `copyButton` helper wires a standalone copy button. `getCopyData(el)` retrieves registered copy data programmatically.
