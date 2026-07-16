@@ -37,6 +37,8 @@ import {
 
 import {
   badge, createStat, renderStats, createTable, createVirtualList,
+  createTree, createFilterBar, createChips, createLoadMore,
+  createBreadcrumbs, createSparkline, createChartContainer, createFeed,
 } from "../assets/js/widgets.js";
 
 // ---------- settings ----------
@@ -882,6 +884,34 @@ A column's \`format(value, row)\` may return a **string or a live DOM Node**, so
 ### Virtual list {#data-virtuallist}
 
 \`createVirtualList({rowHeight, items?, renderRow, getKey?, overscan?})\` → \`{el, setItems, scrollToIndex, destroy}\` renders only the rows intersecting the viewport (plus overscan), so a 10,000-item list keeps a near-constant DOM node count. **Fixed row height only** — variable/measured heights are out of scope by decision; the constant height is what makes the windowing O(1). It is a **standalone list, not a table mode**: virtual rows are absolutely-positioned \`<div>\`s (a \`<tbody>\` cannot position \`<tr>\`s), so a virtual *table* is a different problem. Give \`.tm-vlist\` a height in CSS — \`contain: strict\` needs a viewport to window against. A stable \`getKey\` lets rows be reused as they scroll back into view.
+
+### Tree view {#data-tree}
+
+\`createTree({nodes, onSelect?})\` → \`{el, setNodes, expand, collapse, destroy}\` is the **APG TreeView**: a \`role="tree"\` of \`role="treeitem"\` rows with \`role="group"\` child lists, a **roving tabindex**, and the full keyboard model — Arrow **Down/Up** move between visible items, **Right** expands a collapsed parent then enters it, **Left** collapses then exits to the parent, **Home/End** jump, and **Enter/Space** activate (\`onSelect(node)\`). \`nodes\` is recursive \`[{id, label, children?, open?}]\`; \`expand\`/\`collapse\` address nodes by \`id\` or by a **path** (array of ids). Depth indentation is CSS-driven. **Lazy/async children are out of scope** — build the whole forest and hand it to \`setNodes\`.
+
+### Filter bar + chips {#data-filterbar}
+
+\`createFilterBar({slots})\` → \`{el, setSlots, destroy}\` is a **layout-only** strip: you drop in the controls you already have (tabs, segmented, combobox, a search input, a datepicker) and the bar provides flex layout + responsive wrap. It owns **no filter state** — filter state is *application* state (which facets are active, how they map to a query, how they persist in the URL), which no generic widget can model. \`createChips({items?, onRemove?, onClearAll?})\` → \`{el, setItems, destroy}\` renders **sharp removable chips** (a label or a \`key: value\`) over caller state. Clicking a chip's × calls \`onRemove(item, index)\` — it does **not** self-remove; the caller updates state and calls \`setItems\`, so the chips can never drift from the truth. A **Clear-all** affordance appears past one chip, and the strip collapses to nothing when empty.
+
+### Load more {#data-loadmore}
+
+\`createLoadMore({fetchPage, onItems, pageSize?})\` → \`{el, reset, destroy}\` is **transport-agnostic** pagination. You supply \`fetchPage(cursor, pageSize) -> Promise<{items, nextCursor}>\`; the widget owns the button, its loading spinner, and the end/error affordances. It starts at a null cursor; each page advances the cursor and calls \`onItems(items)\`; a null \`nextCursor\` hides the button. **No silent failure** — a rejected fetch shows a visible error line with a **Retry** that re-requests the *same* cursor (the position is never lost). \`reset()\` returns to the first-page state for a filter change (it does not fetch — the next click loads page one, keeping every fetch caller-visible).
+
+### Breadcrumbs {#data-breadcrumbs}
+
+\`createBreadcrumbs({items, onNavigate?})\` → \`{el, setItems, destroy}\` renders a **router-agnostic** trail: \`nav[aria-label="Breadcrumb"]\` wrapping an \`<ol>\`, chevron separators in CSS, and \`aria-current="page"\` on the last (current) item. An item with an \`href\` is a real link; an href-less navigable item is a \`<button>\`; \`onNavigate(item, index)\` fires on activation but never preventDefaults — the href drives navigation, or you route in the handler. Beyond ~6 items the middle **collapses into an expandable ellipsis**.
+
+### Sparkline {#data-sparkline}
+
+\`createSparkline({values, width?, height?, area?, label?})\` → \`{el, setData, destroy}\` is a tiny **inline-SVG** trend line, with an optional area fill. **Every color lives in CSS** backed by tokens — the emitted SVG carries no color literals, so it re-themes for free and the conformance checker stays clean. It is \`aria-hidden\` by default; pass a \`label\` to make it a labelled \`role="img"\` when the trend itself carries meaning. The pure \`sparklinePoints(values, width, height)\` geometry is exported alongside (like \`windowRange\`) for testing and reuse.
+
+### Chart container {#data-chart}
+
+\`createChartContainer({render, update?, label})\` → \`{el, redraw, destroy}\` is a renderer-**agnostic** lifecycle that ships **no charting**. tinymoon does not bundle a charting library (that would be a large runtime dependency); instead the container provides the parts a chart always needs: a sized root, a **ResizeObserver** that re-renders on layout change (debounced to one paint per animation frame), a **margin** convention read from \`--chart-margin-*\` tokens on the container, and the **shared tooltip** (draw elements with \`data-tooltip\`). Your \`render(ctx)\` receives \`{root, width, height, margin, cssVar}\` and does the drawing — D3, hand-rolled SVG, canvas, whatever. The container **never draws anything itself**. \`label\` is required (the accessible name).
+
+### Live feed {#data-feed}
+
+\`createFeed({renderItem, cap?, onPrune?})\` → \`{el, append, prepend, setItems, destroy}\` is a **presentation-only** live feed / log viewer with **no transport coupling** — you wire the SSE/socket/polling and push items in. \`renderItem(item) -> Node\` builds each row (set \`data-level\` for severity coloring, mirrored onto the row wrapper). The buffer is **capped** (default 200): \`append\` overflow prunes the oldest (top), \`prepend\` overflow prunes the far end (bottom), and pruned items go to \`onPrune\`. **Stick-to-bottom** autoscroll keeps the tail pinned; scrolling up **pauses** it and reveals a **jump-to-latest** affordance.
 `,
   },
   {
@@ -1827,9 +1857,268 @@ const DataView = {
     vlist.el.style.height = "320px";
     vp.appendChild(vlist.el);
     this.root.appendChild(vp);
+
+    // tree — APG TreeView, keyboard-navigable.
+    const trp = panel("Tree view", "library");
+    trp.appendChild(el("p", "hash",
+      "APG TreeView: role=tree/treeitem/group with a roving tabindex. Arrow keys move (Right expands/enters, Left collapses/exits), Home/End jump, Enter/Space activate. Synchronous data only — lazy/async children are out of scope."));
+    const tree = createTree({
+      label: "Project files",
+      onSelect: (node) => toast("Selected: " + node.label),
+      nodes: [
+        { id: "assets", label: "assets", open: true, children: [
+          { id: "js", label: "js", open: true, children: [
+            { id: "index", label: "index.js" },
+            { id: "widgets", label: "widgets.js" },
+            { id: "tree", label: "tree.js" },
+          ] },
+          { id: "css", label: "css", children: [
+            { id: "tokens", label: "tokens.css" },
+            { id: "widgetscss", label: "widgets.css" },
+          ] },
+        ] },
+        { id: "tests", label: "tests", children: [{ id: "unit", label: "unit" }] },
+        { id: "pkg", label: "package.json" },
+      ],
+    });
+    tree.el.dataset.testid = "data-tree";
+    trp.appendChild(tree.el);
+    this.root.appendChild(trp);
+
+    // filter bar + chips — a slot strip over app-owned filter state.
+    const fp = panel("Filter bar + chips", "faders");
+    fp.appendChild(el("p", "hash",
+      "The bar lays out existing controls (here a segmented + a search input) and owns NO filter state — filter state is app state. The chips mirror that state: clicking × calls onRemove and THIS view updates its state and re-renders the chips. Clear-all appears past one chip."));
+    // App-owned filter state (the source of truth the widgets only present).
+    let activeFilters = ["status: open", "kind: module"];
+    const chips = createChips({
+      items: activeFilters,
+      onRemove: (_item, i) => { activeFilters = activeFilters.filter((_, k) => k !== i); chips.setItems(activeFilters); },
+      onClearAll: () => { activeFilters = []; chips.setItems(activeFilters); },
+    });
+    chips.el.dataset.testid = "data-chips";
+    const seg = createSegmented({
+      name: "data-scope", label: "Scope",
+      items: [{ value: "all", label: "All" }, { value: "mine", label: "Mine" }],
+      value: "all",
+    });
+    const search = createInput({ name: "data-search", label: "Search", placeholder: "Filter…" });
+    const filterBar = createFilterBar({ label: "Filters", slots: [seg, search] });
+    filterBar.el.dataset.testid = "data-filterbar";
+    fp.appendChild(filterBar.el);
+    fp.appendChild(chips.el);
+    this.root.appendChild(fp);
+
+    // load more — a synthetic paged source, transport-agnostic.
+    const lp = panel("Load more", "download");
+    lp.appendChild(el("p", "hash",
+      "Transport-agnostic: the caller supplies fetchPage(cursor) -> {items, nextCursor}. The button shows a loading state, appends each page, and hides at the end (nextCursor null). Errors surface as a visible line with a Retry — never swallowed. Here a synthetic source yields three pages."));
+    const loadedList = el("ul", "hash");
+    loadedList.dataset.testid = "data-loaded-list";
+    const PAGES = 3;
+    const loadMore = createLoadMore({
+      pageSize: 4,
+      fetchPage: (cursor) => new Promise((resolve) => {
+        const page = cursor == null ? 0 : cursor;
+        setTimeout(() => {
+          const items = Array.from({ length: 4 }, (_, i) => "item " + (page * 4 + i));
+          resolve({ items, nextCursor: page + 1 < PAGES ? page + 1 : null });
+        }, 120);
+      }),
+      onItems: (items) => { for (const it of items) loadedList.appendChild(el("li", null, it)); },
+    });
+    loadMore.el.dataset.testid = "data-loadmore";
+    lp.appendChild(loadedList);
+    lp.appendChild(loadMore.el);
+    this.root.appendChild(lp);
+
+    // breadcrumbs — a router-agnostic trail with middle-ellipsis collapse.
+    const cp = panel("Breadcrumbs", "compare");
+    cp.appendChild(el("p", "hash",
+      "Router-agnostic: a flat {label, href?} trail. The last item is the current page (aria-current). Beyond ~6 items the middle collapses into an expandable ellipsis."));
+    const crumbs = createBreadcrumbs({
+      items: [
+        { label: "Home", href: "#/data" },
+        { label: "Reports", href: "#/data" },
+        { label: "2026", href: "#/data" },
+        { label: "Q3", href: "#/data" },
+        { label: "July", href: "#/data" },
+        { label: "Week 29", href: "#/data" },
+        { label: "Load report" },
+      ],
+      onNavigate: (item) => toast("Navigate: " + item.label),
+    });
+    crumbs.el.dataset.testid = "data-breadcrumbs";
+    cp.appendChild(crumbs.el);
+    this.root.appendChild(cp);
+
+    // sparkline — inline SVG, colors from tokens via CSS.
+    const skp = panel("Sparklines", "wave");
+    skp.appendChild(el("p", "hash",
+      "Tiny inline-SVG trend lines. Every color comes from the token layer via CSS classes — the SVG emits no color literals, so it re-themes for free. aria-hidden by default; pass a label when the trend itself carries meaning."));
+    const skrow = el("div", "demo-row");
+    skrow.dataset.testid = "data-sparkline";
+    const sine = Array.from({ length: 24 }, (_, i) => Math.sin(i / 3) * 10 + 10);
+    const ramp = Array.from({ length: 24 }, (_, i) => i);
+    const noisy = [4, 9, 3, 12, 6, 15, 8, 11, 5, 14, 7, 18, 10, 6, 13, 9];
+    skrow.appendChild(createSparkline({ values: sine, label: "sine trend" }).el);
+    skrow.appendChild(createSparkline({ values: ramp, area: true, label: "ramp trend" }).el);
+    skrow.appendChild(createSparkline({ values: noisy, area: true, label: "noisy trend" }).el);
+    skp.appendChild(skrow);
+    this.root.appendChild(skp);
+
+    // chart container — renderer-agnostic lifecycle; the view brings the SVG.
+    const chp = panel("Chart container", "faders");
+    chp.appendChild(el("p", "hash",
+      "The container ships NO charting — it drives a lifecycle: a sized root, a ResizeObserver (debounced to one paint per frame), a margin read from --chart-margin-* tokens, and the shared tooltip. THIS view brings the drawing (hand-rolled SVG here), pulling every color from the tokens via ctx.cssVar. Hover a bar for the shared tooltip."));
+    const bars = [12, 28, 9, 34, 22, 40, 18, 30];
+    const chart = createChartContainer({
+      label: "Requests per hour",
+      render: (ctx) => this.paintChart(ctx, bars),
+      update: (ctx) => this.paintChart(ctx, bars),
+    });
+    chart.el.dataset.testid = "data-chart";
+    chart.el.style.height = "160px";
+    this.chart = chart;
+    chp.appendChild(chart.el);
+    this.root.appendChild(chp);
+
+    // feed — presentation-only live log viewer.
+    const gp = panel("Live feed", "menu");
+    gp.appendChild(el("p", "hash",
+      "Presentation-only: no transport coupling (wire your own sse/socket/polling). A capped buffer (200) prunes the oldest; stick-to-bottom autoscroll pauses when you scroll up and offers a jump-to-latest. Set data-level on your row for severity coloring."));
+    const LEVELS = ["info", "success", "warn", "error"];
+    let feedSeq = 0;
+    const feed = createFeed({
+      cap: 200,
+      renderItem: (item) => {
+        const row = el("div");
+        row.dataset.level = item.level;
+        row.appendChild(el("span", "hash", "#" + item.n + " "));
+        row.appendChild(el("span", null, item.text));
+        return row;
+      },
+    });
+    feed.el.dataset.testid = "data-feed";
+    feed.el.style.height = "200px";
+    for (let i = 0; i < 6; i++) {
+      feed.append({ n: feedSeq, level: LEVELS[feedSeq % 4], text: "seed line " + feedSeq });
+      feedSeq += 1;
+    }
+    const emit = el("button", "btn");
+    emit.type = "button";
+    emit.textContent = "Emit log line";
+    emit.dataset.testid = "data-feed-emit";
+    emit.addEventListener("click", () => {
+      feed.append({ n: feedSeq, level: LEVELS[feedSeq % 4], text: "log line " + feedSeq });
+      feedSeq += 1;
+    });
+    gp.appendChild(emit);
+    gp.appendChild(feed.el);
+    this.root.appendChild(gp);
+
+    // composed dashboard — the consistency showcase: filter bar + chips +
+    // table + feed + sparklines side by side.
+    const dp = panel("Dashboard (composed)", "library");
+    dp.appendChild(el("p", "hash",
+      "The consistency showcase: a filter bar + chips, a data table, a live feed, and sparklines composed into one strip. Every widget reads the same tokens, so a dashboard assembled from independent parts looks like one designed surface."));
+    const dash = el("div", "data-dashboard");
+    dash.dataset.testid = "data-dashboard";
+    let dashFilters = ["region: us-east", "tier: pro"];
+    const dashChips = createChips({
+      items: dashFilters,
+      onRemove: (_item, i) => { dashFilters = dashFilters.filter((_, k) => k !== i); dashChips.setItems(dashFilters); },
+      onClearAll: () => { dashFilters = []; dashChips.setItems(dashFilters); },
+    });
+    const dashTabs = createTabs({
+      label: "Range",
+      items: [{ value: "24h", label: "24h" }, { value: "7d", label: "7d" }, { value: "30d", label: "30d" }],
+      value: "24h",
+    });
+    const dashBar = createFilterBar({ label: "Dashboard filters", slots: [dashTabs] });
+    const dashStats = renderStats([
+      { label: "requests", value: "8.4k", unit: "/h", trend: "good" },
+      { label: "errors", value: "12", unit: "/h", trend: "bad" },
+      { label: "p95", value: "240", unit: "ms", trend: "neutral" },
+    ]);
+    const dashSparks = el("div", "demo-row");
+    dashSparks.appendChild(createSparkline({ values: sine, area: true, label: "requests trend" }).el);
+    dashSparks.appendChild(createSparkline({ values: noisy, label: "errors trend" }).el);
+    const dashTable = createTable({
+      caption: "Top endpoints",
+      columns: [
+        { key: "path", label: "Endpoint" },
+        { key: "hits", label: "Hits", align: "end" },
+        { key: "status", label: "Status", format: (v) => badge(v, v) },
+      ],
+      rows: [
+        { path: "/api/search", hits: 3820, status: "ok" },
+        { path: "/api/upload", hits: 940, status: "warn" },
+        { path: "/api/report", hits: 210, status: "err" },
+      ],
+    });
+    const dashFeed = createFeed({
+      cap: 50,
+      renderItem: (item) => {
+        const row = el("div");
+        row.dataset.level = item.level;
+        row.appendChild(el("span", null, item.text));
+        return row;
+      },
+    });
+    dashFeed.el.style.height = "120px";
+    for (const s of [
+      { level: "info", text: "deploy started" },
+      { level: "success", text: "healthcheck ok" },
+      { level: "warn", text: "latency spike" },
+      { level: "error", text: "5xx on /api/report" },
+    ]) dashFeed.append(s);
+    dash.appendChild(dashBar.el);
+    dash.appendChild(dashChips.el);
+    dash.appendChild(dashStats.el);
+    dash.appendChild(dashSparks);
+    dash.appendChild(dashTable.el);
+    dash.appendChild(dashFeed.el);
+    dp.appendChild(dash);
+    this.root.appendChild(dp);
   },
 
-  refresh() {},
+  // Hand-rolled SVG bar chart drawn into the chart container's root. Colors are
+  // pulled live from the tokens via ctx.cssVar (never literals), and each bar
+  // carries a data-tooltip for the shared tooltip system.
+  paintChart(ctx, values) {
+    const { root, width, height, margin } = ctx;
+    root.textContent = "";
+    const w = width || 320;
+    const h = height || 160;
+    const plotW = Math.max(0, w - margin.left - margin.right);
+    const plotH = Math.max(0, h - margin.top - margin.bottom);
+    const NS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("width", String(w));
+    svg.setAttribute("height", String(h));
+    const max = Math.max(1, ...values);
+    const gap = 4;
+    const bw = values.length ? (plotW - gap * (values.length - 1)) / values.length : 0;
+    values.forEach((v, i) => {
+      const bh = (v / max) * plotH;
+      const rect = document.createElementNS(NS, "rect");
+      rect.setAttribute("x", String(margin.left + i * (bw + gap)));
+      rect.setAttribute("y", String(margin.top + (plotH - bh)));
+      rect.setAttribute("width", String(Math.max(0, bw)));
+      rect.setAttribute("height", String(Math.max(0, bh)));
+      rect.setAttribute("fill", ctx.cssVar("--accent"));
+      rect.dataset.tooltip = v + " requests";
+      svg.appendChild(rect);
+    });
+    root.appendChild(svg);
+  },
+
+  refresh() {
+    // The chart draws from clientWidth/clientHeight, valid once the view is on
+    // screen; force a redraw on each visit so a route re-entry repaints.
+    if (this.chart) this.chart.redraw();
+  },
 };
 
 // ---------- mount ----------
@@ -1887,7 +2176,7 @@ shell = mountShell({
     },
     data: {
       title: "Data", icon: "compare", view: () => DataView,
-      tip: "Data -- the data-display widgets live: status badges (all variants), stat tiles with explicit trends, a keyboard-navigable sortable data table (caller-side sort, node-formatted cells, maxRows), and a 10,000-row virtual list with a bounded DOM.",
+      tip: "Data -- the full data-display set live: badges, stat tiles, sortable table, 10,000-row virtual list, APG tree, filter bar + chips, transport-agnostic load-more, breadcrumbs, token-colored sparklines, a renderer-agnostic chart container, a live feed, and a composed dashboard strip.",
     },
     realtime: {
       title: "Realtime", icon: "compare", view: () => RealtimeView,

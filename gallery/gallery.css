@@ -171,3 +171,13 @@
   width: 100%;
 }
 .transcript-resume.hidden { display: none; }
+
+/* Composed dashboard strip on the Data route: independent widgets laid out on
+   one responsive grid to show token consistency across the set. */
+.data-dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.data-dashboard .data.tm-table { width: 100%; }
