@@ -149,7 +149,7 @@ test.describe("badges + stats (Data view) — both themes", () => {
 
   test("badges + stats are axe-clean in the light theme", async ({ page }) => {
     // Toggle to light via the topbar theme button.
-    await page.locator("button[aria-label='Toggle theme']").click();
+    await page.locator('[data-testid="theme-cycle"]').click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     const results = await scanBadgesAndStats(page);
     expect(

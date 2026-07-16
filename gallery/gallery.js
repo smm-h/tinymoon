@@ -2378,6 +2378,7 @@ const themeBtnInstance = iconButton({
   onClick: () => cycleTheme(settings),
 });
 const themeBtn = themeBtnInstance.el;
+themeBtn.dataset.testid = "theme-cycle";
 const paintThemeBtn = () => { themeBtnInstance.setIcon(themeIcon()); };
 window.addEventListener("tm:theme", paintThemeBtn);
 paintThemeBtn();
@@ -2427,6 +2428,16 @@ const AsyncView = createView({
       bar.appendChild(b);
     }
     p1.appendChild(bar);
+
+    // Toast action demo: a persistent toast with a single Undo action button.
+    const actionRow = el("div", "demo-row");
+    const toastBtn = el("button", "btn", "Toast with an action");
+    toastBtn.type = "button";
+    toastBtn.dataset.testid = "toast-action-btn";
+    toastBtn.addEventListener("click", () =>
+      toast("Saved a draft", "ok", { action: { label: "Undo", onClick: () => toast("Undone", "ok") } }));
+    actionRow.appendChild(toastBtn);
+    p1.appendChild(actionRow);
     p1.appendChild(results);
     root.appendChild(p1);
 

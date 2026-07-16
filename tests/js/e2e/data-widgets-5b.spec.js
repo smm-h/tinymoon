@@ -160,7 +160,7 @@ test.describe("sparkline + chart — token colors in both themes", () => {
 
     // Toggle to light: the chart redraws on tm:theme; the fill still equals the
     // (live) token value.
-    await page.locator("button[aria-label='Toggle theme']").click();
+    await page.locator('[data-testid="theme-cycle"]').click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     const lightAccent = await accent(page);
     const lightFill = await chart.locator("svg rect").first().getAttribute("fill");
@@ -199,7 +199,7 @@ test.describe("the whole Data route is axe-clean in both themes", () => {
     expect(results.violations, results.violations.map((v) => v.id + ": " + v.description).join("; ")).toHaveLength(0);
   });
   test("light", async ({ page }) => {
-    await page.locator("button[aria-label='Toggle theme']").click();
+    await page.locator('[data-testid="theme-cycle"]').click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     const results = await scan(page);
     expect(results.violations, results.violations.map((v) => v.id + ": " + v.description).join("; ")).toHaveLength(0);
