@@ -43,12 +43,14 @@ test.describe("Forms view", () => {
     // Wait for the toast to appear with FormData content
     const toast = page.locator(".toast").last();
     await expect(toast).toBeVisible();
-    const text = await toast.textContent();
+    // Auto-retrying assertions re-resolve the toast locator and re-read its
+    // text on each poll, tolerant of the appear transition and the auto-dismiss
+    // timer, instead of a single racy textContent() snapshot.
     // "notifications" should be present (checked by default)
-    expect(text).toContain("notifications");
+    await expect(toast).toContainText("notifications");
     // "priority" radio should be present with value "medium" (default)
-    expect(text).toContain("priority");
-    expect(text).toContain("medium");
+    await expect(toast).toContainText("priority");
+    await expect(toast).toContainText("medium");
   });
 
   test("unchecking a checkbox removes it from FormData", async ({ page }) => {
@@ -62,9 +64,12 @@ test.describe("Forms view", () => {
 
     const toast = page.locator(".toast").last();
     await expect(toast).toBeVisible();
-    const text = await toast.textContent();
+    // Anchor on a field that is always submitted so the toast body is fully
+    // rendered before asserting the negative, then assert absence with an
+    // auto-retrying matcher instead of a one-shot textContent() snapshot.
+    await expect(toast).toContainText("priority");
     // notifications should NOT be in the FormData (was unchecked)
-    expect(text).not.toContain("notifications");
+    await expect(toast).not.toContainText("notifications");
   });
 
   test("segmented control submits its value in the form", async ({ page }) => {
@@ -75,9 +80,8 @@ test.describe("Forms view", () => {
 
     const toast1 = page.locator(".toast").last();
     await expect(toast1).toBeVisible();
-    const text1 = await toast1.textContent();
-    expect(text1).toContain("size");
-    expect(text1).toContain("m");
+    await expect(toast1).toContainText("size");
+    await expect(toast1).toContainText("m");
   });
 
   test("clicking a segmented option changes the submitted value", async ({ page }) => {
@@ -92,9 +96,8 @@ test.describe("Forms view", () => {
 
     const toast = page.locator(".toast").last();
     await expect(toast).toBeVisible();
-    const text = await toast.textContent();
-    expect(text).toContain("size");
-    expect(text).toContain("xl");
+    await expect(toast).toContainText("size");
+    await expect(toast).toContainText("xl");
   });
 
   test("selecting a different radio changes the submitted value", async ({ page }) => {
@@ -108,8 +111,7 @@ test.describe("Forms view", () => {
 
     const toast = page.locator(".toast").last();
     await expect(toast).toBeVisible();
-    const text = await toast.textContent();
-    expect(text).toContain("high");
+    await expect(toast).toContainText("high");
   });
 
   test("select submits its value via hidden native select", async ({ page }) => {
@@ -120,9 +122,8 @@ test.describe("Forms view", () => {
 
     const toast = page.locator(".toast").last();
     await expect(toast).toBeVisible();
-    const text = await toast.textContent();
-    expect(text).toContain("region");
-    expect(text).toContain("us-east");
+    await expect(toast).toContainText("region");
+    await expect(toast).toContainText("us-east");
   });
 
   test("changing select value updates the submitted form value", async ({ page }) => {
@@ -138,8 +139,7 @@ test.describe("Forms view", () => {
 
     const toast = page.locator(".toast").last();
     await expect(toast).toBeVisible();
-    const text = await toast.textContent();
-    expect(text).toContain("region");
-    expect(text).toContain("eu-west");
+    await expect(toast).toContainText("region");
+    await expect(toast).toContainText("eu-west");
   });
 });

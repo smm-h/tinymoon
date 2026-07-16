@@ -32,12 +32,12 @@ test("tab to a data-tooltip element shows the tooltip", async ({ page }) => {
   const tooltip = page.locator("[id^='tm-tooltip'].show");
   await expect(tooltip).toBeVisible();
 
-  // Tooltip content is plain text.
-  const text = await tooltip.textContent();
-  expect(text).toBeTruthy();
+  // Tooltip content is plain text. Auto-retrying matchers re-read on each poll
+  // rather than snapshotting textContent()/count() while the tooltip is still
+  // populating during its appear transition.
+  await expect(tooltip).not.toBeEmpty();
   // No HTML elements inside the tooltip (plain text only).
-  const childElements = await tooltip.locator("strong, code, a").count();
-  expect(childElements).toBe(0);
+  await expect(tooltip.locator("strong, code, a")).toHaveCount(0);
 });
 
 test("tooltip sets aria-describedby on the trigger", async ({ page }) => {
@@ -100,12 +100,18 @@ test("ArrowDown moves focus into the hovercard", async ({ page }) => {
   // Press ArrowDown to move focus into the hovercard.
   await page.keyboard.press("ArrowDown");
 
-  // Focus should now be on a link inside the hovercard.
-  const focusedInHc = await page.evaluate(() => {
-    const hc = document.getElementById("tm-hovercard");
-    return hc && hc.contains(document.activeElement);
-  });
-  expect(focusedInHc).toBe(true);
+  // Focus should now be inside the hovercard. Poll instead of a single
+  // activeElement snapshot: the keydown handler moves focus, and polling
+  // re-reads the live activeElement until it lands (or the assertion times
+  // out) rather than racing the one dispatch.
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const hc = document.getElementById("tm-hovercard");
+        return !!(hc && hc.contains(document.activeElement));
+      }),
+    )
+    .toBe(true);
 });
 
 test("Escape closes the hovercard", async ({ page }) => {
