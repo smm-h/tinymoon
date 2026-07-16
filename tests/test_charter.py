@@ -195,3 +195,133 @@ def test_no_interactive_content_in_tooltips_js():
     assert violations == [], (
         "Interactive content in tooltip elements:\n" + "\n".join(violations)
     )
+
+
+# ---------------------------------------------------------------------------
+# Ban ships its replacement
+# ---------------------------------------------------------------------------
+
+# Charter principle: every native control the conformance checker bans must
+# map to a shipped framework factory, and no ban may ever be added without its
+# replacement. A ban that forbids a native control while leaving authors with
+# no framework-native alternative is a broken promise -- the checker would
+# block usage with nothing to migrate to.
+#
+# The ban surface is read live from the checker so this test cannot drift from
+# the real rules:
+#   - Banned <input type=...> values come from checker._BANNED_INPUT_TYPES.
+#   - The banned native <select> tag is extracted from the checker's own
+#     native-control regexes (_JS_EL_NATIVE_RE / _JS_CREATE_NATIVE_RE): the
+#     tag alternation lives in the capture group following the quote-character
+#     group. There is no dedicated select-tag constant, so this capture group
+#     is the authoritative programmatic representation of the select ban.
+#
+# The checker is imported lazily inside the helpers (not at module scope) so a
+# concurrent in-flight edit to checker.py cannot break collection of the other
+# charter tests in this file.
+
+CORE_BARREL = ASSETS_JS / "index.js"
+
+# Every banned native control -> the framework factory that replaces it.
+# This mapping must track the checker's ban surface exactly (see the three
+# tests below): no missing entries, no stale entries, and every factory here
+# must be exported by the core barrel.
+REPLACEMENTS = {
+    "checkbox": "createCheckbox",
+    "radio": "createRadio",
+    "file": "createFileInput",
+    "select": "createSelect",
+}
+
+
+def _banned_native_tags():
+    """Native element tag names the checker bans, extracted from its own
+    native-control regexes. In each pattern the tag alternation is the
+    capture group made only of word characters and ``|`` (the sibling
+    quote-character group is a ``["']`` character class and is skipped).
+    Robust to the alternation growing (e.g. ``(select|datalist)``)."""
+    import tinymoon.checker as checker
+
+    tags = set()
+    for pat in (checker._JS_EL_NATIVE_RE, checker._JS_CREATE_NATIVE_RE):
+        for group in re.findall(r"\(([^()]+)\)", pat.pattern):
+            if re.fullmatch(r"[\w|]+", group):
+                tags.update(group.split("|"))
+    return tags
+
+
+def _banned_controls():
+    """The full set of native controls the checker bans: banned <input>
+    types plus banned native element tags, sourced live from the checker."""
+    import tinymoon.checker as checker
+
+    return set(checker._BANNED_INPUT_TYPES) | _banned_native_tags()
+
+
+def _barrel_exports():
+    """Names exported by the core barrel (assets/js/index.js), parsed
+    textually from its ``export { ... } from "..."`` statements. An
+    ``orig as alias`` re-export contributes the alias (the visible name)."""
+    text = CORE_BARREL.read_text()
+    names = set()
+    for block in re.findall(r"export\s*\{([^}]*)\}", text):
+        for part in block.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            m = re.search(r"\bas\s+([\w$]+)$", part)
+            names.add(m.group(1) if m else part)
+    return names
+
+
+def test_every_banned_control_has_a_replacement_factory_mapping():
+    """(a) Every native control the checker bans maps to a replacement.
+
+    Principle: a ban may never be added without its replacement factory.
+    """
+    banned = _banned_controls()
+    missing = sorted(banned - set(REPLACEMENTS))
+    assert missing == [], (
+        "The checker bans native controls with no replacement factory "
+        "mapped in REPLACEMENTS: " + ", ".join(missing) + ". Charter "
+        "principle: a ban may never ship without its replacement factory. "
+        "Add the REPLACEMENTS entry and ship the framework factory before "
+        "banning the control."
+    )
+
+
+def test_every_replacement_factory_is_exported_by_core_barrel():
+    """(b) Every mapped replacement factory is exported by the core barrel.
+
+    Principle: a ban may never ship without its replacement factory -- and
+    an unexported factory is not shipped, so authors could not migrate to it.
+    """
+    exports = _barrel_exports()
+    missing = sorted(
+        f"{control} -> {factory}"
+        for control, factory in REPLACEMENTS.items()
+        if factory not in exports
+    )
+    assert missing == [], (
+        "Replacement factories are not exported by the core barrel "
+        f"({CORE_BARREL.relative_to(REPO)}): " + ", ".join(missing) + ". "
+        "Charter principle: a banned control's replacement factory must be "
+        "shipped and exported from the core barrel -- a ban may never ship "
+        "without its replacement."
+    )
+
+
+def test_no_stale_replacement_entries():
+    """(c) REPLACEMENTS has no entries for controls the checker does not ban.
+
+    A stale entry advertises a replacement for a control that was never (or
+    is no longer) banned, letting the mapping drift from the real ban surface.
+    """
+    banned = _banned_controls()
+    stale = sorted(set(REPLACEMENTS) - banned)
+    assert stale == [], (
+        "REPLACEMENTS maps controls the checker does not ban: "
+        + ", ".join(stale) + ". The mapping must track the ban surface "
+        "exactly so that ban and replacement stay in lockstep -- remove the "
+        "stale entries."
+    )
