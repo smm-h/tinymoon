@@ -971,6 +971,286 @@ dialog.tm-modal::backdrop {
   pointer-events: none;
 }
 
+/* ---------- number stepper (createNumber) ---------- */
+
+/* A native input[type=number] (browser spinners hidden in base.css) framed by
+   two custom stepper buttons that respect min/max/step. */
+.tm-number {
+  display: flex;
+  align-items: stretch;
+}
+.tm-number .tm-number-input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  text-align: center;
+  border-inline: none;
+}
+.tm-number-step {
+  width: 34px;
+  height: auto;
+  flex: none;
+  border: 1px solid var(--border-2);
+  background: var(--surface-2);
+  color: var(--text-dim);
+}
+.tm-number-step:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--accent);
+  background: var(--surface-3);
+}
+.tm-number-step:disabled { opacity: 0.45; cursor: default; pointer-events: none; }
+
+/* ---------- time picker (createTimePicker) ---------- */
+
+.tm-timepicker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  position: relative;
+}
+.tm-timepicker-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.tm-timepicker-input-row { display: flex; align-items: center; }
+.tm-timepicker-text { flex: 1; min-width: 0; }
+.tm-timepicker-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  padding: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-inline-start: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color var(--dur-base) ease, border-color var(--dur-base) ease, background var(--dur-base) ease;
+}
+.tm-timepicker-toggle svg { width: 16px; height: 16px; }
+.tm-timepicker-toggle:hover { color: var(--text); border-color: var(--accent); background: var(--surface-3); }
+.tm-timepicker-toggle:disabled { opacity: 0.45; cursor: default; pointer-events: none; }
+.tm-timepicker-popover {
+  margin: 0;
+  padding: var(--space-6);
+  border: 1px solid var(--border-2);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-pop);
+  inset: auto;
+  position: absolute;
+  top: 100%;
+  inset-inline-start: 0;
+  z-index: var(--z-popover);
+  display: flex;
+  gap: var(--space-6);
+  animation: menu-in var(--dur-quick) ease;
+}
+.tm-timepicker-col {
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 56px;
+}
+.tm-timepicker-opt {
+  padding: var(--space-6) var(--space-10);
+  background: none;
+  border: 1px solid transparent;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-dim);
+  cursor: pointer;
+  text-align: center;
+  transition: background var(--dur-base) ease, color var(--dur-base) ease, border-color var(--dur-base) ease;
+}
+.tm-timepicker-opt:hover { background: var(--surface-3); color: var(--text); }
+.tm-timepicker-opt:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+.tm-timepicker-opt.selected,
+.tm-timepicker-opt[aria-selected="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ---------- combobox (createCombobox) ---------- */
+
+.tm-combobox { position: relative; }
+.tm-combobox-box { position: relative; display: flex; align-items: center; }
+.tm-combobox-input { width: 100%; padding-inline-end: var(--space-24); }
+.tm-combobox-caret {
+  position: absolute;
+  inset-inline-end: var(--space-8);
+  display: inline-flex;
+  pointer-events: none;
+  color: var(--text-faint);
+}
+.tm-combobox-caret svg { width: 12px; height: 12px; transition: transform var(--dur-base) ease; }
+.tm-combobox.open .tm-combobox-caret svg { transform: rotate(180deg); color: var(--accent-hi); }
+
+/* Shared floating menu for combobox + multi-select. */
+.tm-combobox-menu {
+  position: absolute;
+  top: 100%;
+  inset-inline-start: 0;
+  min-width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  box-shadow: var(--shadow-pop);
+  z-index: var(--z-menu);
+  display: none;
+}
+.tm-combobox.open .tm-combobox-menu,
+.tm-multiselect.open .tm-combobox-menu {
+  display: block;
+  animation: menu-in var(--dur-quick) ease;
+}
+.tm-combobox-opt {
+  padding: var(--space-7) var(--space-12);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tm-combobox-opt:hover,
+.tm-combobox-opt.active { background: var(--surface-3); color: var(--text); }
+.tm-combobox-opt[aria-selected="true"] { color: var(--accent-hi); background: var(--accent-soft); }
+.tm-combobox-status {
+  padding: var(--space-7) var(--space-12);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+}
+
+/* ---------- multi-select (createMultiSelect) ---------- */
+
+.tm-multiselect { position: relative; }
+.tm-multiselect-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+  background: var(--input-bg);
+  border: 1px solid var(--border-2);
+  padding: var(--space-5);
+  transition: border-color var(--dur-base) ease, box-shadow var(--dur-base) ease;
+}
+.tm-multiselect-control:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-a18);
+}
+.tm-multiselect-chips { display: contents; }
+.tm-multiselect-input {
+  flex: 1;
+  min-width: 80px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: var(--space-3) var(--space-5);
+  outline: none;
+}
+.tm-multiselect-input::placeholder { color: var(--text-faint); }
+
+/* Sharp removable chip -- radius 0 is the identity. */
+.tm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-a40);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-8);
+}
+.tm-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color var(--dur-base) ease;
+}
+.tm-chip-remove svg { width: 12px; height: 12px; }
+.tm-chip-remove:hover { color: var(--red); }
+.tm-chip-remove:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---------- accordion (createAccordion) ---------- */
+
+.tm-accordion {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.tm-accordion-item { border-bottom: 1px solid var(--border); }
+.tm-accordion-item:last-child { border-bottom: none; }
+.tm-accordion-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-10);
+  background: none;
+  border: none;
+  padding: var(--space-12) var(--space-16);
+  color: var(--text);
+  font-family: var(--font-brand);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-xs);
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--dur-base) ease, color var(--dur-base) ease;
+}
+.tm-accordion-header:hover { background: var(--surface-2); }
+.tm-accordion-header:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+.tm-accordion-chevron {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-faint);
+}
+.tm-accordion-chevron svg { width: 16px; height: 16px; transition: transform var(--dur-base) ease; }
+.tm-accordion-item.open .tm-accordion-chevron svg { transform: rotate(180deg); color: var(--accent-hi); }
+/* grid-template-rows 0fr -> 1fr expansion. Duration token only, so the global
+   reduced-motion rule (which zeroes transition-duration) fully covers it. */
+.tm-accordion-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-slow) ease;
+}
+.tm-accordion-item.open .tm-accordion-panel { grid-template-rows: 1fr; }
+.tm-accordion-panel-inner { overflow: hidden; }
+.tm-accordion-body {
+  padding: 0 var(--space-16) var(--space-14);
+  color: var(--text-dim);
+  font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
+}
+
 /* ---------- responsive ---------- */
 
 /* Docs layout: stack TOC above content on narrow screens */
