@@ -13,10 +13,54 @@
 #   e) rlsbl check --tag changelog  -- changelog coverage
 #
 # Exit code is non-zero if any gate fails.
+#
+# --stress (opt-in): instead of the normal phase suite, run only the
+# interaction-heavy e2e specs (chrome, light-dismiss, tooltip-hovercard,
+# datepicker, forms, ctxmenu) under a load profile -- --repeat-each=10
+# --workers=6. That profile stresses timing-sensitive overlay behavior
+# (close/reopen, focus, dismissal ordering) and surfaces load-dependent races
+# that unloaded single-pass runs miss. Nothing invokes this automatically; it is
+# an explicit pre-release step. Usage:
+#   scripts/checkpoint.sh --stress
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO"
+
+# Argument parsing: the only accepted flag is --stress.
+STRESS=0
+for arg in "$@"; do
+  case "$arg" in
+    --stress) STRESS=1 ;;
+    *) echo "checkpoint: unknown argument: ${arg} (only --stress is accepted)" >&2; exit 2 ;;
+  esac
+done
+
+# Stress mode: the load-profile e2e gate. Runs the interaction-heavy specs with
+# repeat + parallel workers so timing-sensitive overlay races show up locally
+# instead of only on a loaded CI runner.
+if [ "${STRESS}" -eq 1 ]; then
+  stress_cmd="npx playwright test \
+    tests/js/e2e/chrome.spec.js \
+    tests/js/e2e/light-dismiss.spec.js \
+    tests/js/e2e/tooltip-hovercard.spec.js \
+    tests/js/e2e/datepicker.spec.js \
+    tests/js/e2e/forms.spec.js \
+    tests/js/e2e/ctxmenu.spec.js \
+    --repeat-each=10 --workers=6"
+  echo
+  echo "==> stress gate: interaction-heavy e2e under load (--repeat-each=10 --workers=6)"
+  echo "    \$ ${stress_cmd}"
+  if bash -c "${stress_cmd}"; then
+    echo
+    echo "checkpoint(stress): PASSED"
+    exit 0
+  else
+    echo
+    echo "checkpoint(stress): FAILED"
+    exit 1
+  fi
+fi
 
 # Parallel arrays: human label and the command to run for each gate.
 labels=(

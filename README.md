@@ -321,6 +321,12 @@ CI does not run until release, so the local suite is the quality gate between wo
 ./scripts/checkpoint.sh
 ```
 
+Before a release, also run the opt-in stress gate. It runs the interaction-heavy e2e specs (chrome, light-dismiss, tooltip-hovercard, datepicker, forms, ctxmenu) under a load profile -- `--repeat-each=10 --workers=6` -- which exercises timing-sensitive overlay behavior (close/reopen, focus, dismissal ordering) and surfaces load-dependent races that unloaded single-pass runs miss. Nothing invokes it automatically; it is an explicit pre-release step.
+
+```
+./scripts/checkpoint.sh --stress
+```
+
 ## License
 
 MIT
