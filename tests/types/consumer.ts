@@ -37,6 +37,10 @@ import {
   createFileInput,
   createSegmented,
   createTabs,
+  createInput,
+  createTextarea,
+  createField,
+  createSlider,
   createDatePicker,
   cssVar,
   ensureRoot,
@@ -67,6 +71,7 @@ ref(
   createSelect, createEmbed, registerCtx, registerCtxFooter, showCtxMenu, hideCtxMenu,
   openPopover, closePopover, createSwitch, copyButton, kebabButton,
   createCheckbox, createRadio, createFileInput, createSegmented, createTabs,
+  createInput, createTextarea, createField, createSlider,
   createDatePicker, cssVar, ensureRoot, placeBelow, registerCopyable,
   unregisterCopyable, getCopyData, mountShell,
   api, post, createSettings, renderDocMd, createWikiView,
@@ -91,6 +96,42 @@ sw.destroy();
 const mapEmbed = createEmbed({ mode: "iframe", label: "Map", src: "/map" });
 mapEmbed.setSrc?.("/map?zoom=2");
 mapEmbed.destroy();
+
+const nameInput = createInput({
+  name: "username",
+  label: "Username",
+  type: "text",
+  required: true,
+  onInput: (v: string) => ref(v),
+});
+const nameValue: string = nameInput.value;
+nameInput.set("ada");
+nameInput.focus();
+nameInput.setError("Taken");
+nameInput.setError(null);
+ref(nameValue, nameInput.get());
+
+const bio = createTextarea({ name: "bio", label: "Bio", rows: 4 });
+bio.set("hello");
+bio.destroy();
+
+const volume = createSlider({
+  name: "volume",
+  label: "Volume",
+  min: 0,
+  max: 100,
+  value: 40,
+  onInput: (v: number) => ref(v),
+  onChange: (v: number) => ref(v),
+});
+const vol: number = volume.value;
+volume.set(80);
+ref(vol, volume.get());
+
+const volField = createField({ label: "Volume", control: volume, hint: "0–100" });
+volField.setError("Too loud");
+volField.setError(null);
+ref(volField.el);
 
 // -- exercise a handful of typed calls (extras) -------------------------------
 

@@ -49,14 +49,14 @@ BudgetRow = namedtuple("BudgetRow", "name kind members ceiling counted")
 _SUBDIR = {"js": "js", "css": "css", "font": "fonts"}
 _EXT = {"js": "*.js", "css": "*.css", "font": "*.woff2"}
 
-# Core modules: dom, icons, kernel, controls, select, embed, datepicker,
-# modal, popover, tooltip, hovercard, ctxmenu, toast, markdown, shell, index
-# barrel.
+# Core modules: dom, icons, kernel, controls, inputs, slider, select, embed,
+# datepicker, modal, popover, tooltip, hovercard, ctxmenu, toast, markdown,
+# shell, index barrel.
 _CORE_JS = frozenset({
     "controls.js", "ctxmenu.js", "datepicker.js", "dom.js", "embed.js",
-    "hovercard.js", "icons.js", "index.js", "kernel.js", "markdown.js",
-    "modal.js", "popover.js", "select.js", "shell.js", "toast.js",
-    "tooltip.js",
+    "hovercard.js", "icons.js", "index.js", "inputs.js", "kernel.js",
+    "markdown.js", "modal.js", "popover.js", "select.js", "shell.js",
+    "slider.js", "toast.js", "tooltip.js",
 })
 
 # Extras modules: wiki, net, settings, extras barrel.

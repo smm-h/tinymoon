@@ -41,6 +41,12 @@ const MIGRATED = [
   "createFileInput",
   "createSegmented",
   "createTabs",
+  // inputs.js — createX(opts) -> {el, ...} convention
+  "createInput",
+  "createTextarea",
+  "createField",
+  // slider.js — createSlider(opts) -> {el, value, set, get, destroy}
+  "createSlider",
   // select.js — createSelect(opts) -> {el, set, value, setItems, destroy}
   "createSelect",
   // embed.js — createEmbed(opts) -> {el, ...mode methods, destroy}
@@ -188,6 +194,56 @@ describe("api-convention: migrated primitives", () => {
     expect(instance).not.toBeInstanceOf(HTMLElement);
     expect(instance.el).toBeInstanceOf(HTMLElement);
     expect(typeof instance.set).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createInput(opts) conforms to the convention", async () => {
+    const { createInput } = await import("../../../assets/js/index.js");
+    const instance = createInput({ name: "test", label: "Test" });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
+    expect(typeof instance.get).toBe("function");
+    expect(typeof instance.focus).toBe("function");
+    expect(typeof instance.setError).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createTextarea(opts) conforms to the convention", async () => {
+    const { createTextarea } = await import("../../../assets/js/index.js");
+    const instance = createTextarea({ name: "test", label: "Test" });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
+    expect(typeof instance.setError).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createField(opts) conforms to the convention", async () => {
+    const { createField } = await import("../../../assets/js/index.js");
+    const control = document.createElement("input");
+    const instance = createField({ label: "Test", control });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.setError).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createSlider(opts) conforms to the convention", async () => {
+    const { createSlider } = await import("../../../assets/js/index.js");
+    const instance = createSlider({ name: "test", label: "Test", min: 0, max: 10 });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
+    expect(typeof instance.get).toBe("function");
     expect(typeof instance.destroy).toBe("function");
   });
 
