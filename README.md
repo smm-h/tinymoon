@@ -227,6 +227,19 @@ The visual identity is enforced by constraint, not offered as options:
 
 Design tokens let you re-theme and re-accent; they do not let you opt out of the identity.
 
+## Scope and non-goals
+
+tinymoon is deliberately narrow: a **fixed-identity, hand-coded, web-only** UI framework for building internal tools and dashboards. You write plain semantic content and small view objects; tinymoon supplies the shell, typography, widgets, and motion, as native ES modules and plain CSS with no build step, no dependencies, and no network loads. The identity is a constant, not a configuration surface.
+
+Because that scope is intentional, several things are explicit **non-goals**. tinymoon does not, and will not, provide:
+
+- **Server-driven UI trees.** The UI is authored in code at build time by the developer, not streamed as a declarative tree that a backend assembles and mutates at runtime.
+- **Per-deployment theming.** There is no mechanism to override radii, fonts, or the palette per app or per deployment. Sharp corners, the three-font system, and the accent language are fixed. Tokens let you re-theme and re-accent within the identity; they do not let you fork it.
+- **Cross-platform native rendering.** tinymoon targets the web platform only. There is no native iOS/Android/desktop renderer and no abstraction layer that would enable one.
+- **App-platform features.** Window docking, draggable panel layouts, a plugin/extension runtime, and similar "platform" capabilities are out of scope. tinymoon is a component-and-shell toolkit, not an application platform.
+
+If you are building one of those systems -- a server-driven declarative UI runtime, a per-app theming engine, a cross-platform renderer, or a docking/plugin host -- tinymoon is not the framework to build it on. At most, such a system may consume tinymoon's **design-token values** (the palette and type scale, as plain values) as a source of visual kinship. It should never depend on tinymoon's runtime, and tinymoon will never grow runtime hooks to accommodate those models.
+
 ## Size
 
 No overhead -- as a number, not a vibe. Shipped CSS, JS, and fonts have hard byte ceilings enforced by CI; nothing bloats quietly.
