@@ -113,8 +113,9 @@ _CSS_SHEETS = frozenset({
 # Optional fifth sheet -- linked after primitives.css only by apps that render
 # these widgets. Ceiling raised ONCE for the Phase 5 data-display widgets (badge
 # variants + gold, stat trend indicators, the interactive data grid's sticky
-# header/sort caret/focus rings, and the virtual list). Measured new baseline
-# 9,527 bytes (was 4,881); ceiling is new-baseline + 25% rounded clean.
+# header/sort caret/focus rings, and the virtual list), plus a legibility fix
+# bumping the 10px stat/table labels to --text-dim. Measured new baseline 9,893
+# bytes (was 4,881); ceiling is new-baseline + 25% rounded clean (12,000).
 _WIDGETS_CSS = frozenset({"widgets.css"})
 
 BUDGETS = [

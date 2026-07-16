@@ -108,12 +108,15 @@
   font-family: var(--font-mono);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-faint);
+  /* --text-dim, not --text-faint: at 10px the muted label must still clear
+     4.5:1 once the grain overlay composites onto surface-2 (faint drops to
+     ~4.47:1 there; dim holds ~6.5:1). */
+  color: var(--text-dim);
   display: block;
   margin-bottom: var(--space-3);
 }
 .stat .v { font-weight: var(--weight-medium); font-size: var(--text-base); font-family: var(--font-mono); color: var(--text); display: inline-flex; align-items: center; gap: var(--space-5); }
-.stat .v small { font-size: var(--text-label); color: var(--text-faint); }
+.stat .v small { font-size: var(--text-label); color: var(--text-dim); }
 .stat-v-text { color: var(--text); }
 
 /* Trend: an explicit, non-text delta indicator. The direction colors a small
@@ -144,7 +147,10 @@ table.data th {
   font-family: var(--font-mono);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-faint);
+  /* --text-dim, not --text-faint: the 10px uppercase header must clear 4.5:1
+     even after the grain overlay composites onto the surface (faint lands at
+     ~4.47:1 there). */
+  color: var(--text-dim);
   padding: var(--space-7) var(--space-10);
   border-bottom: 1px solid var(--border-2);
   white-space: nowrap;
@@ -162,7 +168,7 @@ table.data tr:hover td { background: var(--surface-2); color: var(--text); }
    a sticky header, a caller-side sort indicator, focus rings on cells, and the
    "N more rows not shown" footer note. */
 .tm-table { table-layout: auto; }
-.tm-table caption { text-align: start; color: var(--text-faint); font-size: var(--text-label); font-family: var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; padding: var(--space-6) var(--space-10); }
+.tm-table caption { text-align: start; color: var(--text-dim); font-size: var(--text-label); font-family: var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; padding: var(--space-6) var(--space-10); }
 .tm-table thead th { position: sticky; top: 0; background: var(--surface-2); z-index: 1; }
 .tm-table th.sortable { cursor: pointer; user-select: none; }
 .tm-table th.sortable:hover { color: var(--text-dim); }
