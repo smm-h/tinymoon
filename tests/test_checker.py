@@ -54,7 +54,34 @@ EXPECTED_VIOLATIONS = {
         (6, NATIVE_CONTROL),  # <input type="checkbox">
         (7, NATIVE_CONTROL),  # <input type="radio">
         (8, NATIVE_CONTROL),  # <input type="file">
-        # line 9 <input type="text"> must NOT fire
+        (9, NATIVE_CONTROL),  # <input type="text"> -- text is now banned (-> createInput)
+    ],
+    # Representative new HTML bans: text-like types, range/number/time/date,
+    # a native <textarea> element, and a bare typeless <input> (defaults to text).
+    "native-input-types.html": [
+        (4, NATIVE_CONTROL),   # type="range"
+        (5, NATIVE_CONTROL),   # type="text"
+        (6, NATIVE_CONTROL),   # type="password"
+        (7, NATIVE_CONTROL),   # type="email"
+        (8, NATIVE_CONTROL),   # type="url"
+        (9, NATIVE_CONTROL),   # type="search"
+        (10, NATIVE_CONTROL),  # type="tel"
+        (11, NATIVE_CONTROL),  # type="number"
+        (12, NATIVE_CONTROL),  # type="time"
+        (13, NATIVE_CONTROL),  # type="date"
+        (14, NATIVE_CONTROL),  # <textarea>
+        (15, NATIVE_CONTROL),  # bare <input> (typeless -> text)
+    ],
+    # New JS bans: explicit type LITERAL assignments and native <textarea>
+    # creation fire; bare el("input")/createElement("input") does NOT (a known
+    # JS bypass -- see the checker doctrine header).
+    "native-control-js-types.js": [
+        (8, NATIVE_CONTROL),   # a.type = "text"
+        (10, NATIVE_CONTROL),  # b.setAttribute("type", "email")
+        (12, NATIVE_CONTROL),  # c.type = "number"
+        (13, NATIVE_CONTROL),  # el("textarea")
+        (14, NATIVE_CONTROL),  # createElement("textarea")
+        (16, NATIVE_CONTROL),  # r.type = "range"
     ],
     "native-control.js": [
         (3, NATIVE_CONTROL),  # el("select", ...)
@@ -210,6 +237,47 @@ def test_framework_own_select_native_control_exempt():
             f"{v.line}: {v.message}" for v in violations if v.rule == NATIVE_CONTROL
         )
     )
+
+
+def test_framework_own_visible_native_inputs_exempt():
+    """tinymoon's own styled-native factories create VISIBLE native controls
+    with explicit type literals -- createSlider's `range.type = "range"`,
+    createNumber's `input.type = "number"`, the datepicker's text input. The
+    framework-own allowance (keyed on location) suppresses native-control for
+    them, exactly as for the hidden <select>/<dialog>."""
+    root = REPO / "assets"
+    for module in ("slider.js", "inputs.js", "datepicker.js", "timepicker.js"):
+        violations = scan_file(root / "js" / module, root, frozenset())
+        assert not any(v.rule == NATIVE_CONTROL for v in violations), (
+            f"{module} must pass self-conformance: "
+            + "; ".join(
+                f"{v.line}: {v.message}"
+                for v in violations
+                if v.rule == NATIVE_CONTROL
+            )
+        )
+
+
+def test_consumer_hidden_and_color_inputs_are_legal(tmp_path):
+    """type="hidden" (no identity surface) and type="color" (no replacement
+    factory yet -- the ban-ships-its-replacement gate forbids banning it) stay
+    legal in consumer code; neither fires native-control."""
+    (tmp_path / "page.html").write_text(
+        '<input type="hidden" name="t">\n<input type="color" name="c">\n'
+    )
+    assert scan_dir(tmp_path) == []
+
+
+def test_consumer_bare_input_html_fires_but_js_bare_input_does_not(tmp_path):
+    """A bare <input> in HTML fires (typeless defaults to text), but a bare
+    el("input")/createElement("input") in JS does NOT (a known JS bypass:
+    the regex cannot see a later type="hidden" assignment)."""
+    (tmp_path / "page.html").write_text("<input>\n")
+    (tmp_path / "widget.js").write_text(
+        'const a = el("input");\nconst b = document.createElement("input");\n'
+    )
+    results = {(v.path.replace("\\", "/"), v.line, v.rule) for v in scan_dir(tmp_path)}
+    assert results == {("page.html", 1, NATIVE_CONTROL)}
 
 
 def test_consumer_file_named_select_js_still_fires(tmp_path):

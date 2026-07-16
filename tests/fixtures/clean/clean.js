@@ -5,7 +5,7 @@ import { cssVar } from "../settings.js";
 export async function run(url) {
   const data = await fetch(url).then((r) => r.json());
   const input = el("input");
-  input.type = "text";
+  input.type = "hidden";
   const box = el("div", "box");
   box.style.color = cssVar("--accent");
   box.style.background = "var(--surface)";
