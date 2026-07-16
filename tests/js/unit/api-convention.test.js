@@ -441,3 +441,93 @@ describe("api-convention: state barrel coverage", () => {
     expect(typeof reconcile).toBe("function");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Widgets barrel coverage
+// ---------------------------------------------------------------------------
+//
+// The data-display widgets (badge, stats, table, virtual list) live in the
+// separate "tinymoon/widgets" barrel, classified separately from the core
+// component convention (mirroring the state barrel). Two shapes coexist here:
+//
+// - createStat, renderStats, createTable, createVirtualList are stateful
+//   components: createX(opts) -> {el, ...methods, destroy}, matching the
+//   convention.
+// - badge is a one-shot element factory (returns a bare <span>, no .el wrapper,
+//   no state, no .destroy()), exactly like copyButton/kebabButton in the core
+//   barrel. windowRange is a pure math utility. Neither is a component.
+
+const WIDGETS_COMPONENT_EXPORTS = [
+  "createStat", "renderStats", "createTable", "createVirtualList",
+];
+const WIDGETS_NON_COMPONENT_EXPORTS = [
+  // badge.js — one-shot element factory (bare <span>, not an instance).
+  "badge",
+  // virtuallist.js — pure windowing-math utility.
+  "windowRange",
+];
+
+describe("api-convention: widgets barrel coverage", () => {
+  it("widgets barrel exports exactly the expected names", async () => {
+    const widgets = await import("../../../assets/js/widgets.js");
+    const exportNames = Object.keys(widgets).sort();
+    const expected = [...WIDGETS_COMPONENT_EXPORTS, ...WIDGETS_NON_COMPONENT_EXPORTS].sort();
+    expect(exportNames).toEqual(expected);
+  });
+
+  it("createStat(opts) conforms to the component convention", async () => {
+    const { createStat } = await import("../../../assets/js/widgets.js");
+    const instance = createStat({ label: "Items", value: 12 });
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
+    expect(typeof instance.setTrend).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("renderStats(items) conforms to the component convention", async () => {
+    const { renderStats } = await import("../../../assets/js/widgets.js");
+    const instance = renderStats([{ label: "A", value: 1 }, { label: "B", value: 2 }]);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(Array.isArray(instance.stats)).toBe(true);
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createTable(opts) conforms to the component convention", async () => {
+    const { createTable } = await import("../../../assets/js/widgets.js");
+    const instance = createTable({ columns: [{ key: "a", label: "A" }] });
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.setRows).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createVirtualList(opts) conforms to the component convention", async () => {
+    const { createVirtualList } = await import("../../../assets/js/widgets.js");
+    const instance = createVirtualList({ rowHeight: 24, renderRow: () => document.createElement("div") });
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.setItems).toBe("function");
+    expect(typeof instance.scrollToIndex).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("badge is a one-shot element factory, not a component instance", async () => {
+    const { badge } = await import("../../../assets/js/widgets.js");
+    const node = badge("OK", "ok");
+    // Returns a bare element directly (like copyButton), no {el, ...} wrapper.
+    expect(node).toBeInstanceOf(HTMLElement);
+    expect(node.classList.contains("badge")).toBe(true);
+  });
+
+  it("windowRange is a pure function, not a component", async () => {
+    const { windowRange } = await import("../../../assets/js/widgets.js");
+    expect(typeof windowRange).toBe("function");
+    const r = windowRange(0, 100, 20, 1000, 3);
+    expect(r).toHaveProperty("start");
+    expect(r).toHaveProperty("end");
+  });
+});

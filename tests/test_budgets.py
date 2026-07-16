@@ -32,9 +32,10 @@ REPO = Path(__file__).resolve().parent.parent
 #   assets/fonts/*.woff2  (4 files)  -- measured elsewhere
 #
 # JS is split into core and extras tiers:
-#   Core:   93,984 bytes (15 modules)  -- ceiling 118,000
-#   Extras: 25,115 bytes (6 modules)   -- ceiling 32,000
-#   State:  10,281 bytes (2 modules)   -- ceiling 13,000
+#   Core:    93,984 bytes (15 modules)  -- ceiling 118,000
+#   Extras:  25,115 bytes (6 modules)   -- ceiling 32,000
+#   State:   10,281 bytes (2 modules)   -- ceiling 13,000
+#   Widgets: 19,783 bytes (5 modules)   -- ceiling 25,000
 #
 # Each row is a BudgetRow:
 #   name     -- human-readable tier/sheet name; names the test parameter
@@ -84,6 +85,16 @@ _STATE_JS = frozenset({
     "state.js", "store.js",
 })
 
+# Data-display widget modules (Phase 5A): the badge one-shot factory, the stat
+# tile + row builder, the keyboard-navigable data table, the fixed-height
+# virtual list, and the widgets barrel. Exported from the separate "tinymoon/
+# widgets" barrel (and per-module subpaths), never the core barrel, so they
+# budget in their own tier. Measured baseline 19,783 bytes; ceiling is baseline
+# + 25% rounded clean.
+_WIDGETS_JS = frozenset({
+    "badge.js", "stats.js", "table.js", "virtuallist.js", "widgets.js",
+})
+
 # Dev-only modules: not shipped in any barrel, not counted in size budgets.
 # Consumers import these directly during development. Classified for coverage
 # so every assets/js/*.js still belongs to exactly one row.
@@ -100,7 +111,10 @@ _CSS_SHEETS = frozenset({
 
 # Data-display widget layer: badges, cards, stats + data tables, empty state.
 # Optional fifth sheet -- linked after primitives.css only by apps that render
-# these widgets. Measured baseline 4,881 bytes; ceiling is baseline + 25%.
+# these widgets. Ceiling raised ONCE for the Phase 5 data-display widgets (badge
+# variants + gold, stat trend indicators, the interactive data grid's sticky
+# header/sort caret/focus rings, and the virtual list). Measured new baseline
+# 9,527 bytes (was 4,881); ceiling is new-baseline + 25% rounded clean.
 _WIDGETS_CSS = frozenset({"widgets.css"})
 
 BUDGETS = [
@@ -119,12 +133,16 @@ BUDGETS = [
     # state-js: Phase 4A state story (store.js + state.js barrel). Measured
     # baseline 10,281 bytes; ceiling is baseline + 25% rounded clean.
     BudgetRow("state-js", "js", _STATE_JS, 13_000, True),  # baseline 10,281
+    # widgets-js: Phase 5A data-display widgets (badge + stats + table +
+    # virtuallist + widgets barrel). Measured baseline 19,783 bytes; ceiling is
+    # baseline + 25% rounded clean. Its own tier -- the core row stays frozen.
+    BudgetRow("widgets-js", "js", _WIDGETS_JS, 25_000, True),  # baseline 19,783
     BudgetRow("dev-js", "js", _DEV_JS, None, False),
     # css: raised ONCE for the Phase 3 form-control additions (number stepper,
     # time picker, combobox, multi-select, accordion). Measured new baseline
     # 62,999 bytes (was 54,407); ceiling is new-baseline + 25% rounded clean.
     BudgetRow("css", "css", _CSS_SHEETS, 79_000, True),  # baseline 62,999
-    BudgetRow("widgets-css", "css", _WIDGETS_CSS, 6_100, True),  # baseline 4,881
+    BudgetRow("widgets-css", "css", _WIDGETS_CSS, 12_000, True),  # baseline 9,527
     BudgetRow("fonts", "font", "fonts/*.woff2", 122_000, True),
 ]
 

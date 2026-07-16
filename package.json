@@ -19,8 +19,13 @@
       "types": "./assets/js/state.d.ts",
       "default": "./assets/js/state.js"
     },
+    "./widgets": {
+      "types": "./assets/js/widgets.d.ts",
+      "default": "./assets/js/widgets.js"
+    },
     "./accordion": "./assets/js/accordion.js",
     "./auditor": "./assets/js/auditor.js",
+    "./badge": "./assets/js/badge.js",
     "./combobox": "./assets/js/combobox.js",
     "./controls": "./assets/js/controls.js",
     "./ctxmenu": "./assets/js/ctxmenu.js",
@@ -41,10 +46,13 @@
     "./settings": "./assets/js/settings.js",
     "./shell": "./assets/js/shell.js",
     "./slider": "./assets/js/slider.js",
+    "./stats": "./assets/js/stats.js",
     "./store": "./assets/js/store.js",
+    "./table": "./assets/js/table.js",
     "./timepicker": "./assets/js/timepicker.js",
     "./toast": "./assets/js/toast.js",
     "./tooltip": "./assets/js/tooltip.js",
+    "./virtuallist": "./assets/js/virtuallist.js",
     "./wiki": "./assets/js/wiki.js",
     "./assets/*": "./assets/*"
   },

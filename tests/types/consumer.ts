@@ -81,6 +81,17 @@ import {
   reconcile,
 } from "tinymoon/state";
 
+// -- widgets barrel ("tinymoon/widgets") --------------------------------------
+
+import {
+  badge,
+  createStat,
+  renderStats,
+  createTable,
+  createVirtualList,
+  windowRange,
+} from "tinymoon/widgets";
+
 // Reference every import so the fixture is a genuine consumer. `unknownRef`
 // swallows values without exercising their behavior; the typed calls below do
 // the real checking.
@@ -99,6 +110,7 @@ ref(
   fmtTime, relativeTime, liveRelativeTime,
   createSettings, renderDocMd, createWikiView,
   createStore, bindStore, reconcile,
+  badge, createStat, renderStats, createTable, createVirtualList, windowRange,
 );
 
 // -- exercise a handful of typed calls (core) ---------------------------------
@@ -333,3 +345,54 @@ const wiki = createWikiView({
 wiki.build();
 wiki.refresh();
 ref(heading, found, many, markup, docBody, wiki);
+
+// -- exercise a handful of typed calls (widgets) ------------------------------
+
+// badge: a one-shot element (variant is a checked union).
+const okBadge: HTMLElement = badge("Ready", "ok");
+const bareBadge: HTMLElement = badge("Idle");
+ref(okBadge, bareBadge);
+
+// createStat / renderStats: trend is the explicit union.
+const stat = createStat({ label: "Errors", value: 0, unit: "today", trend: "good" });
+stat.set(3);
+stat.setTrend("bad");
+stat.setTrend(null);
+const statsRow = renderStats([
+  { label: "Items", value: 128 },
+  { label: "Uptime", value: "42:07", trend: "neutral" },
+]);
+const firstStat: HTMLElement = statsRow.stats[0].el;
+statsRow.destroy();
+ref(stat.el, firstStat);
+
+// createTable: columns are generic over the row shape; format may return a Node.
+interface FileRow { name: string; size: number; }
+const fileTable = createTable<FileRow>({
+  caption: "Files",
+  maxRows: 50,
+  columns: [
+    { key: "name", label: "Name", sortable: true },
+    { key: (row) => row.size, label: "Size", align: "end", format: (v) => String(v) + " B" },
+    { key: "name", label: "Chip", format: (_v, row) => badge(row.name, "muted") },
+  ],
+  rows: [{ name: "a.css", size: 10 }],
+  onSort: (key, direction) => ref(key, direction),
+});
+fileTable.setRows([{ name: "b.js", size: 20 }]);
+fileTable.destroy();
+ref(fileTable.el);
+
+// createVirtualList: generic over the item type; renderRow returns a Node.
+const vlist = createVirtualList<{ id: number }>({
+  rowHeight: 28,
+  overscan: 4,
+  items: [{ id: 1 }, { id: 2 }],
+  getKey: (item) => item.id,
+  renderRow: (item, index) => el("div", "row", "#" + index + " id=" + item.id),
+});
+vlist.setItems([{ id: 3 }]);
+vlist.scrollToIndex(0);
+vlist.destroy();
+const range: { start: number; end: number } = windowRange(0, 200, 28, 1000, 4);
+ref(vlist.el, range.start, range.end);

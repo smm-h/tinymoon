@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import * as core from "../../../assets/js/index.js";
 import * as extras from "../../../assets/js/extras.js";
 import * as state from "../../../assets/js/state.js";
+import * as widgets from "../../../assets/js/widgets.js";
 
 // Type-declaration parity guard.
 //
@@ -46,5 +47,11 @@ describe("type declaration parity", () => {
     const declared = readDecl("state.d.ts");
     const missing = Object.keys(state).filter((n) => !declared.has(n));
     expect(missing, `state exports missing from state.d.ts: ${missing.join(", ")}`).toEqual([]);
+  });
+
+  it("every runtime export of the widgets barrel is declared in widgets.d.ts", () => {
+    const declared = readDecl("widgets.d.ts");
+    const missing = Object.keys(widgets).filter((n) => !declared.has(n));
+    expect(missing, `widgets exports missing from widgets.d.ts: ${missing.join(", ")}`).toEqual([]);
   });
 });
