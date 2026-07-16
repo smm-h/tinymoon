@@ -48,7 +48,8 @@ export function announce(msg) { if (_announcer) _announcer.textContent = msg || 
 const _declCache = new Map();
 function resolveView(viewSpec) {
   if (typeof viewSpec === "function") return viewSpec();
-  // declarative: string or Element — wrap once, cache by identity
+  if (viewSpec instanceof Object && !(viewSpec instanceof Element))
+    throw new Error("mountShell: route view is an object, not a factory -- wrap it: () => view");
   if (_declCache.has(viewSpec)) return _declCache.get(viewSpec);
   const wrapper = {
     root: null,
