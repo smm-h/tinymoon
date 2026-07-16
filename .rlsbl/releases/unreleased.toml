@@ -1,9 +1,11 @@
 # Version bump type: patch, minor, major, hotfix, or prerelease
-bump = ""
+bump = "minor"
 # Short description of this release (required)
-description = ""
+description = "Consumer-driven patch wave: vendored-framework recognition by hash identity, fenced code blocks in doc markdown, put/patch/del net helpers, table row event hooks, 2+1/1+2 grid presets, a WCAG-verified danger button, and a Python-side theme boot snippet — plus checker false-positive fixes and a hard error for a silent route misconfiguration."
 # Optional context explaining why these changes were made
-context = ""
+context = """
+every item traces to frictions reported by the four real consumer migrations completed on 0.6.1; the vendored-identity mechanism extends the provenance doctrine so no-backend consumers can vendor the framework without quarantining it; the danger-button ladder exists because the naive red fill fails WCAG in dark theme (measured).
+"""
 # Pre-release identifier: alpha, beta, rc, or stable
 # preid = ""
 # Set to true to generate a blog post for this release
