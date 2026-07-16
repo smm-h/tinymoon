@@ -1,0 +1,22 @@
+/* Foreign vendor widget stylesheet (demo asset).
+ *
+ * This is a hand-written stand-in for a real third-party stylesheet a
+ * consumer might vendor verbatim -- deliberately garish and full of things
+ * the tinymoon charter bans (raw color literals, a rounded corner). It is
+ * NOT first-party code and is never rewritten to obey the charter; instead it
+ * is quarantined under gallery/third_party/ and pinned by sha256 in
+ * PROVENANCE.toml, which earns it an exemption from the conformance checker.
+ *
+ * The gallery's Embed route loads it into a shadow root, where its styling is
+ * sealed and cannot leak out to restyle the identity surface. The hex values
+ * are the exact equivalents of the CSS named colors hotpink/yellow/lime, so it
+ * renders identically garish.
+ */
+.foreign {
+  font-family: cursive;
+  background: #ff69b4;          /* hotpink fill */
+  color: #ffff00;               /* yellow text */
+  border: 6px dashed #00ff00;   /* lime dashed border */
+  border-radius: 18px;          /* rounded corner -- banned on the identity surface */
+  padding: 14px;
+}

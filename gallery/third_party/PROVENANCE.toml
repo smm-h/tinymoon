@@ -1,0 +1,14 @@
+# Vendor quarantine manifest for gallery/third_party/.
+#
+# Every file in this directory is third-party bytes the gallery vendors
+# verbatim and does not rewrite. Listing a file here, pinned by the sha256 of
+# its exact bytes, earns it an exemption from the tinymoon conformance checker
+# (`tinymoon check`). Editing a pinned file breaks its hash and fails the
+# check -- the pin is the proof the bytes are unmodified third-party code.
+#
+# Regenerate a sha256 with:  sha256sum gallery/third_party/<file>
+
+[[file]]
+path = "foreign-widget.css"
+origin = "hand-written demo asset simulating foreign CSS from a third-party widget vendor"
+sha256 = "a6d96b3a999b17010ce541dcf9c427648e9e929f5e5c89b96047e6c4c46a294f"

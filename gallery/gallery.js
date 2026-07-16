@@ -948,6 +948,13 @@ const FormsView = {
 // so the gallery stays checker-clean and auditor-clean; the genuinely external
 // cases (a foreign iframe src waived only inside the marker) live in the test
 // fixtures, never in the shipped gallery.
+//
+// The shadow demo's garish foreign CSS is a REAL vendored file, quarantined
+// under gallery/third_party/ and pinned by sha256 in its PROVENANCE.toml. The
+// gallery is its own first consumer of the vendor-quarantine mechanism: the
+// conformance checker exempts the pinned file rather than the CSS hiding in a
+// JS string. It is fetched same-origin (next to gallery.js) and sealed into
+// the shadow root, lazily on first build so it never touches gallery boot.
 const EmbedView = {
   root: null,
   built: false,
@@ -984,18 +991,25 @@ const EmbedView = {
     this.shadowEmbed = createEmbed({
       mode: "shadow",
       label: "Foreign widget (garish CSS, contained)",
-      content:
-        "<style>"
-        + ".foreign { font-family: cursive; background: hotpink; color: yellow;"
-        + " border: 6px dashed lime; border-radius: 18px; padding: 14px; }"
-        + "</style>"
-        + "<div class='foreign'>Foreign vendor UI. Its garish styling "
-        + "(hotpink fill, lime dashed border, rounded corners) is sealed inside "
-        + "the shadow root and cannot leak out to restyle the gallery.</div>",
     });
     this.shadowEmbed.el.style.width = "100%";
     shadowRow.appendChild(this.shadowEmbed.el);
     p.appendChild(shadowRow);
+
+    // Load the vendored, sha256-pinned foreign stylesheet and seal it into the
+    // shadow root. Fetched same-origin next to gallery.js.
+    fetch(new URL("third_party/foreign-widget.css", import.meta.url))
+      .then((r) => r.text())
+      .then((css) => {
+        this.shadowEmbed.setContent(
+          "<style>" + css + "</style>"
+          + "<div class='foreign'>Foreign vendor UI. Its garish styling "
+          + "(hotpink fill, lime dashed border, rounded corners) is sealed "
+          + "inside the shadow root and cannot leak out to restyle the "
+          + "gallery. Its stylesheet is a real vendored file, pinned by sha256 "
+          + "under gallery/third_party/.</div>",
+        );
+      });
 
     this.root.appendChild(p);
   },
