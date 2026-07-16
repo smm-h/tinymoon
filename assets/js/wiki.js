@@ -5,14 +5,27 @@
 import { $$, el } from "./dom.js";
 import { renderMiniMd } from "./markdown.js";
 
-// renderDocMd(md) → .doc-body node. The block dialect: paragraphs separated
-// by blank lines, "### Sub {#anchor}" subheadings, "- " bullet lists, and
-// the shared inline dialect (renderMiniMd).
+// renderDocMd(md) → .doc-body node. The block dialect:
+//   - paragraphs separated by blank lines
+//   - "### Sub {#anchor}" subheadings
+//   - "- " bullet lists
+//   - ``` fenced code blocks: everything between a line that starts with ```
+//     and the next such line is rendered VERBATIM into a <pre><code> (no inline
+//     markdown, no escaping surprises). An info string after the opening fence
+//     (```js) is accepted and ignored — syntax highlighting is out of scope.
+//   - the shared inline dialect (renderMiniMd) inside paragraphs, list items,
+//     and subheadings.
+// NOT supported (by design): tables, blockquotes, ATX headings other than
+// "###", ordered lists, and inline HTML. Author those as plain paragraphs or
+// bullet lists instead.
 export function renderDocMd(md) {
   const box = el("div", "doc-body");
   const lines = md.split("\n");
   let para = [];
   let list = null;
+  // While inside a fenced block, `code` accumulates the verbatim lines; it is
+  // null outside a fence.
+  let code = null;
   const flush = () => {
     if (list) { box.appendChild(list); list = null; }
     if (para.length) {
@@ -22,8 +35,25 @@ export function renderDocMd(md) {
       para = [];
     }
   };
+  const flushCode = () => {
+    const pre = el("pre", "doc-code");
+    const codeEl = el("code");
+    codeEl.textContent = code.join("\n");
+    pre.appendChild(codeEl);
+    box.appendChild(pre);
+    code = null;
+  };
   for (const raw of lines) {
     const line = raw.trimEnd();
+    // Fenced code blocks: a line starting with ``` opens/closes a verbatim
+    // block. Inside one, every line is kept as-is (no inline parsing).
+    const isFence = line.trimStart().startsWith("```");
+    if (code !== null) {
+      if (isFence) flushCode();
+      else code.push(raw);
+      continue;
+    }
+    if (isFence) { flush(); code = []; continue; }
     if (!line.trim()) { flush(); continue; }
     const h = line.match(/^### (.+?)(?:\s*\{#([^}]+)\})?$/);
     if (h) {
@@ -44,6 +74,8 @@ export function renderDocMd(md) {
     }
     para.push(line.trim());
   }
+  // An unterminated fence still renders its collected lines as a code block.
+  if (code !== null) flushCode();
   flush();
   return box;
 }

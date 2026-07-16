@@ -617,7 +617,7 @@ const WidgetsView = {
     const mdDemo = el("div");
     mdDemo.style.marginTop = "var(--space-12)";
     mdDemo.appendChild(el("div", "set-title", "renderDocMd (extras)"));
-    mdDemo.appendChild(renderDocMd("A doc paragraph with **bold**, `code`, and [a link](#/wiki/view-contract).\n\n- List item one\n- List item two"));
+    mdDemo.appendChild(renderDocMd("A doc paragraph with **bold**, `code`, and [a link](#/wiki/view-contract).\n\n- List item one\n- List item two\n\nFenced ``` code blocks render verbatim (no inline markdown, no highlighting):\n\n```js\nimport { renderDocMd } from \"tinymoon/extras\";\nconst body = renderDocMd(\"## not parsed — **verbatim**\");\n```\n\nTables and blockquotes stay out of scope by design."));
     netPanel.appendChild(mdDemo);
     this.root.appendChild(netPanel);
 
