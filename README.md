@@ -207,6 +207,23 @@ sha256sum third_party/foreign-widget.css
 
 The gallery is the mechanism's own first consumer: its Embed route's garish foreign CSS lives in `gallery/third_party/foreign-widget.css`, pinned by `gallery/third_party/PROVENANCE.toml`, and is loaded into a shadow root where its styling is sealed.
 
+### Conformance from non-Python CI
+
+The rules live in one place -- the Python checker. To let a reimplementation (a Go server, a CI job in any language) test itself instead of re-deriving the rules by hand and drifting, tinymoon ships two portable, machine-readable artifacts inside the packaged assets (wheel, npm tarball, and Go embed all carry them):
+
+- **`assets/conformance/rules.json`** -- the rule data: every rule id, the banned input types and native control tags, the skip dirs, the allowlist and quarantine conventions, and the load-vs-navigation attribute-semantics table. Generated straight from the checker's own constants, so it can never drift from the enforced rules.
+- **`assets/conformance/corpus/`** -- a byte-for-byte copy of the checker's own fixtures (`clean/`, `violations/`, `quarantine/`), paired with **`assets/conformance/expectations.json`**, the exact expected findings (per scan root, per file: ordered `[line, rule-id]` pairs; clean files map to `[]`).
+
+A reimplementation runs its own rule over the corpus and asserts its findings match `expectations.json` for that rule id. The Go side does exactly this as a worked example: [`tinymoon_conformance_test.go`](tinymoon_conformance_test.go) loads the artifacts from the embedded FS, implements the `title-attr` rule natively, runs it over the corpus, and requires an exact match. It is a demonstration of the consumption pattern -- deliberately one tiny rule, not a full Go checker.
+
+For **full scanning** from any CI -- not just conformance-testing a reimplementation -- invoke the shipped CLI; it is the single source of truth and needs no local Python setup:
+
+```
+uvx tinymoon check --dir <dir>
+```
+
+The corpus is fixture data with deliberate violations, so it is not part of the identity surface: the checker skips its own packaged corpus when self-scanning `assets`, and scans it normally only when it is the explicit target. Regenerate the artifacts after changing the checker or the fixtures with `scripts/gen_conformance_json.py`.
+
 ## App model
 
 **Copy system.** `registerCopyable(el, fn)` marks any element as copyable -- clicking it copies the value returned by `fn()` to the clipboard, with a toast confirmation. The `copyButton` helper wires a standalone copy button. `getCopyData(el)` retrieves registered copy data programmatically.
