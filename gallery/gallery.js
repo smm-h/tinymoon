@@ -44,32 +44,96 @@ let shell = null; // assigned by mountShell below; handlers run after mount
 
 // ---------- tokens view ----------
 
-const COLOR_TOKENS = [
-  "--bg", "--surface", "--surface-2", "--surface-3", "--border", "--border-2",
-  "--text", "--text-dim", "--text-faint",
-  "--accent", "--accent-hi", "--accent-soft", "--accent-glow",
-  "--accent-a12", "--accent-a18", "--accent-a35", "--accent-a40",
-  "--on-accent", "--green", "--red",
-  "--input-bg", "--hover-border", "--scroll-thumb", "--backdrop",
+// Token names, grouping membership, and order are DERIVED from the committed
+// export artifact (assets/tokens.json, generated from assets/css/tokens.css by
+// scripts/gen_tokens_json.py) rather than hand-listed here. Single source of
+// truth: a token added to the CSS surfaces in the gallery automatically and
+// can never be silently forgotten. The mapping layer below carries only
+// presentation metadata the raw artifact lacks -- panel title, icon, render
+// style, and the one curated intra-group ordering (layout) -- never the token
+// names themselves.
+//
+// Same-origin fetch: the gallery is served from the repo root, so the artifact
+// resolves next to the assets it mirrors. Values are still read live from
+// computed styles at render time (see refresh()), so theme switches show real
+// resolved values including color-mix() results the artifact leaves declared
+// but unresolved.
+const tokensArtifact = await fetch(new URL("../assets/tokens.json", import.meta.url))
+  .then((r) => r.json());
+
+const DEFAULT_TOKENS = tokensArtifact.themes.default.tokens;
+const DEFAULT_TOKEN_NAMES = Object.keys(DEFAULT_TOKENS); // CSS declaration order
+
+// Runtime-only tokens the shell sets at mount (e.g. the collapsed-sidebar
+// brand initial, an empty string until configured): nothing static to show.
+const HIDDEN_TOKENS = new Set(["--brand-initial"]);
+
+// A value that is a pure color literal (hex, rgb/rgba, hsl/hsla, color-mix).
+// Shadow and size values do not match, so colors classify cleanly by value.
+function isColorValue(v) {
+  return /^(#|rgba?\(|hsla?\(|color-mix\()/.test(v.trim());
+}
+
+const LAYOUT_TOKEN_ORDER = ["--sidebar-w", "--topbar-h", "--footer-h", "--grain-opacity"];
+
+// Ordered group specs. Each declared token joins the FIRST group whose match()
+// returns true; the page renders groups in this order. `style` selects the
+// renderer; `order` (optional) pins intra-group order where curation differs
+// from CSS declaration order.
+const TOKEN_GROUPS = [
+  { title: "Color tokens", icon: "library", style: "color",
+    match: (name, value) => isColorValue(value) },
+  { title: "Layout tokens", icon: "faders", style: "row", order: LAYOUT_TOKEN_ORDER,
+    match: (name) => LAYOUT_TOKEN_ORDER.includes(name) },
+  { title: "Font tokens", icon: "note", style: "font",
+    match: (name) => name.startsWith("--font-") },
+  { title: "Shadow tokens", icon: "copy", style: "shadow",
+    match: (name) => name.startsWith("--shadow-") },
+  { title: "Type scale", icon: "note", style: "row",
+    match: (name) => name.startsWith("--text-") },
+  { title: "Font weight", icon: "note", style: "row",
+    match: (name) => name.startsWith("--weight-") },
+  { title: "Line height", icon: "note", style: "row",
+    match: (name) => name.startsWith("--leading-") },
+  { title: "Spacing scale", icon: "faders", style: "row",
+    match: (name) => name.startsWith("--space-") },
+  { title: "Duration scale", icon: "faders", style: "row",
+    match: (name) => name.startsWith("--dur-") },
+  { title: "Z-index scale", icon: "faders", style: "row",
+    match: (name) => name.startsWith("--z-") },
 ];
-const LAYOUT_TOKENS = ["--sidebar-w", "--topbar-h", "--footer-h", "--grain-opacity"];
-const FONT_TOKENS = ["--font-ui", "--font-mono", "--font-brand"];
-const SHADOW_TOKENS = ["--shadow-card", "--shadow-pop", "--shadow-modal"];
-const TEXT_TOKENS = [
-  "--text-3xl", "--text-2xl", "--text-xl", "--text-lg", "--text-base",
-  "--text-sm", "--text-xs", "--text-2xs", "--text-3xs",
-  "--text-micro", "--text-label",
-];
-const WEIGHT_TOKENS = ["--weight-normal", "--weight-medium", "--weight-semibold", "--weight-bold"];
-const LEADING_TOKENS = ["--leading-tight", "--leading-normal", "--leading-relaxed"];
-const SPACING_TOKENS = [
-  "--space-1", "--space-2", "--space-3", "--space-4", "--space-5",
-  "--space-6", "--space-7", "--space-8", "--space-9", "--space-10",
-  "--space-12", "--space-14", "--space-16", "--space-18", "--space-20",
-  "--space-24", "--space-26", "--space-28", "--space-48",
-];
-const DURATION_TOKENS = ["--dur-fast", "--dur-quick", "--dur-base", "--dur-mid", "--dur-slow"];
-const Z_TOKENS = ["--z-menu", "--z-modal", "--z-ctx", "--z-popover", "--z-toast", "--z-grain", "--z-tooltip"];
+
+// Catch-all so a declared token claimed by no group above still renders --
+// completeness guarantee: nothing declared can vanish from the gallery.
+const OTHER_GROUP = { title: "Other tokens", icon: "library", style: "row" };
+
+// Classify declared default-theme tokens into groups. Returns
+// [{ title, icon, style, names }] in render order, skipping empty groups.
+function classifyTokens() {
+  const buckets = TOKEN_GROUPS.map((group) => ({ group, names: [] }));
+  const other = [];
+  for (const name of DEFAULT_TOKEN_NAMES) {
+    if (HIDDEN_TOKENS.has(name)) continue;
+    const idx = TOKEN_GROUPS.findIndex((g) => g.match(name, DEFAULT_TOKENS[name]));
+    if (idx === -1) { other.push(name); continue; }
+    buckets[idx].names.push(name);
+  }
+  const groups = [];
+  for (const { group, names } of buckets) {
+    if (!names.length) continue;
+    let ordered = names;
+    if (group.order) {
+      const rank = (n) => {
+        const i = group.order.indexOf(n);
+        return i === -1 ? group.order.length : i; // unknowns keep declaration order (stable sort)
+      };
+      ordered = [...names].sort((a, b) => rank(a) - rank(b));
+    }
+    groups.push({ ...group, names: ordered });
+  }
+  if (other.length) groups.push({ ...OTHER_GROUP, names: other });
+  return groups;
+}
 
 function panel(title, iconName) {
   const p = el("div", "panel");
@@ -88,77 +152,48 @@ const TokensView = {
     if (this.built) return;
     this.built = true;
 
-    const colors = panel("Color tokens", "library");
-    const grid = el("div", "sw-grid");
-    for (const name of COLOR_TOKENS) {
-      const sw = el("div", "sw");
-      const chip = el("div", "sw-chip");
-      chip.style.background = "var(" + name + ")";
-      sw.appendChild(chip);
-      sw.appendChild(el("div", "sw-name mono", name));
-      const v = el("div", "sw-val mono");
-      v.dataset.token = name;
-      sw.appendChild(v);
-      grid.appendChild(sw);
-    }
-    colors.appendChild(grid);
-    this.root.appendChild(colors);
+    for (const group of classifyTokens()) {
+      const p = panel(group.title, group.icon);
 
-    const layout = panel("Layout tokens", "faders");
-    for (const name of LAYOUT_TOKENS) {
-      const row = el("div", "tok-row");
-      row.appendChild(el("div", "tok-name mono", name));
-      const v = el("div", "tok-val mono");
-      v.dataset.token = name;
-      row.appendChild(v);
-      layout.appendChild(row);
-    }
-    this.root.appendChild(layout);
+      if (group.style === "color") {
+        const grid = el("div", "sw-grid");
+        for (const name of group.names) {
+          const sw = el("div", "sw");
+          const chip = el("div", "sw-chip");
+          chip.style.background = "var(" + name + ")";
+          sw.appendChild(chip);
+          sw.appendChild(el("div", "sw-name mono", name));
+          const v = el("div", "sw-val mono");
+          v.dataset.token = name;
+          sw.appendChild(v);
+          grid.appendChild(sw);
+        }
+        p.appendChild(grid);
+        this.root.appendChild(p);
+        continue;
+      }
 
-    const fonts = panel("Font tokens", "note");
-    for (const name of FONT_TOKENS) {
-      const row = el("div", "tok-row");
-      row.appendChild(el("div", "tok-name mono", name));
-      const sample = el("div", "tok-val", "Sphinx of black quartz, judge my vow — 0123456789");
-      sample.style.fontFamily = "var(" + name + ")";
-      sample.style.fontSize = "13px";
-      sample.style.color = "var(--text)";
-      row.appendChild(sample);
-      fonts.appendChild(row);
-    }
-    this.root.appendChild(fonts);
-
-    const shadows = panel("Shadow tokens", "copy");
-    for (const name of SHADOW_TOKENS) {
-      const row = el("div", "tok-row");
-      row.appendChild(el("div", "tok-name mono", name));
-      const demo = el("div", "shadow-demo");
-      demo.style.boxShadow = "var(" + name + ")";
-      row.appendChild(demo);
-      const v = el("div", "tok-val mono");
-      v.dataset.token = name;
-      row.appendChild(v);
-      shadows.appendChild(row);
-    }
-    this.root.appendChild(shadows);
-
-    // scale tokens: type, weight, leading, spacing, duration, z-index
-    const scales = [
-      ["Type scale", "note", TEXT_TOKENS],
-      ["Font weight", "note", WEIGHT_TOKENS],
-      ["Line height", "note", LEADING_TOKENS],
-      ["Spacing scale", "faders", SPACING_TOKENS],
-      ["Duration scale", "faders", DURATION_TOKENS],
-      ["Z-index scale", "faders", Z_TOKENS],
-    ];
-    for (const [title, ic, tokens] of scales) {
-      const p = panel(title, ic);
-      for (const name of tokens) {
+      for (const name of group.names) {
         const row = el("div", "tok-row");
         row.appendChild(el("div", "tok-name mono", name));
-        const v = el("div", "tok-val mono");
-        v.dataset.token = name;
-        row.appendChild(v);
+        if (group.style === "font") {
+          const sample = el("div", "tok-val", "Sphinx of black quartz, judge my vow — 0123456789");
+          sample.style.fontFamily = "var(" + name + ")";
+          sample.style.fontSize = "13px";
+          sample.style.color = "var(--text)";
+          row.appendChild(sample);
+        } else if (group.style === "shadow") {
+          const demo = el("div", "shadow-demo");
+          demo.style.boxShadow = "var(" + name + ")";
+          row.appendChild(demo);
+          const v = el("div", "tok-val mono");
+          v.dataset.token = name;
+          row.appendChild(v);
+        } else { // "row"
+          const v = el("div", "tok-val mono");
+          v.dataset.token = name;
+          row.appendChild(v);
+        }
         p.appendChild(row);
       }
       this.root.appendChild(p);
