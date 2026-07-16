@@ -45,6 +45,9 @@ const MIGRATED = [
   "createTabPanels",
   // grid.js — createGrid(opts) -> {el, slots, setPreset, destroy}
   "createGrid",
+  // iconbutton.js — iconButton(opts) -> {el, setActive, setIcon, destroy}.
+  // Unlike copyButton/kebabButton (bare elements), it returns an instance.
+  "iconButton",
   // inputs.js — createX(opts) -> {el, ...} convention
   "createInput",
   "createTextarea",
@@ -226,6 +229,17 @@ describe("api-convention: migrated primitives", () => {
     expect(instance).not.toBeInstanceOf(HTMLElement);
     expect(instance.el).toBeInstanceOf(HTMLElement);
     expect(typeof instance.set).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("iconButton(opts) conforms to the convention", async () => {
+    const { iconButton } = await import("../../../assets/js/index.js");
+    const instance = iconButton({ icon: "close", tip: "Close" });
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.setActive).toBe("function");
+    expect(typeof instance.setIcon).toBe("function");
     expect(typeof instance.destroy).toBe("function");
   });
 

@@ -109,7 +109,7 @@ _WIDGETS_JS = frozenset({
 # against the frozen core-js row, honoring the README Size promise that the
 # core ceiling is never raised -- growth happens in new tiers.
 _CHROME_JS = frozenset({
-    "view.js", "drawer.js", "tabpanels.js", "grid.js",
+    "view.js", "drawer.js", "tabpanels.js", "grid.js", "iconbutton.js",
 })
 
 # Dev-only modules: not shipped in any barrel, not counted in size budgets.
@@ -157,11 +157,11 @@ BUDGETS = [
     # core stays frozen.
     BudgetRow("widgets-js", "js", _WIDGETS_JS, 70_000, True),  # baseline 56,565
     # chrome-js: Phase 6A shell-and-chrome structural modules (view factory,
-    # openDrawer, tab panels, icon button, preset grid). Grows across the 6A
-    # subcommits; ceiling set once to accommodate the whole phase (+25% of the
-    # measured full-phase baseline, rounded clean). Core stays frozen -- these
-    # budget here even though they are re-exported from the core barrel.
-    BudgetRow("chrome-js", "js", _CHROME_JS, 13_000, True),
+    # openDrawer + swipe helper, tab panels, icon button, preset grid). Measured
+    # full-phase baseline 12,956 bytes; ceiling is +25% rounded clean. Core stays
+    # frozen -- these budget here even though they are re-exported from the core
+    # barrel (the barrel re-export lines are the only bytes that touch core).
+    BudgetRow("chrome-js", "js", _CHROME_JS, 16_000, True),  # baseline 12,956
     BudgetRow("dev-js", "js", _DEV_JS, None, False),
     # css: raised ONCE for the Phase 3 form-control additions (number stepper,
     # time picker, combobox, multi-select, accordion). Measured new baseline

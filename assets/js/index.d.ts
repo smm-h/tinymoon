@@ -178,6 +178,25 @@ export interface GridInstance {
 /** A CSS-first preset grid layout (content primitive, not a shell mode). */
 export function createGrid(opts: GridOpts): GridInstance;
 
+// -- iconbutton.js ------------------------------------------------------------
+
+export interface IconButtonOpts {
+  /** Icon name (rendered via icon()). */
+  icon: string;
+  tip?: string;
+  onClick?: (event: MouseEvent) => void;
+  /** Initial pressed/active state (default false). */
+  active?: boolean;
+}
+export interface IconButtonInstance {
+  el: HTMLElement;
+  setActive(active: boolean): void;
+  setIcon(name: string): void;
+  destroy(): void;
+}
+/** A reusable, stateful topbar icon button. Pass `.el` to topbarActions. */
+export function iconButton(opts: IconButtonOpts): IconButtonInstance;
+
 /** Copy-to-clipboard icon button. */
 export function copyButton(getText: () => string, tipText?: string): HTMLElement;
 /** Kebab (three-dot) menu button. */

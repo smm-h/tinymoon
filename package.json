@@ -40,6 +40,7 @@
     "./format": "./assets/js/format.js",
     "./grid": "./assets/js/grid.js",
     "./hovercard": "./assets/js/hovercard.js",
+    "./iconbutton": "./assets/js/iconbutton.js",
     "./icons": "./assets/js/icons.js",
     "./inputs": "./assets/js/inputs.js",
     "./kernel": "./assets/js/kernel.js",

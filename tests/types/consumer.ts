@@ -59,6 +59,7 @@ import {
   openDrawer,
   createTabPanels,
   createGrid,
+  iconButton,
 } from "tinymoon";
 
 // -- extras barrel ("tinymoon/extras") ----------------------------------------
@@ -120,7 +121,7 @@ ref(
   createDatePicker, createTimePicker, createCombobox, createMultiSelect,
   createAccordion, cssVar, ensureRoot, placeBelow, registerCopyable,
   unregisterCopyable, getCopyData, mountShell, announce, createView, openDrawer,
-  createTabPanels, createGrid,
+  createTabPanels, createGrid, iconButton,
   api, post, ApiError, setAuthHeader, sse, socket,
   fmtTime, relativeTime, liveRelativeTime,
   createSettings, renderDocMd, createWikiView,
@@ -218,6 +219,13 @@ const grid = createGrid({ preset: "2x2", slots: [el("div"), el("div")] });
 grid.setPreset("1x2");
 ref(grid.el, grid.slots.length);
 grid.destroy();
+
+// iconButton: instance-returning topbar button; pass .el to topbarActions.
+const pin = iconButton({ icon: "star", tip: "Pin", active: false, onClick: (e) => ref(e.type) });
+pin.setActive(true);
+pin.setIcon("close");
+ref(pin.el);
+pin.destroy();
 
 const volume = createSlider({
   name: "volume",
