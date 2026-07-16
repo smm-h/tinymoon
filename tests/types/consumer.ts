@@ -61,6 +61,13 @@ import {
 import {
   api,
   post,
+  ApiError,
+  setAuthHeader,
+  sse,
+  socket,
+  fmtTime,
+  relativeTime,
+  liveRelativeTime,
   createSettings,
   renderDocMd,
   createWikiView,
@@ -88,7 +95,9 @@ ref(
   createDatePicker, createTimePicker, createCombobox, createMultiSelect,
   createAccordion, cssVar, ensureRoot, placeBelow, registerCopyable,
   unregisterCopyable, getCopyData, mountShell,
-  api, post, createSettings, renderDocMd, createWikiView,
+  api, post, ApiError, setAuthHeader, sse, socket,
+  fmtTime, relativeTime, liveRelativeTime,
+  createSettings, renderDocMd, createWikiView,
   createStore, bindStore, reconcile,
 );
 
@@ -220,6 +229,52 @@ async function fetchThings(): Promise<void> {
   ref(users, created);
 }
 ref(fetchThings);
+
+// api/post accept per-request options (signal + headers); ApiError carries the
+// response metadata; setAuthHeader registers a headers getter.
+async function fetchWithOpts(): Promise<void> {
+  const ctrl = new AbortController();
+  try {
+    await api<{ id: number }>("/api/thing", { signal: ctrl.signal, headers: { "X-Trace": "1" } });
+    await post<{ ok: boolean }>("/api/thing", { a: 1 }, undefined, { signal: ctrl.signal });
+  } catch (e) {
+    if (e instanceof ApiError) {
+      const s: number = e.status;
+      const st: string = e.statusText;
+      const p: string = e.path;
+      const d: string | undefined = e.detail;
+      ref(s, st, p, d);
+    }
+  }
+}
+ref(fetchWithOpts);
+setAuthHeader(() => ({ Authorization: "Bearer token" }));
+
+// realtime: sse + socket wrappers.
+const stream = sse("/events", {
+  onMessage: (data: unknown, event: MessageEvent) => ref(data, event),
+  onError: (event: Event) => ref(event),
+  events: { tick: (data: unknown) => ref(data) },
+});
+stream.close();
+
+const ws = socket("/ws/chat", {
+  onMessage: (data: unknown) => ref(data),
+  onReconnect: () => ref("resync"),
+  reconnect: true,
+  protocols: ["v1"],
+});
+ws.send({ hello: "world" });
+ws.send("raw string");
+ws.close();
+
+// format: fmtTime, relativeTime, liveRelativeTime.
+const dur: string = fmtTime(3661);
+const rel: string = relativeTime(new Date(), Date.now());
+const rel2: string = relativeTime(Date.now() - 60000);
+const stopLive: () => void = liveRelativeTime(el("time"), new Date());
+stopLive();
+ref(dur, rel, rel2);
 
 // createSettings is generic over its schema: get()/set() are key-checked and
 // return/accept the schema's value type.

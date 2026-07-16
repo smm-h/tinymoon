@@ -33,7 +33,7 @@ REPO = Path(__file__).resolve().parent.parent
 #
 # JS is split into core and extras tiers:
 #   Core:   93,984 bytes (15 modules)  -- ceiling 118,000
-#   Extras:  8,407 bytes (4 modules)   -- ceiling 11,000
+#   Extras: 25,115 bytes (6 modules)   -- ceiling 32,000
 #   State:  10,281 bytes (2 modules)   -- ceiling 13,000
 #
 # Each row is a BudgetRow:
@@ -71,9 +71,9 @@ _CONTROLS_JS = frozenset({
     "accordion.js", "combobox.js", "timepicker.js",
 })
 
-# Extras modules: wiki, net, settings, extras barrel.
+# Extras modules: wiki, net, realtime, format, settings, extras barrel.
 _EXTRAS_JS = frozenset({
-    "extras.js", "net.js", "settings.js", "wiki.js",
+    "extras.js", "net.js", "realtime.js", "format.js", "settings.js", "wiki.js",
 })
 
 # State-story modules (Phase 4A): the reactive store + bind + keyed reconciler
@@ -110,7 +110,12 @@ BUDGETS = [
     # 25% rounded clean. Core-js stays frozen per the README Size promise --
     # these modules budget here, not against core.
     BudgetRow("controls-js", "js", _CONTROLS_JS, 46_000, True),  # baseline 36,692
-    BudgetRow("extras-js", "js", _EXTRAS_JS, 11_000, True),
+    # extras-js: raised ONCE for the Phase 4 realtime/net/format additions
+    # (sse + socket wrappers in realtime.js, ApiError + auth-hook + request
+    # options in net.js, and the restored fmtTime + relativeTime +
+    # liveRelativeTime in format.js). Measured new baseline 25,115 bytes (was
+    # 10,404 across 4 modules); ceiling is new-baseline + 25% rounded clean.
+    BudgetRow("extras-js", "js", _EXTRAS_JS, 32_000, True),  # baseline 25,115
     # state-js: Phase 4A state story (store.js + state.js barrel). Measured
     # baseline 10,281 bytes; ceiling is baseline + 25% rounded clean.
     BudgetRow("state-js", "js", _STATE_JS, 13_000, True),  # baseline 10,281

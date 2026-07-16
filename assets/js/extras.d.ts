@@ -6,23 +6,145 @@ import type { ShellView } from "./index.js";
 // -- net.js -------------------------------------------------------------------
 
 /**
- * GET `path` and return its parsed JSON body. Rejects with an `Error` carrying
- * the status code on any non-2xx response. The response type is unconstrained;
- * supply a type argument to narrow it (`api<User[]>("/users")`).
+ * Thrown by {@link api} and {@link post} on any non-OK (non-2xx) response. It
+ * carries the HTTP `status`, the `statusText`, the request `path`, and a
+ * `detail` surfaced from the response body's `detail` OR `error` field (both
+ * server shapes supported). `message` is the detail when present, else an
+ * "Error <status>" fallback. `detail` is `undefined` when the body carried
+ * neither field (or was not JSON).
  */
-export function api<T = unknown>(path: string): Promise<T>;
+export class ApiError extends Error {
+  readonly status: number;
+  readonly statusText: string;
+  readonly path: string;
+  readonly detail?: string;
+  constructor(status: number, statusText: string, path: string, detail?: string);
+}
+
+/** Per-request options common to {@link api} and {@link post}. */
+export interface RequestOpts {
+  /** An `AbortSignal` to cancel the request. */
+  signal?: AbortSignal;
+  /** Extra headers, merged over the auth-hook headers for this call. */
+  headers?: Record<string, string>;
+}
+
+/**
+ * GET `path` and return its parsed JSON body. Throws an {@link ApiError} on any
+ * non-OK response. The response type is unconstrained; supply a type argument
+ * to narrow it (`api<User[]>("/users")`). Absolute URLs are passed to `fetch`
+ * mechanically — URL legality is the conformance checker's concern, not this
+ * function's.
+ */
+export function api<T = unknown>(path: string, opts?: RequestOpts): Promise<T>;
 
 /**
  * POST `body` as JSON to `path` and return the parsed JSON response. On a
- * non-2xx response, `onError` (if given) is invoked with the server's `error`
- * field (or a status-code fallback) before the returned promise rejects with
- * an `Error` carrying the same message.
+ * non-OK response, `onError` (if given) is invoked with the error's message
+ * before the returned promise rejects with an {@link ApiError}.
  */
 export function post<T = unknown>(
   path: string,
   body: unknown,
   onError?: (msg: string, status: number, path: string) => void,
+  opts?: RequestOpts,
 ): Promise<T>;
+
+/**
+ * Register a single module-level getter returning a headers object merged into
+ * every {@link api}/{@link post} request. Registering a second getter is a hard
+ * error, never a silent overwrite.
+ *
+ * PLATFORM NOTE: only the fetch-based transports (api/post) attach these
+ * headers. Browser `EventSource` ({@link sse}) and `WebSocket` ({@link socket})
+ * cannot carry custom request headers, so the auth hook has no effect on them —
+ * use a same-origin cookie or a query parameter for realtime auth instead.
+ */
+export function setAuthHeader(getter: () => Record<string, string>): void;
+
+// -- realtime.js --------------------------------------------------------------
+
+/** Options for {@link sse}. */
+export interface SseOpts {
+  /** Default `message` events: `data` is auto-parsed as JSON (raw-string fallback). */
+  onMessage: (data: unknown, event: MessageEvent) => void;
+  /** The `error` event handler. */
+  onError?: (event: Event) => void;
+  /** The `open` event handler. */
+  onOpen?: (event: Event) => void;
+  /** Named server events; each handler gets the same auto-JSON `data`. */
+  events?: Record<string, (data: unknown, event: MessageEvent) => void>;
+}
+
+/** The handle {@link sse} returns. */
+export interface SseHandle {
+  /** Close the EventSource. */
+  close(): void;
+}
+
+/**
+ * Wrap an `EventSource` for a same-origin SSE endpoint. `path` must be relative
+ * (throws on an absolute/external URL). Reconnection is browser-native: the
+ * browser resends the last event id in the `Last-Event-ID` header so a server
+ * that stamps events with `id:` can resume the stream.
+ */
+export function sse(path: string, opts: SseOpts): SseHandle;
+
+/** Options for {@link socket}. */
+export interface SocketOpts {
+  /** Incoming frames: `data` is auto-parsed as JSON (raw-string fallback). */
+  onMessage: (data: unknown, event: MessageEvent) => void;
+  /** The `error` event handler. */
+  onError?: (event: Event) => void;
+  /** The `open` event handler (fires on the first connect and every reconnect). */
+  onOpen?: (event: Event) => void;
+  /** Fires after a SUCCESSFUL reconnection (not the first connect) so the caller can resync. */
+  onReconnect?: (event: Event) => void;
+  /** Reconnect on abnormal close with exponential backoff (default `true`). */
+  reconnect?: boolean;
+  /** WebSocket subprotocol(s). */
+  protocols?: string | string[];
+}
+
+/** The handle {@link socket} returns. */
+export interface SocketHandle {
+  /** Send a frame: objects are JSON-stringified, strings pass through. Throws while closed. */
+  send(data: unknown): void;
+  /** Close for good and cancel any pending reconnect. */
+  close(): void;
+}
+
+/**
+ * Wrap a `WebSocket` for a same-origin endpoint. `path` must be relative
+ * ("/ws/x", throws on absolute/external); the scheme (ws/wss) and host are
+ * resolved from `location`. On an abnormal close the socket reconnects with
+ * framework-owned exponential backoff — 1000ms first, ×2 each attempt, capped
+ * at 30000ms — unless `reconnect: false`. `send()` while not open THROWS (no
+ * silent buffering).
+ */
+export function socket(path: string, opts: SocketOpts): SocketHandle;
+
+// -- format.js ----------------------------------------------------------------
+
+/**
+ * Format a media duration in seconds as "m:ss" (under an hour) or "h:mm:ss" (at
+ * or above). Negative/fractional inputs are clamped and floored.
+ */
+export function fmtTime(seconds: number): string;
+
+/**
+ * A localized relative-time string ("3 minutes ago", "in 2 hours", "now") via
+ * `Intl.RelativeTimeFormat`. `date` is a `Date` or ms timestamp; `now` (ms)
+ * overrides the reference point for deterministic output.
+ */
+export function relativeTime(date: Date | number, now?: number): string;
+
+/**
+ * Register `el` so its `textContent` tracks the relative time to `date`,
+ * repainted once a second by a single shared ticker (started on the first
+ * registration, stopped when the last leaves). Returns an unregister function.
+ */
+export function liveRelativeTime(el: HTMLElement, date: Date | number): () => void;
 
 // -- settings.js --------------------------------------------------------------
 
