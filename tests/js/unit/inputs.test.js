@@ -217,3 +217,106 @@ describe("createField", () => {
     expect(parent.children.length).toBe(0);
   });
 });
+
+describe("createNumber", () => {
+  it("wraps a native input[type=number] with +/- stepper buttons", async () => {
+    const { createNumber } = await import("../../../assets/js/inputs.js");
+    const n = createNumber({ name: "qty", label: "Quantity" });
+    const input = n.el.querySelector("input");
+    expect(input.type).toBe("number");
+    expect(input.name).toBe("qty");
+    expect(input.classList.contains("tm-number-input")).toBe(true);
+    const steps = n.el.querySelectorAll(".tm-number-step");
+    expect(steps.length).toBe(2);
+    // The label is a real <label for>, never aria-label.
+    const label = n.el.querySelector("label");
+    expect(label.getAttribute("for")).toBe(input.id);
+    expect(input.getAttribute("aria-label")).toBeNull();
+  });
+
+  it("applies min, max, step, value, required, disabled", async () => {
+    const { createNumber } = await import("../../../assets/js/inputs.js");
+    const n = createNumber({ name: "q", label: "Q", min: 2, max: 8, step: 2, value: 4, required: true, disabled: true });
+    const input = n.el.querySelector("input");
+    expect(input.min).toBe("2");
+    expect(input.max).toBe("8");
+    expect(input.step).toBe("2");
+    expect(input.value).toBe("4");
+    expect(input.required).toBe(true);
+    expect(input.disabled).toBe(true);
+    for (const s of n.el.querySelectorAll(".tm-number-step")) expect(s.disabled).toBe(true);
+  });
+
+  it("throws without name or label", async () => {
+    const { createNumber } = await import("../../../assets/js/inputs.js");
+    expect(() => createNumber({ label: "Q" })).toThrow("name is required");
+    expect(() => createNumber({ name: "q" })).toThrow("label is required");
+  });
+
+  it("+ / - buttons step within min/max and fire onInput/onChange", async () => {
+    const { createNumber } = await import("../../../assets/js/inputs.js");
+    const inputs = [];
+    const changes = [];
+    const n = createNumber({
+      name: "q", label: "Q", min: 0, max: 3, step: 1, value: 2,
+      onInput: (v) => inputs.push(v),
+      onChange: (v) => changes.push(v),
+    });
+    const input = n.el.querySelector("input");
+    const [down, up] = n.el.querySelectorAll(".tm-number-step");
+    up.click();
+    expect(input.value).toBe("3");
+    up.click(); // clamped at max 3
+    expect(input.value).toBe("3");
+    down.click();
+    expect(input.value).toBe("2");
+    // onInput fires on every step; onChange too (a stepper is a commit).
+    expect(inputs).toEqual(["3", "3", "2"]);
+    expect(changes).toEqual(["3", "3", "2"]);
+  });
+
+  it("stepping from empty seeds from min (or 0)", async () => {
+    const { createNumber } = await import("../../../assets/js/inputs.js");
+    const n = createNumber({ name: "q", label: "Q", min: 5, max: 10 });
+    const input = n.el.querySelector("input");
+    expect(input.value).toBe("");
+    n.el.querySelectorAll(".tm-number-step")[1].click(); // up
+    expect(input.value).toBe("6"); // seeds from min=5, +1
+  });
+
+  it("respects fractional step precision", async () => {
+    const { createNumber } = await import("../../../assets/js/inputs.js");
+    const n = createNumber({ name: "q", label: "Q", step: 0.1, value: 0.2 });
+    const input = n.el.querySelector("input");
+    n.el.querySelectorAll(".tm-number-step")[1].click();
+    expect(input.value).toBe("0.3");
+  });
+
+  it("setError wires aria-invalid and clears it", async () => {
+    const { createNumber } = await import("../../../assets/js/inputs.js");
+    const n = createNumber({ name: "q", label: "Q" });
+    const input = n.el.querySelector("input");
+    n.setError("Bad");
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    n.setError(null);
+    expect(input.getAttribute("aria-invalid")).toBeNull();
+  });
+
+  it("value/get reflect the input and set updates it", async () => {
+    const { createNumber } = await import("../../../assets/js/inputs.js");
+    const n = createNumber({ name: "q", label: "Q", value: 7 });
+    expect(n.value).toBe("7");
+    expect(n.get()).toBe("7");
+    n.set(9);
+    expect(n.value).toBe("9");
+  });
+
+  it("destroy removes the field and detaches stepper listeners", async () => {
+    const { createNumber } = await import("../../../assets/js/inputs.js");
+    const parent = document.createElement("div");
+    const n = createNumber({ name: "q", label: "Q" });
+    parent.appendChild(n.el);
+    n.destroy();
+    expect(parent.children.length).toBe(0);
+  });
+});
