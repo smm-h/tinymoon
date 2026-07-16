@@ -325,13 +325,12 @@ const WidgetsView = {
     // fields + select
     const fields = panel("Fields + select", "faders");
     const frow = el("div", "field-row");
-    const f1 = el("div", "field");
-    f1.appendChild(el("label", null, "Text input"));
-    const input = el("input");
-    input.type = "text";
-    input.placeholder = "type here";
-    f1.appendChild(input);
-    frow.appendChild(f1);
+    const f1 = createInput({
+      name: "widget-demo-text",
+      label: "Text input",
+      placeholder: "type here",
+    });
+    frow.appendChild(f1.el);
     const f2 = el("div", "field");
     f2.appendChild(el("label", null, "Custom select"));
     const sel = createSelect({
@@ -349,11 +348,13 @@ const WidgetsView = {
     f2.appendChild(sel.el);
     frow.appendChild(f2);
     fields.appendChild(frow);
-    const ta = el("textarea");
-    ta.placeholder = "textarea — native appearance eliminated, tokens applied";
-    ta.style.width = "100%";
-    ta.style.marginTop = "12px";
-    fields.appendChild(ta);
+    const ta = createTextarea({
+      name: "widget-demo-textarea",
+      label: "Text area",
+      placeholder: "textarea — native appearance eliminated, tokens applied",
+    });
+    ta.el.style.marginTop = "12px";
+    fields.appendChild(ta.el);
     this.root.appendChild(fields);
 
     // toggle + segmented + settings rows
@@ -418,9 +419,8 @@ const WidgetsView = {
       const p = el("p", null, "Modals close on Escape, the close button, a backdrop click, or the returned close().");
       p.style.marginTop = "0";
       body.appendChild(p);
-      const ta = el("textarea");
-      ta.setAttribute("aria-label", "Demo text area");
-      body.appendChild(ta);
+      const ta = createTextarea({ name: "demo-modal-textarea", label: "Demo text area" });
+      body.appendChild(ta.el);
       const cancel = el("button", "btn ghost", "Cancel");
       const ok = el("button", "btn primary", "Confirm");
       const close = openModal({
