@@ -56,6 +56,7 @@ import {
   mountShell,
   announce,
   createView,
+  openDrawer,
 } from "tinymoon";
 
 // -- extras barrel ("tinymoon/extras") ----------------------------------------
@@ -116,7 +117,7 @@ ref(
   createInput, createTextarea, createField, createNumber, createSlider,
   createDatePicker, createTimePicker, createCombobox, createMultiSelect,
   createAccordion, cssVar, ensureRoot, placeBelow, registerCopyable,
-  unregisterCopyable, getCopyData, mountShell, announce, createView,
+  unregisterCopyable, getCopyData, mountShell, announce, createView, openDrawer,
   api, post, ApiError, setAuthHeader, sse, socket,
   fmtTime, relativeTime, liveRelativeTime,
   createSettings, renderDocMd, createWikiView,
@@ -184,6 +185,17 @@ const shell = mountShell({
 });
 shell.announce("Loaded");
 announce("Standalone announce");
+
+// openDrawer: an edge-anchored overlay; returns {el, close}.
+const filters = openDrawer({
+  title: "Filters",
+  body: el("div", null, "controls"),
+  side: "left",
+  modal: false,
+  onClose: () => ref("closed"),
+});
+ref(filters.el);
+filters.close();
 
 const volume = createSlider({
   name: "volume",

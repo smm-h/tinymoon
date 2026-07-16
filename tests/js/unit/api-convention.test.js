@@ -84,6 +84,9 @@ const NOT_COMPONENTS = [
   "toast", "setToastErrorHook",
   // modal.js — imperative action (returns close fn, not a component)
   "openModal",
+  // drawer.js — imperative overlay action (returns {el, close}, not a
+  // createX(opts) component instance). Sibling of openModal.
+  "openDrawer",
   // controls.js — one-shot element factories (return a pre-wired <button>,
   // not a stateful {el, ...} component instance). By decision these are
   // permanent, sanctioned element utilities: they intentionally do NOT follow

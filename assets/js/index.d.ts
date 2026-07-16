@@ -436,6 +436,26 @@ export interface ModalOpts {
 /** Open a modal dialog. Returns a close() function. */
 export function openModal(opts: ModalOpts): () => void;
 
+// -- drawer.js ----------------------------------------------------------------
+
+export interface DrawerOpts {
+  title: string;
+  body: string | HTMLElement;
+  /** Which edge the drawer anchors to and slides from (default "right"). */
+  side?: "left" | "right";
+  /** true → native <dialog> with focus trap + inert background; false
+   * (default) → light-dismiss overlay that leaves the page interactive. */
+  modal?: boolean;
+  onClose?: () => void;
+}
+export interface DrawerInstance {
+  /** The drawer panel (a <dialog> when modal, else a <div>). */
+  el: HTMLElement;
+  close(): void;
+}
+/** Open an edge-anchored overlay drawer on the kernel layer stack. */
+export function openDrawer(opts: DrawerOpts): DrawerInstance;
+
 // -- popover.js ---------------------------------------------------------------
 
 /** Open a floating panel anchored below an element. */

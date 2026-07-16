@@ -109,7 +109,7 @@ _WIDGETS_JS = frozenset({
 # against the frozen core-js row, honoring the README Size promise that the
 # core ceiling is never raised -- growth happens in new tiers.
 _CHROME_JS = frozenset({
-    "view.js",
+    "view.js", "drawer.js",
 })
 
 # Dev-only modules: not shipped in any barrel, not counted in size budgets.

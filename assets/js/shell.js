@@ -45,6 +45,7 @@ import { $$, el } from "./dom.js";
 import { icon } from "./icons.js";
 import { ensureTooltip } from "./tooltip.js";
 import { ensureRoot } from "./kernel.js";
+import { swipeToClose } from "./drawer.js";
 
 // Live handles to the mounted shell's #tm-page-sub and aria-live announcer,
 // backing setPageSub()/announce() (used by the createView ctx). No-op unmounted.
@@ -54,9 +55,8 @@ let _announcer = null;
 export function setPageSub(text) { if (_pageSub) _pageSub.textContent = text || ""; }
 export function announce(msg) { if (_announcer) _announcer.textContent = msg || ""; }
 
-// Wrap a declarative view value (string HTML or Element) into a view object
-// conforming to the shell's view contract. The returned object is cached per
-// route so repeated calls return the same instance.
+// Wrap a declarative view value (string HTML or Element) into a view object,
+// cached by identity so repeated calls return the same instance.
 const _declCache = new Map();
 function resolveView(viewSpec) {
   if (typeof viewSpec === "function") return viewSpec();
@@ -189,11 +189,10 @@ export function mountShell(config) {
   app.appendChild(announcer);
   root.appendChild(app);
 
-  // Close the drawer when clicking on the main content area (outside the
-  // sidebar). This covers both the backdrop overlay and the content itself.
-  main.addEventListener("click", () => {
-    app.classList.remove("sidebar-open");
-  });
+  // Clicking the main content area (backdrop or content) closes the drawer.
+  main.addEventListener("click", () => { app.classList.remove("sidebar-open"); });
+  // Swipe the mobile nav drawer left (toward its edge) to close it.
+  swipeToClose(sidebar, () => app.classList.remove("sidebar-open"), { edge: "left" });
 
   // Framework overlay mount points (primitives also create these lazily via
   // kernel.ensureRoot; mounting them here keeps stacking order deterministic).

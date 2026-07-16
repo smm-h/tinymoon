@@ -33,6 +33,7 @@
     "./ctxmenu": "./assets/js/ctxmenu.js",
     "./datepicker": "./assets/js/datepicker.js",
     "./dom": "./assets/js/dom.js",
+    "./drawer": "./assets/js/drawer.js",
     "./embed": "./assets/js/embed.js",
     "./feed": "./assets/js/feed.js",
     "./filterbar": "./assets/js/filterbar.js",

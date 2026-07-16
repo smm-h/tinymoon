@@ -23,3 +23,4 @@ export { createAccordion } from "./accordion.js";
 export { cssVar, ensureRoot, placeBelow, registerCopyable, unregisterCopyable, getCopyData } from "./kernel.js";
 export { mountShell, announce } from "./shell.js";
 export { createView } from "./view.js";
+export { openDrawer } from "./drawer.js";
