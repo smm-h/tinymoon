@@ -69,7 +69,10 @@ const NOT_COMPONENTS = [
   // modal.js — imperative action (returns close fn, not a component)
   "openModal",
   // controls.js — one-shot element factories (return a pre-wired <button>,
-  // not a stateful {el, ...} component instance)
+  // not a stateful {el, ...} component instance). By decision these are
+  // permanent, sanctioned element utilities: they intentionally do NOT follow
+  // the createX(opts) -> {el, ...} component convention and will never be
+  // reshaped into createX components.
   "copyButton", "kebabButton",
   // ctxmenu.js — registration + imperative actions
   "registerCtx", "registerCtxFooter", "showCtxMenu", "hideCtxMenu",

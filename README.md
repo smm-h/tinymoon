@@ -104,6 +104,8 @@ With npm, use bare specifiers by adding an import map:
 - `copyButton(getText, tip?)` -- one-click clipboard copy button
 - `kebabButton(itemsFn, tip?)` -- three-dot menu button
 
+> `copyButton` and `kebabButton` are sanctioned one-shot element utilities, not `createX` components -- they return a pre-wired `<button>` by design.
+
 **Overlays:**
 
 - `toast(msg, level?, opts?)` -- toast notification ("ok", "err", or plain)
