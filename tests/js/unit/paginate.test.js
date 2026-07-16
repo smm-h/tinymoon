@@ -106,6 +106,37 @@ describe("createLoadMore", () => {
     expect(calls).toBe(1); // reset did NOT fetch
   });
 
+  it("load() programmatically triggers the first page — same path as the button", async () => {
+    const { createLoadMore } = await import("../../../assets/js/paginate.js");
+    const seenCursors = [];
+    const got = [];
+    const lm = createLoadMore({
+      fetchPage: async (cursor) => { seenCursors.push(cursor); return { items: [10, 11], nextCursor: null }; },
+      onItems: (items) => got.push(...items),
+    });
+    // No click — a direct load() call fetches page one (cursor null).
+    await lm.load();
+    expect(seenCursors).toEqual([null]);
+    expect(got).toEqual([10, 11]);
+    // Ended after a null nextCursor, so a second load() is a no-op.
+    await lm.load();
+    expect(seenCursors).toEqual([null]);
+  });
+
+  it("load() re-fetches page one after reset()", async () => {
+    const { createLoadMore } = await import("../../../assets/js/paginate.js");
+    let calls = 0;
+    const lm = createLoadMore({
+      fetchPage: async () => { calls += 1; return { items: [1], nextCursor: null }; },
+      onItems: () => {},
+    });
+    await lm.load();
+    expect(calls).toBe(1);
+    lm.reset();
+    await lm.load();
+    expect(calls).toBe(2);
+  });
+
   it("destroy detaches the control", async () => {
     const { createLoadMore } = await import("../../../assets/js/paginate.js");
     const parent = document.createElement("div");

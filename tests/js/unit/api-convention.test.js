@@ -620,6 +620,7 @@ describe("api-convention: widgets barrel coverage", () => {
     });
     expect(instance.el).toBeInstanceOf(HTMLElement);
     expect(typeof instance.reset).toBe("function");
+    expect(typeof instance.load).toBe("function");
     expect(typeof instance.destroy).toBe("function");
   });
 

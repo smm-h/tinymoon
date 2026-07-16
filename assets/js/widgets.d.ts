@@ -267,6 +267,12 @@ export interface LoadMore {
   el: HTMLElement;
   /** Return to the first-page state (does not fetch). */
   reset(): void;
+  /**
+   * Programmatically trigger a page load — the same path the button click
+   * takes (a no-op while loading or after the end). On a fresh or reset()
+   * control this loads page one. Returns the underlying fetch promise.
+   */
+  load(): Promise<void>;
   /** Remove listeners and detach the control. */
   destroy(): void;
 }

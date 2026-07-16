@@ -1,5 +1,5 @@
 // tinymoon — pagination: a transport-agnostic "Load more" control.
-// createLoadMore({fetchPage, onItems, pageSize?}) -> {el, reset, destroy}.
+// createLoadMore({fetchPage, onItems, pageSize?}) -> {el, reset, load, destroy}.
 //
 // TRANSPORT-AGNOSTIC by design. The widget knows nothing about HTTP, GraphQL,
 // cursors vs. offsets, or your data shape. The caller supplies
@@ -19,10 +19,15 @@
 import { el } from "./dom.js";
 import { icon } from "./icons.js";
 
-// createLoadMore({fetchPage, onItems, pageSize?}) -> {el, reset(), destroy}.
+// createLoadMore({fetchPage, onItems, pageSize?}) -> {el, reset(), load(), destroy}.
 // fetchPage(cursor, pageSize) returns a promise of {items, nextCursor}; onItems
 // receives each page's items in order. pageSize (optional) is forwarded to
 // fetchPage as a hint — the widget itself does not slice.
+//
+// load() programmatically triggers a page load — the exact same path the button
+// click takes (respects loading/ended state). Called on a fresh or reset()
+// control it fetches page one, so a caller can auto-load the first page without
+// synthesizing a click. It returns the underlying fetch promise.
 export function createLoadMore(opts) {
   if (!opts || typeof opts.fetchPage !== "function") {
     throw new Error("createLoadMore: fetchPage(cursor) is required");
@@ -128,5 +133,5 @@ export function createLoadMore(opts) {
     if (root.parentNode) root.parentNode.removeChild(root);
   }
 
-  return { el: root, reset, destroy };
+  return { el: root, reset, load, destroy };
 }
