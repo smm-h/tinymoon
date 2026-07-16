@@ -22,6 +22,7 @@ import {
   setToastErrorHook,
   openModal,
   createSelect,
+  createEmbed,
   registerCtx,
   registerCtxFooter,
   showCtxMenu,
@@ -63,7 +64,7 @@ function ref(..._values: unknown[]): void {}
 ref(
   $, $$, el, ICONS, icon, registerIcons, renderMiniMd, ensureTooltip, hideTip,
   ensureHovercard, hideHovercard, toast, setToastErrorHook, openModal,
-  createSelect, registerCtx, registerCtxFooter, showCtxMenu, hideCtxMenu,
+  createSelect, createEmbed, registerCtx, registerCtxFooter, showCtxMenu, hideCtxMenu,
   openPopover, closePopover, createSwitch, copyButton, kebabButton,
   createCheckbox, createRadio, createFileInput, createSegmented, createTabs,
   createDatePicker, cssVar, ensureRoot, placeBelow, registerCopyable,
@@ -86,6 +87,10 @@ const sw = createSwitch({
 });
 sw.set(false);
 sw.destroy();
+
+const mapEmbed = createEmbed({ mode: "iframe", label: "Map", src: "/map" });
+mapEmbed.setSrc?.("/map?zoom=2");
+mapEmbed.destroy();
 
 // -- exercise a handful of typed calls (extras) -------------------------------
 

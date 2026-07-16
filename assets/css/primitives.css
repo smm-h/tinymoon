@@ -722,6 +722,41 @@ dialog.tm-modal::backdrop {
   inset: auto;
 }
 
+/* ---------- embed (isolation boundary) ---------- */
+
+/* createEmbed's container. Marks a FOREIGN surface (sandboxed iframe or shadow
+   root) as off the identity surface. Sharp corners, token colors, minimal: a
+   bordered frame with an optional label strip. The isolation is the point, so
+   the container stays visually quiet -- it frames foreign content, it does not
+   dress it. */
+.tm-embed {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-2);
+  background: var(--surface);
+}
+.tm-embed-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: var(--space-6) var(--space-10);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.tm-embed-body {
+  min-width: 0;
+  min-height: 0;
+}
+.tm-embed-frame {
+  display: block;
+  width: 100%;
+  min-height: 240px;
+  border: none;
+  background: var(--surface);
+}
+
 /* ---------- date picker ---------- */
 
 .tm-datepicker {

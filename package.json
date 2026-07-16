@@ -20,6 +20,7 @@
     "./ctxmenu": "./assets/js/ctxmenu.js",
     "./datepicker": "./assets/js/datepicker.js",
     "./dom": "./assets/js/dom.js",
+    "./embed": "./assets/js/embed.js",
     "./hovercard": "./assets/js/hovercard.js",
     "./icons": "./assets/js/icons.js",
     "./kernel": "./assets/js/kernel.js",

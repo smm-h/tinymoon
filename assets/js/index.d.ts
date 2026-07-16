@@ -166,6 +166,44 @@ export interface SelectInstance {
 }
 export function createSelect(opts: SelectOpts): SelectInstance;
 
+// -- embed.js -----------------------------------------------------------------
+
+export type EmbedMode = "iframe" | "shadow";
+export interface EmbedOpts {
+  /** Explicit isolation mode -- no default; the caller must choose. */
+  mode: EmbedMode;
+  /** Accessible name for the foreign region (required). */
+  label: string;
+  /** Render the visible label strip (default true). */
+  showLabel?: boolean;
+  // iframe mode
+  /** Foreign URL for the sandboxed iframe. */
+  src?: string;
+  /** Sandbox tokens; replaces the restrictive default when given. */
+  sandbox?: string[];
+  /** Permissions-Policy allow= list. */
+  allow?: string;
+  // shadow mode
+  /** Initial foreign content injected into the shadow root. */
+  content?: string | Node;
+  /** TEST-ONLY: use an OPEN shadow root and expose shadowRoot. */
+  openForTest?: boolean;
+}
+export interface EmbedInstance {
+  el: HTMLElement;
+  readonly mode: EmbedMode;
+  /** iframe mode: the sandboxed frame element. */
+  frame?: HTMLIFrameElement;
+  /** iframe mode: point the frame at a new URL. */
+  setSrc?(url: string): void;
+  /** shadow mode: replace the foreign content. */
+  setContent?(content: string | Node): void;
+  /** shadow mode + openForTest: the OPEN shadow root (test seam only). */
+  shadowRoot?: ShadowRoot;
+  destroy(): void;
+}
+export function createEmbed(opts: EmbedOpts): EmbedInstance;
+
 // -- datepicker.js ------------------------------------------------------------
 
 export interface DatePickerOpts {

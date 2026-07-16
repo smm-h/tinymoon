@@ -10,6 +10,7 @@ export { ensureHovercard, hideHovercard } from "./hovercard.js";
 export { toast, setToastErrorHook } from "./toast.js";
 export { openModal } from "./modal.js";
 export { createSelect } from "./select.js";
+export { createEmbed } from "./embed.js";
 export { registerCtx, registerCtxFooter, showCtxMenu, hideCtxMenu } from "./ctxmenu.js";
 export { openPopover, closePopover } from "./popover.js";
 export { createSwitch, copyButton, kebabButton, createCheckbox, createRadio, createFileInput, createSegmented, createTabs } from "./controls.js";

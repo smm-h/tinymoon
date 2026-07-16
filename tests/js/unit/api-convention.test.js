@@ -43,6 +43,8 @@ const MIGRATED = [
   "createTabs",
   // select.js — createSelect(opts) -> {el, set, value, setItems, destroy}
   "createSelect",
+  // embed.js — createEmbed(opts) -> {el, ...mode methods, destroy}
+  "createEmbed",
   // datepicker.js — createDatePicker(opts) -> {el, set, value, destroy}
   "createDatePicker",
 ];
@@ -202,6 +204,16 @@ describe("api-convention: migrated primitives", () => {
     expect(instance.el).toBeInstanceOf(HTMLElement);
     expect(typeof instance.set).toBe("function");
     expect(typeof instance.setItems).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createEmbed(opts) conforms to the convention", async () => {
+    const { createEmbed } = await import("../../../assets/js/index.js");
+    const instance = createEmbed({ mode: "shadow", label: "Test" });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
     expect(typeof instance.destroy).toBe("function");
   });
 
