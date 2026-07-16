@@ -13,8 +13,10 @@ import {
   createSwitch, copyButton, kebabButton,
   createCheckbox, createRadio, createFileInput,
   createSegmented, createTabs,
-  createInput, createTextarea, createField, createSlider,
-  createDatePicker,
+  createInput, createTextarea, createField, createSlider, createNumber,
+  createDatePicker, createTimePicker,
+  createCombobox, createMultiSelect,
+  createAccordion,
   cssVar,
   mountShell,
   registerCopyable,
@@ -539,6 +541,18 @@ const WidgetsView = {
     emptyPanel.appendChild(empty);
     this.root.appendChild(emptyPanel);
 
+    // accordion (createAccordion) — stacked disclosure panels, single-open.
+    const accPanel = panel("Accordion", "menu");
+    const acc = createAccordion({
+      items: [
+        { title: "What is an accordion?", body: "A stack of disclosure panels. Headers are button[aria-expanded]; panels animate open via the grid-template-rows technique using a duration token, so reduced-motion suppresses it automatically.", open: true },
+        { title: "Single vs. multi", body: "By default only one panel is open at a time. Pass multi:true to allow several." },
+        { title: "Keyboard", body: "Each header is a real <button>: Tab to it, Enter or Space to toggle." },
+      ],
+    });
+    accPanel.appendChild(acc.el);
+    this.root.appendChild(accPanel);
+
     // net helpers (extras barrel: api + post)
     const netPanel = panel("API helpers (extras)", "docs");
     const netNote = el("p", null,
@@ -686,6 +700,13 @@ Form controls wrap real, visible native elements, so a plain \`<form>\` and the 
 
 \`createField({label, control, hint?})\` wraps any control — a slider, a select, a raw element — in a labeled field with an optional hint line. Both \`createField\` and the text controls expose \`.setError(msg)\`, which renders an inline \`.field-error\` and wires \`aria-invalid\` + \`aria-describedby\` on the control; \`.setError(null)\` clears it. Validation is native constraint validation plus this affordance — you own the logic.
 
+### Numbers, times, and typeaheads {#forms-more}
+
+- \`createNumber({name, label, min?, max?, step?})\` wraps a native \`input[type=number]\` (browser spinners hidden) framed by custom \`+\`/\`-\` stepper buttons that respect \`min\`/\`max\`/\`step\`. Same instance contract as \`createInput\` (\`.value\`, \`.set\`, \`.get\`, \`.setError\`).
+- \`createTimePicker({name, label, value?, minuteStep?})\` shows a locale-formatted time in the field while the form-participating element carries a canonical 24h \`"HH:MM"\` value. Typed input is parsed on blur; an hours/minutes popover follows the date picker's focus and dismissal pattern.
+- \`createCombobox({name, label, onFilter | items, freeText?})\` is an editable typeahead. \`onFilter(query)\` returns items or a \`Promise\` of items — debounced, with stale responses discarded so a slow earlier request never overwrites a newer one. \`freeText\` defaults to \`false\`: arbitrary typed text only commits when you opt in.
+- \`createMultiSelect({name, label, onFilter | items, values?})\` renders its selection as sharp removable chips and submits through a hidden \`<select multiple>\`. Chips are keyboard-removable (Backspace on an empty input drops the last); \`.values\` and \`.setValues\` read and replace the selection.
+
 ### Submitting {#forms-submit}
 
 Because every control is a real named form element, submission is ordinary DOM:
@@ -695,7 +716,7 @@ const fd = new FormData(form);
 for (const [name, value] of fd.entries()) { /* ... */ }
 \`\`\`
 
-The **Forms** route composes \`createInput\`, \`createTextarea\`, \`createField\`, and \`createSlider\` in one form and toasts the collected \`FormData\` on submit.
+The **Forms** route composes \`createInput\`, \`createTextarea\`, \`createField\`, \`createSlider\`, \`createNumber\`, \`createTimePicker\`, \`createCombobox\`, and \`createMultiSelect\` in one form and toasts the collected \`FormData\` on submit.
 `,
   },
   {
@@ -924,6 +945,78 @@ const FormsView = {
     dpRow.appendChild(dp.el);
     dpSection.appendChild(dpRow);
     form.appendChild(dpSection);
+
+    // number stepper (createNumber) — form-participating; native input[type=number]
+    // framed by custom +/- buttons (browser spinners are hidden by CSS).
+    const numSection = el("div");
+    numSection.appendChild(el("div", "set-title", "Number stepper"));
+    const num = createNumber({
+      name: "quantity",
+      label: "Quantity",
+      min: 0,
+      max: 20,
+      step: 1,
+      value: 3,
+      onChange: (v) => toast("Quantity: " + v),
+    });
+    numSection.appendChild(num.el);
+    form.appendChild(numSection);
+
+    // time picker (createTimePicker) — form-participating; canonical HH:MM 24h.
+    const tpSection = el("div");
+    tpSection.appendChild(el("div", "set-title", "Time picker"));
+    const tpRow = el("div", "demo-row");
+    tpRow.style.marginTop = "var(--space-8)";
+    const tp = createTimePicker({
+      name: "start-time",
+      label: "Start time",
+      value: "09:30",
+      minuteStep: 15,
+      onChange: (v) => toast("Time: " + v),
+    });
+    tpRow.appendChild(tp.el);
+    tpSection.appendChild(tpRow);
+    form.appendChild(tpSection);
+
+    // combobox (createCombobox) — typeahead single-value, form-participating.
+    const cbSection2 = el("div");
+    cbSection2.appendChild(el("div", "set-title", "Combobox (typeahead)"));
+    const cb = createCombobox({
+      name: "country",
+      label: "Country",
+      placeholder: "Type to filter…",
+      items: [
+        { value: "us", label: "United States" },
+        { value: "uk", label: "United Kingdom" },
+        { value: "de", label: "Germany" },
+        { value: "fr", label: "France" },
+        { value: "jp", label: "Japan" },
+      ],
+      value: "de",
+      text: "Germany",
+      onChange: (v) => toast("Country: " + v),
+    });
+    cbSection2.appendChild(cb.el);
+    form.appendChild(cbSection2);
+
+    // multi-select (createMultiSelect) — chips + hidden <select multiple>.
+    const msSection = el("div");
+    msSection.appendChild(el("div", "set-title", "Multi-select (chips)"));
+    const ms = createMultiSelect({
+      name: "tags",
+      label: "Tags",
+      placeholder: "Add a tag…",
+      items: [
+        { value: "urgent", label: "Urgent" },
+        { value: "backend", label: "Backend" },
+        { value: "design", label: "Design" },
+        { value: "docs", label: "Docs" },
+      ],
+      values: ["backend"],
+      onChange: (vs) => toast("Tags: " + vs.join(", ")),
+    });
+    msSection.appendChild(ms.el);
+    form.appendChild(msSection);
 
     // text fields (createInput + createTextarea) — self-labeling .field
     // controls that wrap real, visible native elements. The setError demo below
