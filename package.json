@@ -15,7 +15,9 @@
       "types": "./assets/js/extras.d.ts",
       "default": "./assets/js/extras.js"
     },
+    "./accordion": "./assets/js/accordion.js",
     "./auditor": "./assets/js/auditor.js",
+    "./combobox": "./assets/js/combobox.js",
     "./controls": "./assets/js/controls.js",
     "./ctxmenu": "./assets/js/ctxmenu.js",
     "./datepicker": "./assets/js/datepicker.js",
@@ -33,6 +35,7 @@
     "./settings": "./assets/js/settings.js",
     "./shell": "./assets/js/shell.js",
     "./slider": "./assets/js/slider.js",
+    "./timepicker": "./assets/js/timepicker.js",
     "./toast": "./assets/js/toast.js",
     "./tooltip": "./assets/js/tooltip.js",
     "./wiki": "./assets/js/wiki.js",

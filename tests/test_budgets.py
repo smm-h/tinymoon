@@ -51,12 +51,23 @@ _EXT = {"js": "*.js", "css": "*.css", "font": "*.woff2"}
 
 # Core modules: dom, icons, kernel, controls, inputs, slider, select, embed,
 # datepicker, modal, popover, tooltip, hovercard, ctxmenu, toast, markdown,
-# shell, index barrel.
+# shell, index barrel. This is the ORIGINAL frozen set that the README "Size"
+# promise refers to -- its ceiling is never raised. New-generation control
+# modules land in the separate controls-js row below, never here.
 _CORE_JS = frozenset({
     "controls.js", "ctxmenu.js", "datepicker.js", "dom.js", "embed.js",
     "hovercard.js", "icons.js", "index.js", "inputs.js", "kernel.js",
     "markdown.js", "modal.js", "popover.js", "select.js", "shell.js",
     "slider.js", "toast.js", "tooltip.js",
+})
+
+# New-generation control modules (Phase 3B): the time picker, the typeahead
+# combobox + multi-select, and the accordion. These are still exported from the
+# core barrel (index.js, additive API), but their BYTES are budgeted here rather
+# than against the frozen core-js row, honoring the README Size promise that the
+# core ceiling is never raised -- growth happens in new tiers.
+_CONTROLS_JS = frozenset({
+    "accordion.js", "combobox.js", "timepicker.js",
 })
 
 # Extras modules: wiki, net, settings, extras barrel.
@@ -85,9 +96,17 @@ _WIDGETS_CSS = frozenset({"widgets.css"})
 
 BUDGETS = [
     BudgetRow("core-js", "js", _CORE_JS, 118_000, True),
+    # controls-js: Phase 3B new-generation control modules. Measured baseline
+    # 36,473 bytes (accordion 4,019 + combobox 20,526 + timepicker 11,928);
+    # ceiling is baseline + 25% rounded clean. Core-js stays frozen per the
+    # README Size promise -- these modules budget here, not against core.
+    BudgetRow("controls-js", "js", _CONTROLS_JS, 46_000, True),  # baseline 36,473
     BudgetRow("extras-js", "js", _EXTRAS_JS, 11_000, True),
     BudgetRow("dev-js", "js", _DEV_JS, None, False),
-    BudgetRow("css", "css", _CSS_SHEETS, 57_000, True),
+    # css: raised ONCE for the Phase 3 form-control additions (number stepper,
+    # time picker, combobox, multi-select, accordion). Measured new baseline
+    # 62,580 bytes (was 54,407); ceiling is new-baseline + 25% rounded clean.
+    BudgetRow("css", "css", _CSS_SHEETS, 78_000, True),  # baseline 62,580
     BudgetRow("widgets-css", "css", _WIDGETS_CSS, 6_100, True),  # baseline 4,881
     BudgetRow("fonts", "font", "fonts/*.woff2", 122_000, True),
 ]

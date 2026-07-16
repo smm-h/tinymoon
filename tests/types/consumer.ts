@@ -40,8 +40,13 @@ import {
   createInput,
   createTextarea,
   createField,
+  createNumber,
   createSlider,
   createDatePicker,
+  createTimePicker,
+  createCombobox,
+  createMultiSelect,
+  createAccordion,
   cssVar,
   ensureRoot,
   placeBelow,
@@ -71,8 +76,9 @@ ref(
   createSelect, createEmbed, registerCtx, registerCtxFooter, showCtxMenu, hideCtxMenu,
   openPopover, closePopover, createSwitch, copyButton, kebabButton,
   createCheckbox, createRadio, createFileInput, createSegmented, createTabs,
-  createInput, createTextarea, createField, createSlider,
-  createDatePicker, cssVar, ensureRoot, placeBelow, registerCopyable,
+  createInput, createTextarea, createField, createNumber, createSlider,
+  createDatePicker, createTimePicker, createCombobox, createMultiSelect,
+  createAccordion, cssVar, ensureRoot, placeBelow, registerCopyable,
   unregisterCopyable, getCopyData, mountShell,
   api, post, createSettings, renderDocMd, createWikiView,
 );
@@ -132,6 +138,65 @@ const volField = createField({ label: "Volume", control: volume, hint: "0–100"
 volField.setError("Too loud");
 volField.setError(null);
 ref(volField.el);
+
+const qty = createNumber({
+  name: "qty",
+  label: "Quantity",
+  min: 0,
+  max: 10,
+  step: 1,
+  value: 2,
+  onChange: (v: string) => ref(v),
+});
+qty.set("3");
+qty.setError("Too many");
+qty.setError(null);
+ref(qty.value, qty.get());
+
+const start = createTimePicker({
+  name: "start",
+  label: "Start time",
+  value: "09:30",
+  minuteStep: 15,
+  onChange: (v: string) => ref(v),
+});
+start.set("14:00");
+const startVal: string | null = start.value;
+ref(startVal);
+
+const country = createCombobox({
+  name: "country",
+  label: "Country",
+  freeText: false,
+  onFilter: (q: string) => Promise.resolve([{ value: "us", label: "United States" }].filter((i) => i.label.includes(q))),
+  onChange: (v: string | null) => ref(v),
+});
+country.set("us", "United States");
+const countryVal: string | null = country.get();
+ref(countryVal, country.value);
+
+const tags = createMultiSelect({
+  name: "tags",
+  label: "Tags",
+  items: [{ value: "a", label: "Alpha" }, { value: "b", label: "Beta" }],
+  values: ["a"],
+  onChange: (vs: string[]) => ref(vs),
+});
+tags.setValues(["a", "b"]);
+const tagVals: string[] = tags.values;
+ref(tagVals);
+
+const acc = createAccordion({
+  items: [
+    { title: "One", body: "first" },
+    { title: "Two", body: el("div", null, "second"), open: true },
+  ],
+  multi: false,
+});
+acc.open(0);
+acc.close(1);
+acc.toggle(0);
+ref(acc.el);
 
 // -- exercise a handful of typed calls (extras) -------------------------------
 

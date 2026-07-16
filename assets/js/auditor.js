@@ -41,6 +41,7 @@ const FRAMEWORK_WRAPPERS = new Set([
   "tm-datepicker", // datepicker wraps a hidden text input
   "sel",           // createSelect wraps a hidden input for form participation
   "tm-slider",     // createSlider wraps a native range (future-proofing)
+  "tm-multiselect", // createMultiSelect wraps a hidden <select multiple>
 ]);
 
 function isInsideFrameworkWrapper(node) {

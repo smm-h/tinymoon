@@ -206,6 +206,24 @@ export interface FieldInstance {
 }
 export function createField(opts: FieldOpts): FieldInstance;
 
+export interface NumberOpts {
+  name: string;
+  label: string;
+  value?: number | string;
+  min?: number;
+  max?: number;
+  step?: number;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  onChange?: (value: string, event: Event) => void;
+  /** Fires on every keystroke and on each stepper button press. */
+  onInput?: (value: string, event: Event) => void;
+}
+/** Number stepper: a native input[type=number] framed by custom +/- buttons.
+ * Same instance contract as createInput. */
+export function createNumber(opts: NumberOpts): InputInstance;
+
 // -- slider.js ----------------------------------------------------------------
 
 export interface SliderOpts {
@@ -311,6 +329,101 @@ export interface DatePickerInstance {
   destroy(): void;
 }
 export function createDatePicker(opts: DatePickerOpts): DatePickerInstance;
+
+// -- timepicker.js ------------------------------------------------------------
+
+export interface TimePickerOpts {
+  name: string;
+  label: string;
+  /** Canonical 24h "HH:MM" value. */
+  value?: string;
+  /** Minute granularity in the picker column (default 5). */
+  minuteStep?: number;
+  onChange?: (value: string) => void;
+  required?: boolean;
+  disabled?: boolean;
+}
+export interface TimePickerInstance {
+  el: HTMLElement;
+  /** Set the canonical 24h "HH:MM" value. */
+  set(value: string): void;
+  /** The canonical 24h "HH:MM" value, or null. */
+  readonly value: string | null;
+  destroy(): void;
+}
+export function createTimePicker(opts: TimePickerOpts): TimePickerInstance;
+
+// -- combobox.js --------------------------------------------------------------
+
+export interface ComboboxItem {
+  value: string;
+  label?: string;
+}
+export interface ComboboxOpts {
+  name: string;
+  label: string;
+  /** Async or sync result provider for the typed query. */
+  onFilter?: (query: string) => ComboboxItem[] | Promise<ComboboxItem[]>;
+  /** Static items filtered client-side when onFilter is omitted. */
+  items?: ComboboxItem[];
+  value?: string;
+  /** Initial visible text (defaults to the value). */
+  text?: string;
+  /** Allow committing arbitrary typed text on Enter (default false). */
+  freeText?: boolean;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  onChange?: (value: string | null) => void;
+}
+export interface ComboboxInstance {
+  el: HTMLElement;
+  readonly value: string | null;
+  set(value: string | null, text?: string): void;
+  get(): string | null;
+  destroy(): void;
+}
+export function createCombobox(opts: ComboboxOpts): ComboboxInstance;
+
+export interface MultiSelectOpts {
+  name: string;
+  label: string;
+  onFilter?: (query: string) => ComboboxItem[] | Promise<ComboboxItem[]>;
+  items?: ComboboxItem[];
+  values?: string[];
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  onChange?: (values: string[]) => void;
+}
+export interface MultiSelectInstance {
+  el: HTMLElement;
+  readonly values: string[];
+  setValues(values: string[]): void;
+  destroy(): void;
+}
+export function createMultiSelect(opts: MultiSelectOpts): MultiSelectInstance;
+
+// -- accordion.js -------------------------------------------------------------
+
+export interface AccordionItem {
+  title: string;
+  body: string | HTMLElement;
+  open?: boolean;
+}
+export interface AccordionOpts {
+  items: AccordionItem[];
+  /** Allow multiple panels open at once (default false = single-open). */
+  multi?: boolean;
+}
+export interface AccordionInstance {
+  el: HTMLElement;
+  open(index: number): void;
+  close(index: number): void;
+  toggle(index: number): void;
+  destroy(): void;
+}
+export function createAccordion(opts: AccordionOpts): AccordionInstance;
 
 // -- modal.js -----------------------------------------------------------------
 

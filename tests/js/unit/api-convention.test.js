@@ -45,6 +45,7 @@ const MIGRATED = [
   "createInput",
   "createTextarea",
   "createField",
+  "createNumber",
   // slider.js — createSlider(opts) -> {el, value, set, get, destroy}
   "createSlider",
   // select.js — createSelect(opts) -> {el, set, value, setItems, destroy}
@@ -53,6 +54,13 @@ const MIGRATED = [
   "createEmbed",
   // datepicker.js — createDatePicker(opts) -> {el, set, value, destroy}
   "createDatePicker",
+  // timepicker.js — createTimePicker(opts) -> {el, set, value, destroy}
+  "createTimePicker",
+  // combobox.js — createCombobox / createMultiSelect -> {el, ..., destroy}
+  "createCombobox",
+  "createMultiSelect",
+  // accordion.js — createAccordion(opts) -> {el, open, close, toggle, destroy}
+  "createAccordion",
 ];
 
 // Non-component exports: utilities, imperative actions, registration
@@ -281,6 +289,68 @@ describe("api-convention: migrated primitives", () => {
     expect(instance).not.toBeInstanceOf(HTMLElement);
     expect(instance.el).toBeInstanceOf(HTMLElement);
     expect(typeof instance.set).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createNumber(opts) conforms to the convention", async () => {
+    const { createNumber } = await import("../../../assets/js/index.js");
+    const instance = createNumber({ name: "test", label: "Test" });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
+    expect(typeof instance.get).toBe("function");
+    expect(typeof instance.setError).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createTimePicker(opts) conforms to the convention", async () => {
+    const { createTimePicker } = await import("../../../assets/js/index.js");
+    const instance = createTimePicker({ name: "test", label: "Test" });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createCombobox(opts) conforms to the convention", async () => {
+    const { createCombobox } = await import("../../../assets/js/index.js");
+    const instance = createCombobox({ name: "test", label: "Test", items: [] });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.set).toBe("function");
+    expect(typeof instance.get).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createMultiSelect(opts) conforms to the convention", async () => {
+    const { createMultiSelect } = await import("../../../assets/js/index.js");
+    const instance = createMultiSelect({ name: "test", label: "Test", items: [] });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.setValues).toBe("function");
+    expect(typeof instance.destroy).toBe("function");
+  });
+
+  it("createAccordion(opts) conforms to the convention", async () => {
+    const { createAccordion } = await import("../../../assets/js/index.js");
+    const instance = createAccordion({
+      items: [{ title: "A", body: "aa" }, { title: "B", body: "bb" }],
+    });
+    expect(instance).toBeDefined();
+    expect(typeof instance).toBe("object");
+    expect(instance).not.toBeInstanceOf(HTMLElement);
+    expect(instance.el).toBeInstanceOf(HTMLElement);
+    expect(typeof instance.open).toBe("function");
+    expect(typeof instance.close).toBe("function");
+    expect(typeof instance.toggle).toBe("function");
     expect(typeof instance.destroy).toBe("function");
   });
 });
