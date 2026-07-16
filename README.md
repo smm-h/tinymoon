@@ -16,6 +16,18 @@ The npm package exports barrels: `"tinymoon"` (core primitives), `"tinymoon/extr
 
 Every shipped module is also importable by subpath -- `"tinymoon/select"`, `"tinymoon/dom"`, `"tinymoon/net"`, and so on, one per file in `assets/js/`. There is no build step and no tree-shaking, so subpaths are the way to import just what you use. Typed consumption goes through the barrels (`.d.ts` declarations cover `"tinymoon"`, `"tinymoon/extras"`, `"tinymoon/state"`, `"tinymoon/widgets"`, and `"tinymoon/chrome"`); the subpaths are for granular runtime imports and ship no per-module type declarations. `"tinymoon/auditor"` is a dev-only conformance module, not part of any barrel.
 
+### Types even when you serve the assets yourself
+
+You do not have to load the runtime from `node_modules` to get types. A common setup for a no-backend or server-rendered app is to **serve the CSS/JS from a vendor directory** (say `/tm`, copied from `tinymoon.assets_path()` or `node_modules/tinymoon/assets`) and still install `tinymoon` as a **devDependency purely for its `.d.ts` declarations**:
+
+```
+npm install --save-dev tinymoon
+```
+
+Then author against the barrel types (`import type { TableOptions } from "tinymoon/widgets"`) while your pages `<script type="module">` from `/tm/js/…`. The type declarations and the served runtime are the same version, so they stay in step. Vendored copies also pass tinymoon's own conformance checker automatically -- a served asset whose bytes match a packaged framework file is recognized as framework-own by identity (see [Vendored third-party code](#vendored-third-party-code)), so no quarantine is needed for tinymoon's own files.
+
+Because the barrels re-export from per-file modules, each type's real runtime module is its subpath -- e.g. `createTable` is declared in the `tinymoon/widgets` barrel but its module is `tinymoon/table`; `createGrid` is in the `tinymoon` core barrel but its module is `tinymoon/grid`. The `index.d.ts` comments annotate each re-export with its real module path so you can pick the granular subpath import when you want it.
+
 PyPI (assets + conformance checker CLI):
 
 ```
@@ -183,11 +195,11 @@ The L2 state story: build the DOM once and mutate it in place. There is no decla
 
 The data-display story: badges, stats, tables, trees, and charts. Optional -- linked alongside `widgets.css` only by apps that render data. Each widget is also importable by its own subpath (`tinymoon/table`, `tinymoon/tree`, ...).
 
-- `badge(text, variant?)` -- one-shot status chip (bare `<span>`, not a component)
+- `badge(text, variant?)` -- one-shot status chip (bare `<span>`, not a component). It returns a plain element with no instance methods; to change it, mutate the node directly (`node.textContent = "…"`) or replace it with a fresh `badge(…)`. This is by design -- badges are cheap to recreate, so no update API is shipped.
 - `createStat(opts)` -- single metric tile with an optional trend delta
 - `renderStats(items)` -- a row of stat tiles from an array
-- `createTable(opts)` -- keyboard-navigable data table with client-side column sort and `rowClass`/`cellClass` hooks
-- `createVirtualList(opts)` -- fixed-height windowed list for large datasets
+- `createTable(opts)` -- keyboard-navigable data table with client-side column sort, `rowClass`/`cellClass` hooks, and `onRowClick`/`onRowHover` row pointer hooks
+- `createVirtualList(opts)` -- windowed list for large datasets. **Fixed row height is a decided constraint** -- every row is the same `rowHeight`, which is what makes the windowing math exact and cheap. Variable-height rows are intentionally out of scope.
 - `createTree(opts)` -- APG-pattern tree view with keyboard navigation
 - `createFilterBar(opts)` -- slot container for filter controls
 - `createChips(opts)` -- removable filter chips
@@ -253,6 +265,12 @@ uvx tinymoon check --dir ./web
 ```
 
 One line per violation, exit non-zero on any finding. No `--skip`, `--ignore`, or warning mode. Exempt specific URLs by adding them to `tinymoon-allowlist.txt` at the scanned directory root.
+
+### Vendoring tinymoon's own assets
+
+A no-backend or self-hosting consumer often copies tinymoon's `css/`, `js/`, and `fonts/` out of the package into its own tree (e.g. `/tm`) and serves them directly. Those copies are tinymoon's own bytes, but the checker's framework-own allowance keys on the *installed* package location, so a naively-vendored copy would fail the checker's own native-control rule (`select.js` creating a `<select>`, etc.).
+
+Vendored framework assets are recognized by **identity**, not location: a file whose bytes `sha256`-match a packaged framework asset is framework-own wherever you put it, with zero configuration and no `third_party/` quarantine. Keep the copies **verbatim** -- the intended workflow is an update script that re-copies from `node_modules/tinymoon/assets` (or `tinymoon.assets_path()`) on each upgrade, never a hand-edit. The hash is the proof: editing a vendored file to make it yours breaks the match, and it is then scanned as ordinary consumer code. The `third_party/` quarantine below remains for genuinely foreign code you did not write.
 
 ### Vendored third-party code
 

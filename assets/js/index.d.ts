@@ -1,4 +1,13 @@
 // tinymoon — TypeScript declarations for the core barrel.
+//
+// Everything here is re-exported from the `"tinymoon"` barrel, but each export
+// also has a real per-file runtime module: the `// -- <name>.js --` section
+// headers below name it. A section header like `// -- grid.js --` means those
+// symbols also live at the subpath `"tinymoon/grid"`, `select.js` at
+// `"tinymoon/select"`, and so on (one module per file in `assets/js/`). Import
+// from the barrel for types + convenience, or from the subpath when you want to
+// pull in just one module's runtime. The subpaths ship no separate `.d.ts` --
+// these barrel declarations are the types for both entry points.
 
 // -- dom.js -------------------------------------------------------------------
 

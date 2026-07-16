@@ -922,7 +922,7 @@ The \`tinymoon/widgets\` barrel is the **data-display** story — the widgets th
 
 ### Badges {#data-badges}
 
-\`badge(text, variant?)\` is a **one-shot element factory** — like \`copyButton\`, it returns a bare \`<span>\`, not a stateful instance, because a status chip has nothing to update or tear down. Variants are \`ok\` | \`warn\` | \`err\` | \`muted\` | \`neutral\`; an unknown variant is a hard error. The status hue drives the **border and a soft fill** (a non-text 3:1 signal), while the label stays at the high-contrast \`--text\` token so 10px uppercase text clears 4.5:1 in **both** themes — saturated status hues (especially light-theme green) cannot hold 4.5:1 as small text. \`warn\` pulls the new \`--gold\` token.
+\`badge(text, variant?)\` is a **one-shot element factory** — like \`copyButton\`, it returns a bare \`<span>\`, not a stateful instance, because a status chip has nothing to update or tear down. There are **no instance methods**: to change a badge, mutate the node directly (\`node.textContent = "…"\`) or replace it with a fresh \`badge(…)\` — by decision, no update API is shipped. Variants are \`ok\` | \`warn\` | \`err\` | \`muted\` | \`neutral\`; an unknown variant is a hard error. The status hue drives the **border and a soft fill** (a non-text 3:1 signal), while the label stays at the high-contrast \`--text\` token so 10px uppercase text clears 4.5:1 in **both** themes — saturated status hues (especially light-theme green) cannot hold 4.5:1 as small text. \`warn\` pulls the new \`--gold\` token.
 
 ### Stats {#data-stats}
 
