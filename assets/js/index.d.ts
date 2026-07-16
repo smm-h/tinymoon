@@ -143,6 +143,94 @@ export function kebabButton(
   tip?: string,
 ): HTMLElement;
 
+// -- inputs.js ----------------------------------------------------------------
+
+/** Text-like input types createInput accepts. checkbox/radio/file/range/
+ * number/time/date are rejected -- they have dedicated factories. */
+export type InputType = "text" | "password" | "email" | "url" | "search" | "tel";
+
+export interface InputOpts {
+  name: string;
+  label: string;
+  type?: InputType;
+  value?: string;
+  placeholder?: string;
+  required?: boolean;
+  pattern?: string;
+  disabled?: boolean;
+  onChange?: (value: string, event: Event) => void;
+  /** Fires on every keystroke (native "input" event), vs onChange on commit. */
+  onInput?: (value: string, event: Event) => void;
+}
+export interface InputInstance {
+  el: HTMLElement;
+  readonly value: string;
+  set(value: string): void;
+  get(): string;
+  focus(): void;
+  /** Render an inline error (wiring aria-invalid + aria-describedby), or clear
+   * it with null. */
+  setError(message: string | null): void;
+  destroy(): void;
+}
+export function createInput(opts: InputOpts): InputInstance;
+
+export interface TextareaOpts {
+  name: string;
+  label: string;
+  value?: string;
+  placeholder?: string;
+  required?: boolean;
+  rows?: number;
+  disabled?: boolean;
+  onChange?: (value: string, event: Event) => void;
+  /** Fires on every keystroke (native "input" event), vs onChange on commit. */
+  onInput?: (value: string, event: Event) => void;
+}
+export function createTextarea(opts: TextareaOpts): InputInstance;
+
+export interface FieldOpts {
+  label: string;
+  /** A factory instance ({el}) or a raw element to wrap in a labeled field. */
+  control: { el: HTMLElement } | HTMLElement;
+  hint?: string;
+  /** Explicit id for the for/aria wiring; minted when omitted. */
+  id?: string;
+}
+export interface FieldInstance {
+  el: HTMLElement;
+  /** Render/clear an inline error, setting aria-invalid + aria-describedby on
+   * the wrapped control. */
+  setError(message: string | null): void;
+  destroy(): void;
+}
+export function createField(opts: FieldOpts): FieldInstance;
+
+// -- slider.js ----------------------------------------------------------------
+
+export interface SliderOpts {
+  name: string;
+  label: string;
+  min: number;
+  max: number;
+  step?: number;
+  value?: number;
+  disabled?: boolean;
+  /** Fires once on commit (native "change" event). */
+  onChange?: (value: number, event: Event) => void;
+  /** Fires live during a drag (native "input" event). Extends the house
+   * single-onChange convention: onInput = live, onChange = commit. */
+  onInput?: (value: number, event: Event) => void;
+}
+export interface SliderInstance {
+  el: HTMLElement;
+  readonly value: number;
+  set(value: number): void;
+  get(): number;
+  destroy(): void;
+}
+export function createSlider(opts: SliderOpts): SliderInstance;
+
 // -- select.js ----------------------------------------------------------------
 
 export interface SelectItem {

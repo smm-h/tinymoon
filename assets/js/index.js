@@ -14,6 +14,8 @@ export { createEmbed } from "./embed.js";
 export { registerCtx, registerCtxFooter, showCtxMenu, hideCtxMenu } from "./ctxmenu.js";
 export { openPopover, closePopover } from "./popover.js";
 export { createSwitch, copyButton, kebabButton, createCheckbox, createRadio, createFileInput, createSegmented, createTabs } from "./controls.js";
+export { createInput, createTextarea, createField } from "./inputs.js";
+export { createSlider } from "./slider.js";
 export { createDatePicker } from "./datepicker.js";
 export { cssVar, ensureRoot, placeBelow, registerCopyable, unregisterCopyable, getCopyData } from "./kernel.js";
 export { mountShell } from "./shell.js";

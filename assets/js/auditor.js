@@ -40,6 +40,7 @@ const FRAMEWORK_WRAPPERS = new Set([
   "seg",           // createSegmented wraps hidden radios in a .seg
   "tm-datepicker", // datepicker wraps a hidden text input
   "sel",           // createSelect wraps a hidden input for form participation
+  "tm-slider",     // createSlider wraps a native range (future-proofing)
 ]);
 
 function isInsideFrameworkWrapper(node) {
