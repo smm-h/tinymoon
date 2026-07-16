@@ -99,10 +99,14 @@ With npm, use bare specifiers by adding an import map:
 **Controls:**
 
 - `createSwitch(opts)` -- role="switch" toggle button (not form-participating)
+- `createInput(opts)` -- styled-native text input in a labeled field (form-participating; text/password/email/url/search/tel only)
+- `createTextarea(opts)` -- styled-native textarea in a labeled field (form-participating)
+- `createField(opts)` -- labeled `.field` wrapper with optional hint and inline `setError`
 - `createCheckbox(opts)` -- hidden-native checkbox facade (form-participating)
 - `createRadio(opts)` -- hidden-native radio facade (form-participating)
 - `createFileInput(opts)` -- hidden-native file input facade (form-participating)
 - `createSegmented(opts)` -- segmented control with hidden radios (form-participating)
+- `createSlider(opts)` -- styled-native range slider (form-participating; onInput = live, onChange = commit)
 - `createTabs(opts)` -- tab bar (not form-participating)
 - `createSelect(opts)` -- custom dropdown select
 - `createDatePicker(opts)` -- calendar date picker
