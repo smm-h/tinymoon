@@ -161,6 +161,11 @@ EXPECTED_VIOLATIONS = {
         (4, RAW_COLOR),  # hwb()
         (5, RAW_COLOR),  # color()
     ],
+    # A numeric character reference (&#039;) is NOT a color and must not fire;
+    # a genuine hex literal in the same file still does.
+    "numeric-entity.js": [
+        (4, RAW_COLOR),  # const real = "#0af"; -- line 3 &#039; must NOT fire
+    ],
     # -- tm-embed boundary waiver --
     "embed-boundary.html": [
         # line 5 iframe src + title= are INSIDE the data-tm-embed marker and
@@ -200,6 +205,46 @@ def test_allowlist_is_exact_match_only(tmp_path):
     )
     violations = scan_dir(tmp_path)
     assert [(v.line, v.rule) for v in violations] == [(1, EXTERNAL_URL)]
+
+
+# ---------------------------------------------------------------------------
+# raw-color must not match HTML numeric character references (both ways).
+# ---------------------------------------------------------------------------
+
+
+def test_numeric_entity_is_not_a_raw_color(tmp_path):
+    """`&#039;` (an apostrophe entity) is NOT the color `#039`: the `#` belongs
+    to the `&#` marker. A genuine hex literal in the same file still fires."""
+    (tmp_path / "widget.js").write_text(
+        'const entity = "It&#039;s fine";\n'      # line 1 -- must NOT fire
+        'const also = "Ready&#8217; &#160;";\n'   # line 2 -- must NOT fire
+        'const real = "#0af";\n'                  # line 3 -- fires raw-color
+    )
+    results = [(v.line, v.rule) for v in scan_dir(tmp_path)]
+    assert results == [(3, RAW_COLOR)]
+
+
+# ---------------------------------------------------------------------------
+# title-attr: plain-object dot-write false-positives; bracket write is legal.
+# ---------------------------------------------------------------------------
+
+
+def test_plain_object_title_dot_fires_but_bracket_notation_is_legal(tmp_path):
+    """The conservative dot regex fires on `fields.title = x` (an unknown
+    receiver), a documented false positive. The bracket-notation idiom
+    `fields["title"] = x` is the legal workaround for a non-DOM object, while a
+    real `element.title = ...` still fires -- detection is not weakened."""
+    (tmp_path / "dot.js").write_text('const fields = {};\nfields.title = "x";\n')
+    dot = [(v.line, v.rule) for v in scan_dir(tmp_path)]
+    assert dot == [(2, TITLE_ATTR)]  # false positive: fires on the plain object
+
+    (tmp_path / "dot.js").unlink()
+    (tmp_path / "bracket.js").write_text(
+        'const fields = {};\nfields["title"] = "x";\n'  # the legal workaround
+        'const el = document.body;\nel.title = "tip";\n'  # real DOM write STILL fires
+    )
+    bracket = [(v.line, v.rule) for v in scan_dir(tmp_path)]
+    assert bracket == [(4, TITLE_ATTR)]
 
 
 # ---------------------------------------------------------------------------
@@ -293,6 +338,48 @@ def test_consumer_file_named_select_js_still_fires(tmp_path):
 def test_consumer_el_select_still_fires(tmp_path):
     """Plain el("select") in a consumer file (any name) still fires."""
     (tmp_path / "widget.js").write_text('const s = el("select");\n')
+    violations = scan_dir(tmp_path)
+    assert [(v.line, v.rule) for v in violations] == [(1, NATIVE_CONTROL)]
+
+
+# ---------------------------------------------------------------------------
+# Provenance by identity: a VERBATIM vendored framework asset is framework-own
+# wherever it lives; a MODIFIED copy is scanned normally.
+# ---------------------------------------------------------------------------
+
+
+def test_vendored_framework_file_passes_by_identity(tmp_path):
+    """A byte-for-byte vendored copy of a framework module (select.js creates a
+    native <select>) is recognized as framework-own by sha256 identity, even in
+    a consumer directory, so its native-control pattern is suppressed."""
+    src = (REPO / "assets" / "js" / "select.js").read_bytes()
+    vendor = tmp_path / "tm" / "vendor" / "select.js"
+    vendor.parent.mkdir(parents=True)
+    vendor.write_bytes(src)
+    violations = scan_dir(tmp_path)
+    assert violations == [], "\n".join(
+        f"{v.path}:{v.line}: [{v.rule}] {v.message}" for v in violations
+    )
+
+
+def test_modified_vendored_framework_file_fails_normally(tmp_path):
+    """Editing even one byte of the vendored copy breaks the hash, so it is no
+    longer framework-own and its native-control creation fires normally."""
+    src = (REPO / "assets" / "js" / "select.js").read_bytes()
+    vendor = tmp_path / "tm" / "vendor" / "select.js"
+    vendor.parent.mkdir(parents=True)
+    vendor.write_bytes(src + b"\n// consumer edit\n")
+    violations = scan_dir(tmp_path)
+    assert any(v.rule == NATIVE_CONTROL for v in violations), (
+        "a modified vendored copy must be scanned normally (native-control fires)"
+    )
+
+
+def test_identity_allowance_is_not_filename_based(tmp_path):
+    """A consumer file NAMED like a framework module but with DIFFERENT bytes is
+    not framework-own -- identity is by hash, not by name."""
+    imposter = tmp_path / "select.js"
+    imposter.write_text('const s = document.createElement("select");\n')
     violations = scan_dir(tmp_path)
     assert [(v.line, v.rule) for v in violations] == [(1, NATIVE_CONTROL)]
 

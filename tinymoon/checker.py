@@ -60,6 +60,18 @@ no warning mode and no bypass:
   setAttribute("title", ...) on elements. `document.title` is the page
   title, not an element tooltip, and is exempt. Non-DOM receivers (route,
   config, options, etc.) are also exempt.
+  KNOWN LIMITATION (dot-assignment on plain objects): the JS `.title =`
+  detector is a conservative regex with no flow analysis, so it cannot tell a
+  DOM element from a plain data object of the same variable name. An unknown
+  receiver deliberately FIRES (better a false positive than a missed tooltip),
+  which means a plain-object field write like `fields.title = x` reports a
+  title-attr violation even though `fields` is not an element. The reliable,
+  unambiguous idiom to write a `title` PROPERTY on a non-DOM object is BRACKET
+  NOTATION -- `fields["title"] = x` -- which the dot-based regex never matches
+  and is therefore always legal. This closes the false positive without
+  weakening real detection: `element.title = "tip"` on an actual DOM node still
+  fires. (Adding the receiver name to an allowlist is rejected on purpose -- it
+  would blind the rule to a real DOM element that happens to share the name.)
 - border-radius: no border-radius (or borderRadius in JS) with a value
   other than 0/0px -- in CSS rules, inline style= attributes, or JS style
   assignments (including setProperty("border-radius", ...)).
@@ -70,9 +82,12 @@ no warning mode and no bypass:
   other CSS rules, in inline styles, and in all JS (canvas code must go
   through cssVar()). var(...) references, currentColor, transparent, and
   inherit are always fine. JS private fields (#name) and location.hash
-  fragments are stripped before checking. Known limitation: named CSS
-  colors (red, papayawhip, ...) are NOT checked -- matching them produces
-  too many false positives on ordinary words.
+  fragments are stripped before checking. HTML numeric character references
+  (``&#039;``, ``&#8217;``, ...) are NOT color literals: the ``#`` there
+  belongs to the ``&#`` entity marker, so a ``#`` immediately preceded by
+  ``&`` never matches (a genuine color is never preceded by ``&``). Known
+  limitation: named CSS colors (red, papayawhip, ...) are NOT checked --
+  matching them produces too many false positives on ordinary words.
 
 The tm-embed BOUNDARY CONTRACT (provenance in HTML source):
   A `createEmbed` container carries the static marker attribute
@@ -117,6 +132,27 @@ The FRAMEWORK-OWN allowance (native-control in tinymoon's own modules):
   qualifies. This is why select.js can write ``document.createElement("select")``
   and modal.js ``document.createElement("dialog")`` plainly instead of
   obfuscating them past the scanner.
+
+  PROVENANCE BY IDENTITY (vendored framework assets): the allowance ALSO holds
+  by IDENTITY, not only location. A file whose exact bytes sha256-match a
+  packaged framework asset (any file under assets_path()) is framework-own no
+  matter where the consumer put it. A no-backend consumer must VENDOR
+  tinymoon's assets (serve them from ``/tm``, a vendor dir, wherever); those
+  copies would otherwise fail the framework's own native-control rule because
+  the location key points at the INSTALLED package, not the vendored copy.
+  Identity closes that gap with zero config and no quarantine: keep the
+  vendored bytes VERBATIM (an update script that re-copies from the installed
+  package is the intended workflow) and they are recognized automatically. The
+  hash is unforgeable -- editing a vendored file to make it yours breaks the
+  match and it is scanned normally, exactly as the quarantine's hash pin works.
+  The conformance corpus is excluded from the identity set (fixture data, not
+  identity), so a consumer file matching a corpus fixture is never laundered.
+
+  STATIC-COVERAGE NOTE (compiled-framework consumers): the checker scans
+  .html/.css/.js only. A consumer that authors UI in a COMPILED source
+  (.svelte, .ts, .tsx, JSX) gets weaker static coverage -- the rules see the
+  emitted assets, not the pre-compilation source. Scanning those source
+  dialects is deferred to the tree-sitter era.
 
 The VENDOR QUARANTINE (provenance for whole third-party FILES):
   The tm-embed boundary types provenance INSIDE HTML source. The quarantine
@@ -275,16 +311,33 @@ def _framework_assets_root():
 
 
 def _is_framework_own(path):
-    """True if ``path`` resolves to a file inside tinymoon's own packaged
-    assets directory. Keyed on LOCATION, not filename -- a consumer file never
-    qualifies, whatever it is named."""
+    """True if ``path`` is one of tinymoon's own framework assets, by LOCATION
+    or by IDENTITY.
+
+    LOCATION: a file resolving inside tinymoon's packaged assets directory is
+    framework-own (keyed on location, not filename -- a consumer file never
+    qualifies by name alone).
+
+    IDENTITY: a file OUTSIDE the packaged assets whose exact bytes hash to a
+    packaged asset is a verbatim VENDORED COPY of a framework module -- also
+    framework-own, wherever the consumer placed it. This lets a no-backend
+    consumer vendor tinymoon's assets (under /tm, a vendor dir, anywhere) and
+    still pass the framework's own checker, without quarantining them. The hash
+    is unforgeable: the moment a vendored file is EDITED its bytes stop matching
+    and it is scanned normally (a modified copy fails). Consistent with the
+    quarantine's provenance-by-hash doctrine."""
     root = _framework_assets_root()
     if root is None:
         return False
     try:
         Path(path).resolve().relative_to(root)
     except (ValueError, OSError):
-        return False
+        # Not framework-own by LOCATION -- try PROVENANCE BY IDENTITY.
+        try:
+            digest = hashlib.sha256(Path(path).read_bytes()).hexdigest()
+        except OSError:
+            return False
+        return digest in _framework_asset_hashes()
     # The packaged conformance corpus lives inside the assets tree but is
     # fixture data, not a framework module: it must NOT receive the
     # framework-own native-control allowance, so a reimplementation running its
@@ -294,6 +347,32 @@ def _is_framework_own(path):
     if conf_root is not None and _is_within(path, conf_root):
         return False
     return True
+
+
+@lru_cache(maxsize=1)
+def _framework_asset_hashes():
+    """sha256 (hex) of every scannable framework asset file, for
+    provenance-by-identity (see _is_framework_own).
+
+    The conformance CORPUS is EXCLUDED: it is fixture data with deliberate
+    violations, not framework identity, so a consumer file that happens to match
+    a corpus fixture must never be laundered into framework-own. Cached once per
+    run -- the packaged assets do not change within a process."""
+    root = _framework_assets_root()
+    if root is None:
+        return frozenset()
+    conf_root = _framework_conformance_root()
+    hashes = set()
+    for p in root.rglob("*"):
+        if not p.is_file() or p.suffix.lower() not in SOURCE_EXTS:
+            continue
+        if conf_root is not None and _is_within(p, conf_root):
+            continue
+        try:
+            hashes.add(hashlib.sha256(p.read_bytes()).hexdigest())
+        except OSError:
+            continue
+    return frozenset(hashes)
 
 
 # The framework ships a portable conformance CORPUS -- fixture data with
@@ -364,7 +443,11 @@ _EXTERNAL_RE = re.compile(r"^(?:https?:|wss?:)?//")
 _EMBEDDED_URL_RE = re.compile(r"""https?://[^\s"'<>()\\]+""")
 _W3_PREFIXES = ("http://www.w3.org/", "https://www.w3.org/")
 
-_HEX_COLOR_RE = re.compile(r"#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b")
+# The leading (?<!&) keeps the scanner off HTML numeric character references:
+# `&#039;` (an apostrophe) is `&#` + digits, not a `#RGB` color literal. Without
+# the lookbehind the `#039` inside `&#039;` (and `&#8217;`, etc.) false-positives
+# as a 3/4-digit hex color. A genuine color is never preceded by `&`.
+_HEX_COLOR_RE = re.compile(r"(?<!&)#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b")
 _COLOR_FN_RE = re.compile(r"\b(?:rgba?|hsla?|oklch|oklab|lab|lch|hwb|color)\s*\(")
 
 _CSS_URL_FN_RE = re.compile(

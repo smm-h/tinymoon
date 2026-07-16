@@ -10,7 +10,9 @@
       "embed-abuse.html": [],
       "embed-boundary.html": [],
       "native-hidden.html": [],
-      "navigation.html": []
+      "navigation.html": [],
+      "numeric-entity.js": [],
+      "title-bracket.js": []
     },
     "violations": {
       "border-radius.css": [
@@ -277,6 +279,12 @@
         [
           15,
           "native-control"
+        ]
+      ],
+      "numeric-entity.js": [
+        [
+          4,
+          "raw-color"
         ]
       ],
       "raw-color-extra-fns.css": [
