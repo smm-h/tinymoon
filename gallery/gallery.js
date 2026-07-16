@@ -40,6 +40,7 @@ import {
   loadingBlock, emptyBlock, errorBlock, renderAsync,
   lazyMount,
   registerPaletteSource, installPalette,
+  registerOverlayTrigger,
 } from "../assets/js/chrome.js";
 
 import {
@@ -433,6 +434,7 @@ const WidgetsView = {
       ok.addEventListener("click", () => { close(); toast("Confirmed"); });
     });
     const pBtn = el("button", "btn", "Popover");
+    pBtn.dataset.testid = "open-popover";
     pBtn.addEventListener("click", () => {
       openPopover(pBtn, (bodyEl) => {
         for (const name of ["thumbup", "thumbdown", "bookmark"]) {
@@ -732,12 +734,14 @@ Phase 6A adds structural shell-and-chrome primitives, budgeted in their own \`ch
 
 ### openDrawer {#open-drawer}
 
-\`openDrawer({title, body, side?, modal?, onClose?})\` → \`{el, close()}\` opens an edge-anchored overlay on the kernel layer stack. Two variants share one API:
+\`openDrawer({title, body, side?, modal?, trigger?, onClose?})\` → \`{el, close()}\` opens an edge-anchored overlay on the kernel layer stack. Two variants share one API:
 
-- **modal: false** (default) — a light-dismiss drawer: Escape (via the kernel layer stack) or an outside pointerdown closes it, and the page behind stays interactive (\`role="dialog"\`, \`aria-modal="false"\`).
+- **modal: false** (default) — a light-dismiss drawer: Escape (via the kernel layer stack) or an outside pointerdown closes it, and the page behind stays interactive (\`role="dialog"\`, \`aria-modal="false"\`). Outside-pointer dismissal rides the kernel's central light-dismiss registry — one document capture-phase \`pointerdown\` listener, registered synchronously (no per-drawer timer), so it is deterministic under load.
 - **modal: true** — a native \`<dialog>\` (showModal): focus trap, inert background, and a dimmed backdrop, exactly like \`openModal\`.
 
 Both restore focus to the previously-focused element on close and slide in from \`side\` (\`"right"\` default | \`"left"\`) using motion tokens (reduced-motion safe). The shell's mobile nav drawer reuses the same swipe-to-close gesture: drag it toward its edge past a threshold to dismiss.
+
+For a proper toggle button, wrap the trigger with \`registerOverlayTrigger(triggerEl, ({trigger, onClose}) => openDrawer({..., trigger, onClose}))\` from \`tinymoon/chrome\`: the framework owns the trigger's click handler and \`aria-expanded\`, and the kernel's gesture-claim ensures a close-press can never immediately reopen the drawer. The same contract backs the shell's hamburger and any light-dismiss overlay (popover, select, context menu) via \`registerLightDismiss\`.
 
 ### createTabPanels {#create-tabpanels}
 
@@ -2376,6 +2380,18 @@ const ChromeView = createView({
       body.appendChild(el("p", null, "A non-modal drawer: click outside, press Escape, or use the close button. The page behind stays interactive."));
       openDrawer({ title: "Filters", body, side: "left", modal: false });
     });
+    // A proper toggle button via registerOverlayTrigger: the framework owns the
+    // click handler, aria-expanded, and open/close state. Pressing it toggles the
+    // drawer; the kernel gesture-claim keeps a close-press from reopening it. It
+    // is right-anchored so the trigger stays clear of the panel while open.
+    const openToggle = el("button", "btn", "Toggle drawer (right)");
+    openToggle.type = "button";
+    openToggle.dataset.testid = "open-toggle-drawer";
+    registerOverlayTrigger(openToggle, ({ trigger, onClose }) => {
+      const body = el("div");
+      body.appendChild(el("p", null, "A framework-owned toggle: press the button again to close, click outside, or press Escape."));
+      return openDrawer({ title: "Toggle", body, side: "right", modal: false, trigger, onClose });
+    });
     const openModalD = el("button", "btn", "Open dialog drawer (right)");
     openModalD.type = "button";
     openModalD.dataset.testid = "open-modal-drawer";
@@ -2385,6 +2401,7 @@ const ChromeView = createView({
       openDrawer({ title: "Details", body, side: "right", modal: true });
     });
     dRow.appendChild(openLight);
+    dRow.appendChild(openToggle);
     dRow.appendChild(openModalD);
     dp.appendChild(dRow);
     ctx.root.appendChild(dp);
