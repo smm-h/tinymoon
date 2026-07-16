@@ -170,7 +170,7 @@ No overhead -- as a number, not a vibe. Shipped CSS, JS, and fonts have hard byt
 
 `tinymoon check` scans `.html`, `.css`, and `.js` files and enforces the framework's non-negotiables as hard errors:
 
-- **external-url** -- no network loads (no `http://`, `https://`, or `//host` URLs in HTML, CSS, or JS)
+- **external-url** -- no external resource loads (no `http://`, `https://`, or `//host` URLs fetched into the page from HTML, CSS, or JS; form `action`/`formaction` count as loads). Plain `<a>`/`<area>` hyperlink navigations are legal
 - **native-control** -- no native `<select>`, `<dialog>`, or `<input type=checkbox|radio|file>`
 - **title-attr** -- no `title=` attributes (use the tooltip primitive)
 - **border-radius** -- no `border-radius` other than `0`/`0px`
