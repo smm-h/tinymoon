@@ -54,6 +54,8 @@ import {
   unregisterCopyable,
   getCopyData,
   mountShell,
+  announce,
+  createView,
 } from "tinymoon";
 
 // -- extras barrel ("tinymoon/extras") ----------------------------------------
@@ -114,7 +116,7 @@ ref(
   createInput, createTextarea, createField, createNumber, createSlider,
   createDatePicker, createTimePicker, createCombobox, createMultiSelect,
   createAccordion, cssVar, ensureRoot, placeBelow, registerCopyable,
-  unregisterCopyable, getCopyData, mountShell,
+  unregisterCopyable, getCopyData, mountShell, announce, createView,
   api, post, ApiError, setAuthHeader, sse, socket,
   fmtTime, relativeTime, liveRelativeTime,
   createSettings, renderDocMd, createWikiView,
@@ -161,6 +163,27 @@ ref(nameValue, nameInput.get());
 const bio = createTextarea({ name: "bio", label: "Bio", rows: 4 });
 bio.set("hello");
 bio.destroy();
+
+// createView: a contract-conforming view object; ctx carries root + setSub.
+const dashView = createView({
+  build: (ctx) => {
+    ctx.setSub("overview");
+    ctx.root.appendChild(el("h2", null, "Dashboard"));
+  },
+  refresh: (ctx) => ref(ctx.root),
+  setSub: (sub, ctx) => ref(sub, ctx.root),
+});
+ref(dashView.built, dashView.root);
+
+// mountShell wires routes (incl. an eager route) and returns announce().
+const shell = mountShell({
+  root: el("div"),
+  brand: { name: "Demo", logoHTML: "<b>D</b>" },
+  routes: { home: { title: "Home", icon: "home", view: () => dashView, eager: true } },
+  defaultRoute: "home",
+});
+shell.announce("Loaded");
+announce("Standalone announce");
 
 const volume = createSlider({
   name: "volume",

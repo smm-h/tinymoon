@@ -59,6 +59,7 @@
     "./toast": "./assets/js/toast.js",
     "./tooltip": "./assets/js/tooltip.js",
     "./tree": "./assets/js/tree.js",
+    "./view": "./assets/js/view.js",
     "./virtuallist": "./assets/js/virtuallist.js",
     "./wiki": "./assets/js/wiki.js",
     "./assets/*": "./assets/*"

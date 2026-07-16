@@ -21,4 +21,5 @@ export { createTimePicker } from "./timepicker.js";
 export { createCombobox, createMultiSelect } from "./combobox.js";
 export { createAccordion } from "./accordion.js";
 export { cssVar, ensureRoot, placeBelow, registerCopyable, unregisterCopyable, getCopyData } from "./kernel.js";
-export { mountShell } from "./shell.js";
+export { mountShell, announce } from "./shell.js";
+export { createView } from "./view.js";

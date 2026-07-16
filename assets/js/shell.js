@@ -9,12 +9,13 @@
 //   brand          — {name, logoHTML}: name feeds the collapsed-sidebar
 //                    initial (--brand-initial); logoHTML is the sidebar
 //                    logo markup
-//   routes         — {key: {title, icon, view, tip?, hidden?}}.
+//   routes         — {key: {title, icon, view, tip?, hidden?, eager?}}.
 //                    view can be:
 //                      () => viewObj   — factory returning a view object
 //                      "<h2>…</h2>"   — HTML string (wrapped automatically)
 //                      element         — a DOM Element or <template>
 //                    hidden routes get no nav item but stay routable.
+//                    eager: true builds the view (hidden) at mount.
 //   defaultRoute   — route key used for an empty or unknown hash
 //   legacyRoutes?  — {oldKey: "newRoute"}: old hashes redirect, deep-link
 //                    tails are preserved
@@ -44,6 +45,14 @@ import { $$, el } from "./dom.js";
 import { icon } from "./icons.js";
 import { ensureTooltip } from "./tooltip.js";
 import { ensureRoot } from "./kernel.js";
+
+// Live handles to the mounted shell's #tm-page-sub and aria-live announcer,
+// backing setPageSub()/announce() (used by the createView ctx). No-op unmounted.
+let _pageSub = null;
+let _announcer = null;
+
+export function setPageSub(text) { if (_pageSub) _pageSub.textContent = text || ""; }
+export function announce(msg) { if (_announcer) _announcer.textContent = msg || ""; }
 
 // Wrap a declarative view value (string HTML or Element) into a view object
 // conforming to the shell's view contract. The returned object is cached per
@@ -170,6 +179,9 @@ export function mountShell(config) {
   const announcer = el("div", "tm-sr-only");
   announcer.setAttribute("aria-live", "polite");
   announcer.setAttribute("aria-atomic", "true");
+  // Expose the subtitle + announcer to the standalone setPageSub()/announce().
+  _pageSub = pageSub;
+  _announcer = announcer;
 
   app.prepend(skip);
   app.appendChild(sidebar);
@@ -274,6 +286,18 @@ export function mountShell(config) {
     if (onRoute) onRoute(name, sub || null);
   }
 
+  // Eager routes: create the root and build() at mount (hidden). build() is
+  // idempotent, so the router's build() on first visit is a no-op.
+  for (const [, r] of Object.entries(routes)) {
+    if (!r.eager) continue;
+    const view = resolveView(r.view);
+    if (!view.root) {
+      view.root = el("section", "view hidden");
+      content.appendChild(view.root);
+    }
+    view.build();
+  }
+
   window.addEventListener("hashchange", route);
   route();
 
@@ -281,6 +305,7 @@ export function mountShell(config) {
     navigate(r) { location.hash = "#/" + r; },
     setBusy,
     setTitle,
+    announce,
     // Re-run the current view's refresh() in place: no rebuild, no entry
     // animation. No-op before the first route or if the view isn't built.
     refreshCurrent() {

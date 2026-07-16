@@ -503,6 +503,8 @@ export interface ShellRoute {
   view: (() => ShellView) | string | HTMLElement;
   tip?: string;
   hidden?: boolean;
+  /** Build the view (hidden) at mount instead of on first visit. */
+  eager?: boolean;
 }
 
 export interface ShellView {
@@ -529,7 +531,37 @@ export interface ShellInstance {
   setBusy(msg: string | null): void;
   setTitle(title: string, sub?: string): void;
   refreshCurrent(): void;
+  /** Push a message into the shell's aria-live route announcer. */
+  announce(msg: string): void;
 }
 
 /** Mount the app shell into the given root element. */
 export function mountShell(config: ShellConfig): ShellInstance;
+
+/** Push a message into the mounted shell's aria-live route announcer. No-op
+ * before a shell is mounted. */
+export function announce(msg: string): void;
+
+// -- view.js ------------------------------------------------------------------
+
+/** The ctx passed to a createView build/refresh callback. */
+export interface ViewContext {
+  /** The view's section element (assigned before the first build). */
+  root: HTMLElement;
+  /** Write the shell topbar's page subtitle (#tm-page-sub). */
+  setSub(text: string): void;
+}
+
+export interface CreateViewOpts {
+  /** Build the view DOM once (idempotent; runs on first visit or at mount for
+   * eager routes). */
+  build(ctx: ViewContext): void;
+  /** Cheap per-visit updates; runs after the view is shown. */
+  refresh?(ctx: ViewContext): void;
+  /** Deep-link handler: receives the hash tail before refresh() runs. */
+  setSub?(sub: string, ctx: ViewContext): void;
+}
+
+/** Build a contract-conforming shell view object with managed `built` and an
+ * idempotent build. Plain object views still work unchanged. */
+export function createView(opts: CreateViewOpts): ShellView;

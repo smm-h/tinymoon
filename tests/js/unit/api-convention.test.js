@@ -97,8 +97,12 @@ const NOT_COMPONENTS = [
   // kernel.js — infrastructure + copyable registry
   "cssVar", "ensureRoot", "getCopyData", "placeBelow",
   "registerCopyable", "unregisterCopyable",
-  // shell.js — app shell
-  "mountShell",
+  // shell.js — app shell + aria-live announcer
+  "mountShell", "announce",
+  // view.js — view-object factory (returns a {root, built, build, refresh}
+  // view object, not an {el, ...} component instance). Convenience over the
+  // same view contract mountShell already accepts.
+  "createView",
 ];
 
 // ---------------------------------------------------------------------------
