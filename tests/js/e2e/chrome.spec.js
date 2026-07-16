@@ -124,13 +124,22 @@ test.describe("createTabPanels keyboard (APG)", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/gallery/");
     await page.locator('.nav-item[data-route="chrome"]').click();
+    // The chrome route is EAGER: its DOM (tablist included) exists hidden from
+    // page load, and the nav click only sets location.hash — the async
+    // hashchange → route() is what unhides the view. Gate on the route having
+    // actually landed: focus() on a still-display:none element silently
+    // no-ops, so without this wait the first keypress can be lost under load.
+    await expect(page.locator(".tm-tabpanels").first()).toBeVisible();
   });
 
   test("arrow keys move selection and activate the matching panel", async ({ page }) => {
     const tablist = page.locator(".tm-tabpanels [role='tablist']").first();
     const tabs = tablist.locator("[role='tab']");
-    // Focus the first (selected) tab.
+    // Focus the first (selected) tab, and require focus to have LANDED before
+    // any keypress — a keydown dispatched while focus is elsewhere never
+    // reaches the tablist's APG handler.
     await tabs.nth(0).focus();
+    await expect(tabs.nth(0)).toBeFocused();
     await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
     // ArrowRight → second tab selected and its panel shown.
     await page.keyboard.press("ArrowRight");

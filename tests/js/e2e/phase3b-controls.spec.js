@@ -36,7 +36,9 @@ test.describe("Phase 3B form controls (Forms view)", () => {
     await expect(input).toHaveValue("3");
 
     // Native keyboard stepping still works (the input is a real input[type=number]).
+    // Focus must have landed before the keypress or the key goes elsewhere.
     await input.focus();
+    await expect(input).toBeFocused();
     await page.keyboard.press("ArrowUp");
     await expect(input).toHaveValue("4");
   });
@@ -213,6 +215,8 @@ test.describe("Accordion (Widgets view)", () => {
     const view = page.locator("#tm-content section.view:not(.hidden)");
     const headers = view.locator(".tm-accordion .tm-accordion-header");
     await headers.nth(1).focus();
+    // Focus must have landed before the keypress or the key goes elsewhere.
+    await expect(headers.nth(1)).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(headers.nth(1)).toHaveAttribute("aria-expanded", "true");
   });

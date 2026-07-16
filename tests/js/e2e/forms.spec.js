@@ -201,6 +201,8 @@ test.describe("Forms view", () => {
     const range = view.locator(".tm-slider input[type='range'][name='volume']");
 
     await range.focus();
+    // Focus must have landed before the keypress or the key goes elsewhere.
+    await expect(range).toBeFocused();
     // Default value is 40; ArrowRight steps up by 1.
     await page.keyboard.press("ArrowRight");
     await expect(range).toHaveValue("41");
@@ -232,7 +234,9 @@ test.describe("Forms view", () => {
     await expect(range).toHaveJSProperty("value", "30");
 
     // Keyboard seeking works exactly like a chromed slider.
+    // Focus must have landed before the keypress or the key goes elsewhere.
     await range.focus();
+    await expect(range).toBeFocused();
     await page.keyboard.press("ArrowRight");
     await expect(range).toHaveValue("31");
     await page.keyboard.press("Home");

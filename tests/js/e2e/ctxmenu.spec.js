@@ -24,7 +24,9 @@ test("Shift+F10 on a data-ctx region opens context menu with menuitem roles", as
   await expect(panel).toHaveAttribute("tabindex", "0");
 
   // Focus the panel and press Shift+F10 to open the context menu.
+  // Focus must have landed before the keypress or the key goes elsewhere.
   await panel.focus();
+  await expect(panel).toBeFocused();
   await page.keyboard.press("Shift+F10");
 
   const menu = page.locator("#tm-ctx-root.open");
@@ -44,7 +46,9 @@ test("arrow keys navigate, Home/End jump, Escape closes and restores focus", asy
 
   const panel = page.locator("[data-ctx='gallery-demo']");
   await expect(panel).toHaveAttribute("tabindex", "0");
+  // Focus must have landed before the keypress or the key goes elsewhere.
   await panel.focus();
+  await expect(panel).toBeFocused();
   await page.keyboard.press("Shift+F10");
 
   const menu = page.locator("#tm-ctx-root.open");
@@ -151,7 +155,9 @@ test("axe-core reports zero violations on the context menu", async ({ page }) =>
   await goToWidgets(page);
 
   const panel = page.locator("[data-ctx='gallery-demo']");
+  // Focus must have landed before the keypress or the key goes elsewhere.
   await panel.focus();
+  await expect(panel).toBeFocused();
   await page.keyboard.press("Shift+F10");
 
   const menu = page.locator("#tm-ctx-root.open");

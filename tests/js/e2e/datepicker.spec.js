@@ -113,7 +113,10 @@ test.describe("Date picker", () => {
     const popover = datepicker.locator(".tm-datepicker-popover");
     await expect(popover).toBeVisible();
 
-    // Focus should be on a day button; press Enter to select
+    // Wait for focus to land on a day button (openCalendar focuses via rAF —
+    // pressing before it lands sends Enter to the still-focused toggle), then
+    // Enter selects the focused day.
+    await expect(popover.locator("button.tm-datepicker-day[data-date='2026-07-14']")).toBeFocused();
     await page.keyboard.press("Enter");
 
     // Popover should close
