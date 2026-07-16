@@ -195,6 +195,39 @@ describe("createFileInput", () => {
     expect(input.multiple).toBe(true);
   });
 
+  it("open() clicks the hidden input to open the native picker", async () => {
+    const { createFileInput } = await import("../../../assets/js/controls.js");
+    const fi = createFileInput({ name: "doc", label: "Upload" });
+    const input = fi.el.querySelector("input");
+    let clicks = 0;
+    input.click = () => { clicks += 1; };
+    fi.open();
+    expect(clicks).toBe(1);
+    // The visible trigger routes through the same handler.
+    fi.el.querySelector("button").click();
+    expect(clicks).toBe(2);
+  });
+
+  it("the file-name display reflects 0, 1, and many selected files", async () => {
+    const { createFileInput } = await import("../../../assets/js/controls.js");
+    let seen;
+    const fi = createFileInput({ name: "doc", label: "Upload", onChange: (files) => { seen = files; } });
+    const input = fi.el.querySelector("input");
+    const display = fi.el.querySelector(".tm-file-name");
+    const fire = (files) => {
+      Object.defineProperty(input, "files", { configurable: true, value: files });
+      input.dispatchEvent(new Event("change"));
+    };
+    expect(display.textContent).toBe("No file chosen");
+    fire([{ name: "a.pdf" }]);
+    expect(display.textContent).toBe("a.pdf");
+    expect(seen.length).toBe(1);
+    fire([{ name: "a.pdf" }, { name: "b.pdf" }]);
+    expect(display.textContent).toBe("2 files");
+    fire([]);
+    expect(display.textContent).toBe("No file chosen");
+  });
+
   it("destroy removes the element from its parent", async () => {
     const { createFileInput } = await import("../../../assets/js/controls.js");
     const parent = document.createElement("div");

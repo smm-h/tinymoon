@@ -188,6 +188,7 @@ describe("api-convention: migrated primitives", () => {
     expect(instance).not.toBeInstanceOf(HTMLElement);
     expect(instance.el).toBeInstanceOf(HTMLElement);
     expect(typeof instance.getFiles).toBe("function");
+    expect(typeof instance.open).toBe("function");
     expect(typeof instance.destroy).toBe("function");
   });
 

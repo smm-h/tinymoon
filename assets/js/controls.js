@@ -314,8 +314,9 @@ export function createRadio(opts) {
 }
 
 // createFileInput({name, label, accept?, multiple?, onChange?})
-// → {el, getFiles(), destroy()}.
-// Hidden-native facade: a styled button triggers the hidden file input.
+// → {el, getFiles(), open(), destroy()}.
+// Hidden-native facade: a styled button triggers the hidden file input;
+// open() triggers the same native picker programmatically.
 export function createFileInput(opts) {
   if (!opts || !opts.name) throw new Error("createFileInput: name is required");
   if (!opts.label) throw new Error("createFileInput: label is required");
@@ -336,25 +337,19 @@ export function createFileInput(opts) {
   wrapper.appendChild(input);
   wrapper.appendChild(trigger);
   wrapper.appendChild(display);
-  function onTriggerClick() { input.click(); }
+  function open() { input.click(); }
   function onInputChange() {
-    const files = input.files;
-    if (files.length === 0) {
-      display.textContent = "No file chosen";
-    } else if (files.length === 1) {
-      display.textContent = files[0].name;
-    } else {
-      display.textContent = files.length + " files";
-    }
-    if (onChange) onChange(files);
+    const f = input.files;
+    display.textContent = f.length === 0 ? "No file chosen" : f.length === 1 ? f[0].name : f.length + " files";
+    if (onChange) onChange(f);
   }
-  trigger.addEventListener("click", onTriggerClick);
+  trigger.addEventListener("click", open);
   input.addEventListener("change", onInputChange);
   function getFiles() { return input.files; }
   function destroy() {
-    trigger.removeEventListener("click", onTriggerClick);
+    trigger.removeEventListener("click", open);
     input.removeEventListener("change", onInputChange);
     if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
   }
-  return { el: wrapper, getFiles, destroy };
+  return { el: wrapper, getFiles, open, destroy };
 }

@@ -97,6 +97,8 @@ export interface FileInputOpts {
 export interface FileInputInstance {
   el: HTMLElement;
   getFiles(): FileList;
+  /** Programmatically open the native file picker (same as clicking the trigger). */
+  open(): void;
   destroy(): void;
 }
 export function createFileInput(opts: FileInputOpts): FileInputInstance;
