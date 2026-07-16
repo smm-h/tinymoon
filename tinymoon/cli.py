@@ -31,13 +31,16 @@ app = strictcli.App(
         "Recursively scan the .html/.css/.js files under --dir for "
         "conformance violations: external URLs (external-url), native "
         "browser controls (native-control), title= attributes (title-attr), "
-        "non-zero border-radius (border-radius), and off-token color "
-        "literals (raw-color). Prints one line per violation "
+        "non-zero border-radius (border-radius), off-token color "
+        "literals (raw-color), and unpinned vendored third-party files "
+        "(unpinned-vendor). Prints one line per violation "
         "(path:line: [rule-id] message) and a summary count. Exits 0 when "
         "clean, 1 on any violation -- there is no bypass. An optional "
         "tinymoon-allowlist.txt at the scanned directory root (one exact "
         "URL per line, # comments allowed) exempts exact URL matches from "
-        "the external-url rule."
+        "the external-url rule. A third_party/ directory whose files are "
+        "pinned by sha256 in third_party/PROVENANCE.toml is exempt from "
+        "rule scanning -- see the README's Vendored third-party code section."
     ),
 )
 @strictcli.flag(

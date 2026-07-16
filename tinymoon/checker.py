@@ -88,6 +88,44 @@ The FRAMEWORK-OWN allowance (native-control in tinymoon's own modules):
   qualifies. This is why select.js can write ``document.createElement("select")``
   plainly instead of obfuscating it past the scanner.
 
+The VENDOR QUARANTINE (provenance for whole third-party FILES):
+  The tm-embed boundary types provenance INSIDE HTML source. The quarantine
+  is the second, file-level provenance mechanism: a consumer sometimes must
+  vendor a third-party FILE verbatim -- a foreign stylesheet or script they
+  did not write and cannot rewrite to obey the charter (rounded corners, raw
+  colors, a native control). Rewriting it would fork it; leaving it in the
+  tree would fail the checker.
+
+  The quarantine resolves this WITHOUT a bypass flag. A directory named
+  ``third_party`` (the fixed conventional name -- no configuration, conventions
+  over options) is a PROVENANCE-TYPED EXCLUSION zone. Files inside it are
+  exempt from all five rules IF AND ONLY IF a manifest at
+  ``third_party/PROVENANCE.toml`` (beside the files) pins each one by its
+  relative path, an informational upstream origin, and a sha256 of its exact
+  bytes. The exemption is EARNED by proving the bytes are unmodified
+  third-party code: the hash is the proof. First-party code cannot hide here,
+  because the moment you edit a quarantined file to make it yours the sha256
+  stops matching and the pin breaks -- editing is exactly what the pin
+  forbids. The manifest can only pin files INSIDE the directory: absolute
+  paths and ``..`` traversal in an entry are rejected, so the quarantine can
+  never launder a file elsewhere in the tree.
+
+  Every deviation is a HARD ERROR under the ``unpinned-vendor`` rule -- no
+  warnings, no bypass:
+    - a file present under ``third_party/`` with no manifest entry (including
+      the case of NO manifest at all: then every file is unpinned);
+    - a manifest entry whose file is missing (a stale pin);
+    - a hash mismatch (the vendored file was edited);
+    - a manifest entry with an absolute or traversing path.
+  The manifest schema is ``[[file]]`` array-of-tables with string ``path``
+  (relative to the quarantine directory), ``origin``, and ``sha256`` keys.
+
+  RESOLUTION SCOPE: the quarantine is resolved relative to EACH scanned root,
+  and any ``third_party`` directory NESTED anywhere within a scanned tree is
+  ALSO honored, provided its own ``PROVENANCE.toml`` sits beside it. Scanning
+  a repo root therefore honors a ``gallery/third_party`` inside it exactly as
+  scanning ``gallery`` directly honors its top-level ``third_party``.
+
 Known bypasses remaining for future work:
 - HTML-in-JS-strings: innerHTML/insertAdjacentHTML string content is not
   parsed as HTML, so embedded URLs, native controls, title attributes,
@@ -100,14 +138,16 @@ Known bypasses remaining for future work:
 - eval/Function: dynamically constructed code is not analyzed.
 """
 
+import hashlib
 import json
 import re
+import tomllib
 import urllib.parse
 from bisect import bisect_right
 from dataclasses import dataclass
 from functools import lru_cache
 from html.parser import HTMLParser
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 # Rule ids
 EXTERNAL_URL = "external-url"
@@ -116,10 +156,20 @@ TITLE_ATTR = "title-attr"
 BORDER_RADIUS = "border-radius"
 RAW_COLOR = "raw-color"
 ENCODING_ERROR = "encoding-error"
+UNPINNED_VENDOR = "unpinned-vendor"
 
 SKIP_DIRS = {"node_modules", ".git", ".venv", "__pycache__", "dist"}
 SOURCE_EXTS = {".html", ".css", ".js"}
 ALLOWLIST_FILENAME = "tinymoon-allowlist.txt"
+
+# Vendor quarantine: a conventionally-named directory whose contents are
+# THIRD-PARTY bytes a consumer vendors verbatim and cannot rewrite (foreign
+# CSS/JS). Files under it are excluded from rule scanning only when their exact
+# bytes are pinned in the provenance manifest that sits beside them. See the
+# VENDOR QUARANTINE section of the module docstring.
+QUARANTINE_DIRNAME = "third_party"
+PROVENANCE_FILENAME = "PROVENANCE.toml"
+_SHA256_RE = re.compile(r"[0-9a-fA-F]{64}")
 
 _BANNED_INPUT_TYPES = ("checkbox", "radio", "file")
 
@@ -898,7 +948,12 @@ def load_allowlist(root):
 
 
 def iter_source_files(root):
-    """Yield .html/.css/.js files under root, skipping vendored/derived dirs."""
+    """Yield .html/.css/.js files under root, skipping vendored/derived dirs.
+
+    Files inside a ``third_party`` quarantine directory are NOT yielded: they
+    are governed by the provenance manifest (see ``validate_quarantine``), not
+    by the ordinary rule scanners.
+    """
     root = Path(root)
     for p in sorted(root.rglob("*")):
         if not p.is_file() or p.suffix.lower() not in SOURCE_EXTS:
@@ -906,7 +961,189 @@ def iter_source_files(root):
         rel = p.relative_to(root)
         if any(part in SKIP_DIRS for part in rel.parts[:-1]):
             continue
+        if any(part == QUARANTINE_DIRNAME for part in rel.parts):
+            continue
         yield p
+
+
+def iter_quarantine_dirs(root):
+    """Yield every ``third_party`` quarantine directory within the scanned tree.
+
+    Both a top-level ``<root>/third_party`` and any nested one (e.g.
+    ``<root>/gallery/third_party``) are yielded, so a quarantine is honored
+    whether the scan root is the repo root or the sub-tree that contains it.
+    Quarantine dirs inside skipped trees (node_modules, dist, ...) are ignored.
+    """
+    root = Path(root)
+    for p in sorted(root.rglob(QUARANTINE_DIRNAME)):
+        if not p.is_dir():
+            continue
+        rel = p.relative_to(root)
+        if any(part in SKIP_DIRS for part in rel.parts[:-1]):
+            continue
+        yield p
+
+
+def _quarantine_path_unsafe(rel):
+    """True if a manifest entry path is absolute or escapes the quarantine dir.
+
+    The quarantine may only pin files INSIDE ``third_party/``; an absolute
+    path or any ``..`` component would let it launder a file elsewhere in the
+    tree, so both are rejected (checked lexically -- independent of the
+    filesystem, on both POSIX and Windows spellings).
+    """
+    if not rel or rel.startswith(("/", "\\")):
+        return True
+    normalized = rel.replace("\\", "/")
+    if PurePosixPath(normalized).is_absolute() or PureWindowsPath(rel).is_absolute():
+        return True
+    return any(part == ".." for part in PurePosixPath(normalized).parts)
+
+
+def validate_quarantine(qdir, root):
+    """Validate one quarantine directory against its provenance manifest.
+
+    Returns a list of ``unpinned-vendor`` Violations (paths relative to
+    ``root``). A file is exempt from the ordinary rules exactly when the
+    manifest pins it and its sha256 still matches; every other state is an
+    error. The manifest itself (PROVENANCE.toml) is never required to pin
+    itself.
+    """
+    qdir = Path(qdir)
+    out = []
+    manifest_path = qdir / PROVENANCE_FILENAME
+    manifest_rel = str(manifest_path.relative_to(root))
+    present = [
+        p
+        for p in sorted(qdir.rglob("*"))
+        if p.is_file() and p.resolve() != manifest_path.resolve()
+    ]
+
+    if not manifest_path.is_file():
+        for p in present:
+            out.append(
+                Violation(
+                    str(p.relative_to(root)),
+                    1,
+                    UNPINNED_VENDOR,
+                    f"vendored file under {QUARANTINE_DIRNAME}/ is unpinned"
+                    f" -- there is no {PROVENANCE_FILENAME} manifest; add one"
+                    " recording each file's relative path, upstream origin,"
+                    " and sha256",
+                )
+            )
+        return out
+
+    try:
+        data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+    except (tomllib.TOMLDecodeError, UnicodeDecodeError, OSError) as e:
+        return [
+            Violation(
+                manifest_rel,
+                1,
+                UNPINNED_VENDOR,
+                f"{PROVENANCE_FILENAME} is not readable valid TOML: {e}",
+            )
+        ]
+
+    raw_entries = data.get("file", [])
+    if not isinstance(raw_entries, list):
+        return [
+            Violation(
+                manifest_rel,
+                1,
+                UNPINNED_VENDOR,
+                f"{PROVENANCE_FILENAME} 'file' must be an array of tables"
+                " ([[file]] entries)",
+            )
+        ]
+
+    pinned_rel = set()  # posix rel-to-qdir paths that carry an entry
+    for entry in raw_entries:
+        if not isinstance(entry, dict):
+            out.append(
+                Violation(
+                    manifest_rel, 1, UNPINNED_VENDOR,
+                    "manifest entry must be a [[file]] table",
+                )
+            )
+            continue
+        rel = entry.get("path")
+        sha = entry.get("sha256")
+        origin = entry.get("origin")
+        if not isinstance(rel, str) or not rel:
+            out.append(
+                Violation(
+                    manifest_rel, 1, UNPINNED_VENDOR,
+                    "manifest entry is missing a string 'path'",
+                )
+            )
+            continue
+        if _quarantine_path_unsafe(rel):
+            out.append(
+                Violation(
+                    manifest_rel, 1, UNPINNED_VENDOR,
+                    f'manifest entry path "{rel}" is absolute or escapes'
+                    f" {QUARANTINE_DIRNAME}/ -- only files inside the"
+                    " quarantine directory may be pinned",
+                )
+            )
+            continue
+        norm = PurePosixPath(rel.replace("\\", "/")).as_posix()
+        pinned_rel.add(norm)
+        if not isinstance(sha, str) or not _SHA256_RE.fullmatch(sha.strip()):
+            out.append(
+                Violation(
+                    manifest_rel, 1, UNPINNED_VENDOR,
+                    f'manifest entry for "{rel}" is missing a valid 64-hex'
+                    " 'sha256'",
+                )
+            )
+            continue
+        if not isinstance(origin, str) or not origin.strip():
+            out.append(
+                Violation(
+                    manifest_rel, 1, UNPINNED_VENDOR,
+                    f'manifest entry for "{rel}" is missing an "origin"'
+                    " (a URL or name recording where the bytes came from)",
+                )
+            )
+            continue
+        target = qdir / rel
+        if not target.is_file():
+            out.append(
+                Violation(
+                    manifest_rel, 1, UNPINNED_VENDOR,
+                    f'manifest pins "{rel}" but no such file exists under'
+                    f" {QUARANTINE_DIRNAME}/ -- the entry is stale",
+                )
+            )
+            continue
+        actual = hashlib.sha256(target.read_bytes()).hexdigest()
+        if actual.lower() != sha.strip().lower():
+            out.append(
+                Violation(
+                    str(target.relative_to(root)), 1, UNPINNED_VENDOR,
+                    f'vendored file "{rel}" was modified -- pinned sha256'
+                    f" {sha.strip()[:12]}... but it now hashes to"
+                    f" {actual[:12]}...; revert it, or re-pin only if this is"
+                    " an intended upstream update",
+                )
+            )
+            continue
+
+    for p in present:
+        rel_posix = p.relative_to(qdir).as_posix()
+        if rel_posix not in pinned_rel:
+            out.append(
+                Violation(
+                    str(p.relative_to(root)), 1, UNPINNED_VENDOR,
+                    f'vendored file "{rel_posix}" is not pinned in'
+                    f" {PROVENANCE_FILENAME} -- add a [[file]] entry with its"
+                    " relative path, upstream origin, and sha256",
+                )
+            )
+    return out
 
 
 def scan_file(path, root, allowlist):
@@ -945,6 +1182,7 @@ def scan_dir(root, stderr=None):
     root = Path(root)
     if not root.is_dir():
         raise NotADirectoryError(f"not a directory: {root}")
+    quarantine_dirs = list(iter_quarantine_dirs(root))
     if stderr is not None:
         for d in sorted(root.iterdir()):
             if d.is_dir() and d.name in SKIP_DIRS:
@@ -952,9 +1190,18 @@ def scan_dir(root, stderr=None):
                     f"notice: skipping directory {d.name}/",
                     file=stderr,
                 )
+        for q in quarantine_dirs:
+            print(
+                f"notice: quarantining directory {q.relative_to(root)}/"
+                f" (files exempt from rules only when pinned in"
+                f" {PROVENANCE_FILENAME})",
+                file=stderr,
+            )
     allowlist = load_allowlist(root)
     out = []
     for f in iter_source_files(root):
         out.extend(scan_file(f, root, allowlist))
+    for q in quarantine_dirs:
+        out.extend(validate_quarantine(q, root))
     out.sort()
     return out
