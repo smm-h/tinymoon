@@ -27,15 +27,31 @@ REPO = Path(__file__).resolve().parent.parent
 # headroom. Raising a ceiling is a deliberate decision that must happen in
 # this file, in review -- never as a side effect.
 #
-# Baselines (re-measured after Phase 8 module restructure):
-#   assets/css/*.css      (4 base sheets + widgets)  -- measured elsewhere
-#   assets/fonts/*.woff2  (4 files)  -- measured elsewhere
+# Baselines below are current measured facts (bytes on disk), refreshed to the
+# present module layout. Ceilings are unchanged -- only these descriptive
+# baselines track reality; raising a ceiling remains a deliberate decision made
+# in the BUDGETS registry rows.
 #
-# JS is split into core and extras tiers:
-#   Core:    93,984 bytes (15 modules)  -- ceiling 118,000
-#   Extras:  25,115 bytes (6 modules)   -- ceiling 32,000
-#   State:   10,281 bytes (2 modules)   -- ceiling 13,000
-#   Widgets: 56,565 bytes (12 modules)  -- ceiling 70,000
+# JS tiers (measured; BUDGETS holds the authoritative ceilings):
+#   core-js:     117,919 bytes (18 modules)  -- ceiling 118,000
+#   controls-js:  36,805 bytes (3 modules)   -- ceiling 46,000
+#   extras-js:    27,610 bytes (6 modules)   -- ceiling 32,000
+#   state-js:     10,281 bytes (2 modules)   -- ceiling 13,000
+#   widgets-js:   57,528 bytes (12 modules)  -- ceiling 70,000
+#   chrome-js:    42,346 bytes (11 modules)  -- ceiling 44,000
+#
+# CSS / fonts (measured):
+#   css:          69,900 bytes (4 base sheets)  -- ceiling 79,000
+#   widgets-css:  18,059 bytes (1 sheet)        -- ceiling 23,000
+#   fonts:        97,596 bytes (4 woff2 files)  -- ceiling 122,000
+#
+# Core headroom note: core-js sits ~81 bytes under its frozen 118,000 ceiling.
+# Migrating datepicker (core tier) and timepicker (controls tier) onto the
+# shared light-dismiss engine (dismiss.js) deleted each widget's bespoke
+# per-open document pointerdown listener. For the scarce core tier the net was
+# byte-negative (datepicker 18,049 -> 18,037, -12 bytes), so the migration
+# bought LIFO/gesture-claim correctness without spending core headroom;
+# timepicker's controls tier has ample room and is byte-relaxed.
 #
 # Each row is a BudgetRow:
 #   name     -- human-readable tier/sheet name; names the test parameter
