@@ -22,6 +22,13 @@ var requiredAssets = []string{
 	"fonts/space-grotesk-latin.woff2",
 	"fonts/ibm-plex-mono-latin-400.woff2",
 	"fonts/ibm-plex-mono-latin-500.woff2",
+	// Portable conformance artifacts (rule data + corpus + expectations) must
+	// ride the embed so a Go reimplementation can conformance-test itself.
+	"conformance/rules.json",
+	"conformance/expectations.json",
+	"conformance/corpus/violations/title-attr.html",
+	"conformance/corpus/clean/tinymoon-allowlist.txt",
+	"conformance/corpus/clean/third_party/PROVENANCE.toml",
 }
 
 // TestEmbeddedAssetsExistAndNonEmpty verifies every required shipped asset is
