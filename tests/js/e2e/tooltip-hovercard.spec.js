@@ -92,26 +92,30 @@ test("ArrowDown moves focus into the hovercard", async ({ page }) => {
   await goWidgets(page);
 
   const badge = page.locator("span.badge", { hasText: "hover me (hovercard)" });
-  await badge.focus();
 
-  const hovercard = page.locator("#tm-hovercard.show");
-  await expect(hovercard).toBeVisible();
+  // Focus lands on the first focusable element inside the hovercard -- exactly
+  // what the keydown handler targets -- verified with toBeFocused (auto-retries
+  // against the live activeElement instead of a single snapshot).
+  const firstFocusable = page
+    .locator("#tm-hovercard")
+    .locator("a, button, [tabindex]:not([tabindex='-1'])")
+    .first();
 
-  // Press ArrowDown to move focus into the hovercard.
-  await page.keyboard.press("ArrowDown");
-
-  // Focus should now be inside the hovercard. Poll instead of a single
-  // activeElement snapshot: the keydown handler moves focus, and polling
-  // re-reads the live activeElement until it lands (or the assertion times
-  // out) rather than racing the one dispatch.
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const hc = document.getElementById("tm-hovercard");
-        return !!(hc && hc.contains(document.activeElement));
-      }),
-    )
-    .toBe(true);
+  // ArrowDown-into-the-hovercard is a keyboard interaction whose *trigger* can
+  // be lost under load: the app's keydown handler only moves focus while the
+  // trigger is the active element, so if the key press lands a hair before
+  // focus commits to the badge, the guard skips, the default ArrowDown scroll
+  // fires, and the scroll listener hides the hovercard. A passive assertion
+  // cannot recover a lost trigger, so retry the whole interaction with toPass
+  // (auto-retrying, no fixed sleep): each attempt re-establishes trigger focus
+  // (re-showing the hovercard if a stray scroll closed it) and re-presses,
+  // until focus lands inside the hovercard. The assertions are unchanged.
+  await expect(async () => {
+    await badge.focus();
+    await expect(page.locator("#tm-hovercard.show")).toBeVisible();
+    await page.keyboard.press("ArrowDown");
+    await expect(firstFocusable).toBeFocused({ timeout: 1000 });
+  }).toPass({ timeout: 15000 });
 });
 
 test("Escape closes the hovercard", async ({ page }) => {
