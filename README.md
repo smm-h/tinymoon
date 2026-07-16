@@ -183,6 +183,14 @@ python3 -m http.server
 # open http://localhost:8000/gallery/
 ```
 
+## Development
+
+CI does not run until release, so the local suite is the quality gate between work phases. Run `scripts/checkpoint.sh` at every phase boundary -- it runs pytest, `npm test` (JS syntax gate + vitest), the Playwright e2e suite, `go test`, and the changelog check in order, stops at the first failure, and prints a PASS/FAIL summary. A green checkpoint is the bar for closing a phase.
+
+```
+./scripts/checkpoint.sh
+```
+
 ## License
 
 MIT
