@@ -122,7 +122,10 @@ export function mountShell(config) {
   hamburger.type = "button";
   hamburger.setAttribute("aria-label", "Toggle navigation");
   hamburger.innerHTML = icon("menu");
-  hamburger.addEventListener("click", () => {
+  hamburger.addEventListener("click", (e) => {
+    // Stop the click from bubbling to #tm-main's close handler below, which
+    // would immediately undo the toggle (the hamburger lives inside #tm-main).
+    e.stopPropagation();
     app.classList.toggle("sidebar-open");
   });
   topbar.appendChild(hamburger);

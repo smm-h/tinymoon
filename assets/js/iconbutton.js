@@ -21,7 +21,9 @@ export function iconButton(opts) {
   const b = el("button", "icon-btn" + (active ? " on" : ""));
   b.type = "button";
   b.innerHTML = renderIcon(iconName);
-  if (tip) b.dataset.tooltip = tip;
+  // An icon-only button needs an accessible name: mirror tip onto aria-label
+  // (data-tooltip is the visual tooltip; it is not exposed to assistive tech).
+  if (tip) { b.dataset.tooltip = tip; b.setAttribute("aria-label", tip); }
   b.setAttribute("aria-pressed", String(!!active));
 
   const handler = onClick || null;

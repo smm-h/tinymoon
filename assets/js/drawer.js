@@ -26,6 +26,7 @@ export function openDrawer({ title, body, side = "right", modal = false, onClose
   const panel = document.createElement(tag);
   panel.className = "tm-drawer tm-drawer-" + side + (modal ? " tm-drawer-modal" : "");
   panel.setAttribute("aria-labelledby", titleId);
+  panel.tabIndex = -1; // programmatically focusable (we focus the panel on open)
   if (!modal) {
     panel.setAttribute("role", "dialog");
     panel.setAttribute("aria-modal", "false");
@@ -93,8 +94,10 @@ export function openDrawer({ title, body, side = "right", modal = false, onClose
   x.addEventListener("click", close);
   removeLayer = pushLayer(() => close());
 
-  // Focus the close button so keyboard users land inside the drawer.
-  x.focus();
+  // Focus the panel (not the close button) so keyboard users land inside the
+  // drawer without triggering the close button's tooltip — whose own Escape
+  // layer would otherwise sit above the drawer and swallow the first Escape.
+  panel.focus();
 
   return { el: panel, close };
 }
