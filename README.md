@@ -147,9 +147,35 @@ With npm, use bare specifiers by adding an import map:
 
 - `api(path)` -- GET JSON from a same-origin path
 - `post(path, body, onError?)` -- POST JSON to a same-origin path
-- `createSettings(opts)` -- localStorage-backed settings store with schema validation
+- `createSettings(opts)` -- localStorage-backed settings store with schema validation (the returned store exposes `.subscribe(key, cb)` like any state store)
 - `createWikiView(opts)` -- wiki view factory with table of contents and deep-linkable sections
 - `renderDocMd(md)` -- block-level markdown to DOM (paragraphs, subheadings, lists)
+
+### State (`tinymoon/state`)
+
+The L2 state story: build the DOM once and mutate it in place. There is no declarative render layer by design -- these helpers keep that mutation centralized.
+
+- `createStore(initial)` -- reactive key/value store; the returned store exposes `get`, `set`, `update`, `subscribe(key, cb)` (pass `null` for any-change), `select(fn)`, and `snapshot()`
+- `bind(store, key, widget)` -- wire a store key to a widget's `.set(v)`; syncs once, then forwards every change; returns an unbind function
+- `reconcile(container, items, keyFn, hooks)` -- keyed child reconciler: new keys `create`, kept keys reuse their node and `update`, gone keys `remove` then detach; returns the ordered node array
+
+### Widgets (`tinymoon/widgets`)
+
+The data-display story: badges, stats, tables, trees, and charts. Optional -- linked alongside `widgets.css` only by apps that render data. Each widget is also importable by its own subpath (`tinymoon/table`, `tinymoon/tree`, ...).
+
+- `badge(text, variant?)` -- one-shot status chip (bare `<span>`, not a component)
+- `createStat(opts)` -- single metric tile with an optional trend delta
+- `renderStats(items)` -- a row of stat tiles from an array
+- `createTable(opts)` -- keyboard-navigable data table with client-side column sort
+- `createVirtualList(opts)` -- fixed-height windowed list for large datasets
+- `createTree(opts)` -- APG-pattern tree view with keyboard navigation
+- `createFilterBar(opts)` -- slot container for filter controls
+- `createChips(opts)` -- removable filter chips
+- `createLoadMore(opts)` -- transport-agnostic cursor pagination control
+- `createBreadcrumbs(opts)` -- router-agnostic breadcrumb trail
+- `createSparkline(opts)` -- inline token-colored SVG sparkline
+- `createChartContainer(opts)` -- renderer-agnostic sized chart shell with token access
+- `createFeed(opts)` -- presentation-only live feed with a capped item buffer
 
 ## Identity
 
@@ -170,7 +196,7 @@ Design tokens let you re-theme and re-accent; they do not let you opt out of the
 
 No overhead -- as a number, not a vibe. Shipped CSS, JS, and fonts have hard byte ceilings enforced by CI; nothing bloats quietly.
 
-- **Budgets are per-tier.** The JS is split into a core tier and an extras tier, each with its own ceiling. New capability tiers land as their own tiers, each carrying its own budget -- never charged against core. The core tier is the original frozen module set; new-generation control modules (time picker, combobox, multi-select, accordion) budget in a separate `controls-js` tier even though they are still exported from the core barrel.
+- **Budgets are per-tier.** Every shipped file belongs to exactly one budgeted tier, each with its own hard ceiling. New capability tiers land as their own tiers, each carrying its own budget -- never charged against core. The full tier set: **JS** -- `core` (the original frozen module set), `controls-js` (new-generation controls: time picker, combobox, multi-select, accordion), `state-js` (store + reconciler), `widgets-js` (data-display widgets), and `dev` (dev-only modules, classified but uncounted); **CSS** -- `css` (the four base sheets) and `widgets-css` (the optional data-display sheet); plus **`fonts`** (the four vendored woff2 files). New-generation modules budget in their own tier even when they are still exported from the core barrel.
 - **The core tier's existing APIs are frozen against breaking change.** What core exports today keeps its shape and behavior.
 - **Additive extensions are permitted.** New primitives and options can join a tier as long as they stay under its ceiling.
 - **The core ceiling is never raised.** Growth happens in new tiers, not by loosening core. Raising any ceiling is a deliberate reviewed decision, never a side effect.
