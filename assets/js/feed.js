@@ -46,6 +46,11 @@ export function createFeed(opts) {
   // Parallel array of rendered rows: { item, node } where node is the wrapper.
   let rows = [];
   let stuck = true;
+  // True during a programmatic scroll-to-bottom. The scroll event it generates
+  // must NOT be treated as a user scroll — otherwise rapid appends (each
+  // growing scrollHeight before the async scroll event fires) would flip the
+  // feed out of stick-to-bottom and never recover.
+  let programmatic = false;
 
   function makeRow(item) {
     const inner = renderItem(item);
@@ -63,9 +68,17 @@ export function createFeed(opts) {
   }
 
   function scrollToBottom() {
+    programmatic = true;
     root.scrollTop = root.scrollHeight;
     stuck = true;
     jump.hidden = true;
+    // Clear the flag after the frame the scroll event fires in. The async
+    // scroll event lands before this, so it is correctly ignored; genuine user
+    // scrolls happen later, with the flag already cleared.
+    const raf = typeof requestAnimationFrame === "function"
+      ? requestAnimationFrame
+      : (fn) => setTimeout(fn, 0);
+    raf(() => { programmatic = false; });
   }
 
   // Prune from the given end until within cap; returns pruned items (oldest→).
@@ -109,6 +122,7 @@ export function createFeed(opts) {
   }
 
   function onScroll() {
+    if (programmatic) return; // ignore scrolls we caused ourselves
     if (atBottom()) {
       stuck = true;
       jump.hidden = true;

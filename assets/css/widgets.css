@@ -445,3 +445,10 @@ table.data tr:hover td { background: var(--surface-2); color: var(--text); }
 }
 .tm-feed-jump:hover { background: var(--surface-3); }
 .tm-feed-jump:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* The `hidden` attribute must win over the display rules above. A bare
+   `[hidden]` (specificity 0,1,0) loses to a class with `display:` set, so
+   re-assert it at class+attribute specificity for the toggled elements. */
+.tm-loadmore-btn[hidden],
+.tm-loadmore-error[hidden],
+.tm-feed-jump[hidden] { display: none; }
