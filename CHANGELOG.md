@@ -2,6 +2,21 @@
 
 # Changelog
 
+## 0.6.1
+
+Date/time picker popovers join the centralized light-dismiss engine: toggle buttons close cleanly without reopen races, and pickers nested in other overlays dismiss correctly.
+
+<details>
+<summary>Context</summary>
+
+Two prior releases (0.5.0, 0.6.0) were tagged but blocked from registries by load-dependent e2e races, both root-caused (a starved deferred listener registration; a focus no-op on hidden eager routes) and fixed. This release completes the overlay-family migration onto the dismissal engine, hardens the e2e suite against the race classes, and adds a stress preflight gate. It is the first registry-published release of the augmentation line.
+
+</details>
+
+### Fixes
+
+- **Date/time picker dismissal.** Date and time picker popovers now close cleanly when their toggle button is pressed again, and no longer conflict with an enclosing overlay's dismissal (e.g. a picker inside a drawer closes only itself).
+
 ## 0.6.0
 
 Light-dismiss engine and invoker contract: centralized outside-press dismissal with gesture-claim (registerLightDismiss, registerOverlayTrigger), fixing drawer dismissal reliability and toggle close-reopen races across all overlays.
