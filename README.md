@@ -14,6 +14,8 @@ npm install tinymoon
 
 The npm package exports two barrels: `"tinymoon"` (core primitives) and `"tinymoon/extras"` (wiki, networking, settings). Assets are available at `"tinymoon/assets/*"`.
 
+Every shipped module is also importable by subpath -- `"tinymoon/select"`, `"tinymoon/dom"`, `"tinymoon/net"`, and so on, one per file in `assets/js/`. There is no build step and no tree-shaking, so subpaths are the way to import just what you use. Typed consumption goes through the two barrels (`.d.ts` declarations cover `"tinymoon"` and `"tinymoon/extras"`); the subpaths are for granular runtime imports and ship no per-module type declarations. `"tinymoon/auditor"` is a dev-only conformance module, not part of any barrel.
+
 PyPI (assets + conformance checker CLI):
 
 ```
@@ -151,6 +153,15 @@ The visual identity is enforced by constraint, not offered as options:
 - **Reduced motion** -- `prefers-reduced-motion: reduce` suppresses all animation and transition durations to near-zero. Enforced by E2E tests.
 
 Design tokens let you re-theme and re-accent; they do not let you opt out of the identity.
+
+## Size
+
+No overhead -- as a number, not a vibe. Shipped CSS, JS, and fonts have hard byte ceilings enforced by CI; nothing bloats quietly.
+
+- **Budgets are per-tier.** The JS is split into a core tier and an extras tier, each with its own ceiling. New capability tiers (widgets, state) will land as their own tiers, each carrying its own budget -- never charged against core.
+- **The core tier's existing APIs are frozen against breaking change.** What core exports today keeps its shape and behavior.
+- **Additive extensions are permitted.** New primitives and options can join a tier as long as they stay under its ceiling.
+- **The core ceiling is never raised.** Growth happens in new tiers, not by loosening core. Raising any ceiling is a deliberate reviewed decision, never a side effect.
 
 ## Conformance checker
 
