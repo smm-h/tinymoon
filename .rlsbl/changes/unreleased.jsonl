@@ -6,3 +6,4 @@
 {"id":"18c2b3ec153b44933076f0f08fe0481ea61e59f1ff6ee668","commits":["0874dc88c5e4cef0b24fd6c4c91d42677e67162d"],"user_facing":false}
 {"id":"18c2b435d285abaad1f0aa8f8af4496ba5fa396964e5082d","commits":["480f06aff66690689e6adb1fe9dc8e876885072c"],"user_facing":true,"description":"**Tri-state theme.** Theme now supports `\"system\"` (follows the OS light/dark preference and re-resolves live when it changes), alongside explicit light/dark. Adds a `cycleTheme(store)` helper and a `THEME_BOOT_SNIPPET` inline no-flash boot script.","type":"feature"}
 {"id":"18c2b435e1916f3718b3c94fdc8c42749226140661d55d7c","commits":["a4a506f382959adb666eabf8ec049345f9acf272"],"user_facing":false}
+{"id":"18c2b4549d840609f6646cf21ffe4bef968df883228d7d76","commits":["3ab29e988e23e807235990b9b697c2fdd93fde90"],"user_facing":false}
