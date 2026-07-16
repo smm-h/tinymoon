@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { settleAnimations } from "./helpers.js";
 
 // Phase 6B framework wave, end to end on the real gallery: the command palette
 // (open via mod+k, type, navigate, run), the tri-state theme cycle (dark →
@@ -46,6 +47,7 @@ test.describe("command palette", () => {
   test("the open palette is axe-clean", async ({ page }) => {
     await page.keyboard.press("ControlOrMeta+k");
     await expect(page.locator("dialog.tm-palette")).toBeVisible();
+    await settleAnimations(page);
     const results = await new AxeBuilder({ page }).include("dialog.tm-palette").analyze();
     expect(results.violations).toEqual([]);
   });

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { settleAnimations } from "./helpers.js";
 
 // E2E test for the Forms gallery view: verifies form submission includes
 // checkbox and radio values, and that all form primitives render.
@@ -241,6 +242,7 @@ test.describe("Forms view", () => {
   });
 
   test("axe-core reports zero violations on the seek-slider overlay", async ({ page }) => {
+    await settleAnimations(page);
     const results = await new AxeBuilder({ page })
       .include(".seek-demo")
       .analyze();
@@ -256,6 +258,7 @@ test.describe("Forms view", () => {
     // createField-wrapped createSlider. (A whole-view scan also surfaces a
     // separate, pre-existing gap in createFileInput's hidden native input,
     // which is outside Phase 3A's scope.)
+    await settleAnimations(page);
     const results = await new AxeBuilder({ page })
       .include(".field")
       .analyze();

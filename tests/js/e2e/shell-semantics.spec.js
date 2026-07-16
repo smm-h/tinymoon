@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { settleAnimations } from "./helpers.js";
 
 // Shell semantics: landmark structure, document.title sync, skip link,
 // aria-current="page", and axe-core accessibility scan.
@@ -89,6 +90,7 @@ test.describe("shell semantics", () => {
   });
 
   test("axe-core reports zero violations on the gallery", async ({ page }) => {
+    await settleAnimations(page);
     const results = await new AxeBuilder({ page }).analyze();
     expect(
       results.violations,

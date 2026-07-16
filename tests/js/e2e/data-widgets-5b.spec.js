@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { settleAnimations } from "./helpers.js";
 
 // E2E for the Phase 5B data-display widgets on the gallery Data route: the APG
 // tree keyboard walk, filter bar + chips composition, load-more against a
@@ -63,6 +64,7 @@ test.describe("tree view — APG keyboard walk", () => {
   });
 
   test("the tree is axe-clean", async ({ page }) => {
+    await settleAnimations(page);
     const results = await new AxeBuilder({ page }).include('[data-testid="data-tree"]').analyze();
     expect(
       results.violations,
@@ -192,6 +194,7 @@ test.describe("breadcrumbs — trail with ellipsis collapse", () => {
 
 test.describe("the whole Data route is axe-clean in both themes", () => {
   async function scan(page) {
+    await settleAnimations(page);
     return new AxeBuilder({ page }).include("#tm-content").analyze();
   }
   test("dark", async ({ page }) => {

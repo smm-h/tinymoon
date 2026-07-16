@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { settleAnimations } from "./helpers.js";
 
 // Modal (native <dialog>) — verifies the dialog element, WCAG accessibility,
 // focus trap, Escape dismiss with focus restore, and backdrop light dismiss.
@@ -92,6 +93,7 @@ test("axe-core reports zero violations with the modal open", async ({ page }) =>
   await openGalleryModal(page);
   await expect(page.locator("dialog.tm-modal")).toBeVisible();
 
+  await settleAnimations(page);
   const results = await new AxeBuilder({ page }).analyze();
   expect(
     results.violations,

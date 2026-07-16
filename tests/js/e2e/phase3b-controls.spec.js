@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { settleAnimations } from "./helpers.js";
 
 // E2E coverage for the Phase 3B controls in the gallery Forms/Widgets views:
 // number stepper, time picker, typeahead combobox, chip multi-select, and the
@@ -160,6 +161,7 @@ test.describe("Phase 3B form controls (Forms view)", () => {
     // input), matching the existing forms axe scan. A whole-view scan would
     // instead surface a separate, pre-existing grain-overlay contrast issue on
     // faint 10px labels/hashes that predates this phase.
+    await settleAnimations(page);
     const results = await new AxeBuilder({ page })
       .include(".tm-number")
       .include(".tm-timepicker")

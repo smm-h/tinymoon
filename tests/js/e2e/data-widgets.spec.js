@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { settleAnimations } from "./helpers.js";
 
 // E2E for the Phase 5A data-display widgets on the gallery Data route:
 // the sortable/keyboard-navigable data table, the 10,000-row virtual list,
@@ -78,6 +79,7 @@ test.describe("data table (Data view)", () => {
   });
 
   test("the table is axe-clean", async ({ page }) => {
+    await settleAnimations(page);
     const results = await new AxeBuilder({ page }).include('[data-testid="data-table"]').analyze();
     expect(
       results.violations,
@@ -133,6 +135,7 @@ test.describe("badges + stats (Data view) — both themes", () => {
   });
 
   async function scanBadgesAndStats(page) {
+    await settleAnimations(page);
     return new AxeBuilder({ page })
       .include('[data-testid="data-badges"]')
       .include('[data-testid="data-stats"]')

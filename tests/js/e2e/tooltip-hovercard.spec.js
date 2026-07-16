@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { settleAnimations } from "./helpers.js";
 
 // E2E tests for the tooltip/hovercard split (Phase 3.6).
 // Tooltips: plain text, non-interactive, hover + focus triggered.
@@ -141,6 +142,7 @@ test("axe-core reports zero tooltip-related violations with tooltip visible", as
   await iconBtn.focus();
   await expect(page.locator("[id^='tm-tooltip'].show")).toBeVisible();
 
+  await settleAnimations(page);
   const results = await new AxeBuilder({ page })
     .include("[id^='tm-tooltip']")
     .analyze();
@@ -156,6 +158,7 @@ test("axe-core reports zero hovercard-related violations with hovercard visible"
   await badge.focus();
   await expect(page.locator("#tm-hovercard.show")).toBeVisible();
 
+  await settleAnimations(page);
   const results = await new AxeBuilder({ page })
     .include("#tm-hovercard")
     .analyze();

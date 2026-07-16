@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { settleAnimations } from "./helpers.js";
 
 // Context menu — verifies keyboard entry (Shift+F10), ARIA roles, arrow/Home/End
 // navigation, Escape with focus restore, and the preventDefault fix (native menu
@@ -158,6 +159,7 @@ test("axe-core reports zero violations on the context menu", async ({ page }) =>
 
   // Scope the axe scan to the context menu element to avoid flagging
   // pre-existing page-level issues unrelated to this component.
+  await settleAnimations(page);
   const results = await new AxeBuilder({ page })
     .include("#tm-ctx-root")
     .analyze();
