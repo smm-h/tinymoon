@@ -110,6 +110,13 @@ _WIDGETS_JS = frozenset({
 # core ceiling is never raised -- growth happens in new tiers.
 _CHROME_JS = frozenset({
     "view.js", "drawer.js", "tabpanels.js", "grid.js", "iconbutton.js",
+    # Phase 6B framework wave: async-state blocks (states.js), lazy mounting
+    # (lazy.js), keyboard shortcuts (shortcuts.js), the command palette
+    # (palette.js), and their dedicated barrel (chrome.js). They budget in the
+    # chrome tier alongside the 6A structural chrome; the core-js row stays
+    # frozen (the 6B modules are surfaced from the "tinymoon/chrome" barrel, not
+    # the core index barrel, precisely because core has no byte headroom).
+    "states.js", "lazy.js", "shortcuts.js", "palette.js", "chrome.js",
 })
 
 # Dev-only modules: not shipped in any barrel, not counted in size budgets.
@@ -157,11 +164,14 @@ BUDGETS = [
     # core stays frozen.
     BudgetRow("widgets-js", "js", _WIDGETS_JS, 70_000, True),  # baseline 56,565
     # chrome-js: Phase 6A shell-and-chrome structural modules (view factory,
-    # openDrawer + swipe helper, tab panels, icon button, preset grid). Measured
-    # full-phase baseline 12,956 bytes; ceiling is +25% rounded clean. Core stays
-    # frozen -- these budget here even though they are re-exported from the core
-    # barrel (the barrel re-export lines are the only bytes that touch core).
-    BudgetRow("chrome-js", "js", _CHROME_JS, 16_000, True),  # baseline 12,956
+    # openDrawer + swipe helper, tab panels, icon button, preset grid) PLUS the
+    # Phase 6B framework wave (async-state blocks, lazy mounting, keyboard
+    # shortcuts, command palette, and the chrome barrel). Ceiling raised ONCE for
+    # 6B: measured new baseline 35,035 bytes (was 13,404 across 5 modules);
+    # ceiling is new-baseline + 25% rounded clean (44,000) -- ~25% headroom.
+    # Core stays frozen -- the 6B modules ship from the "tinymoon/chrome" barrel,
+    # not the core index barrel, since core has no headroom for re-export lines.
+    BudgetRow("chrome-js", "js", _CHROME_JS, 44_000, True),  # baseline 35,035
     BudgetRow("dev-js", "js", _DEV_JS, None, False),
     # css: raised ONCE for the Phase 3 form-control additions (number stepper,
     # time picker, combobox, multi-select, accordion). Measured new baseline

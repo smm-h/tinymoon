@@ -16,10 +16,10 @@ const REPO = resolve(import.meta.dirname, "../../..");
 const ASSETS_JS = join(REPO, "assets", "js");
 const pkg = JSON.parse(readFileSync(join(REPO, "package.json"), "utf8"));
 
-// The barrels are exposed via the root, "./extras", "./state", and "./widgets"
-// keys, NOT via a per-module subpath. Every other module must have its own
-// subpath.
-const BARRELS = new Set(["index.js", "extras.js", "state.js", "widgets.js"]);
+// The barrels are exposed via the root, "./extras", "./state", "./widgets", and
+// "./chrome" keys, NOT via a per-module subpath. Every other module must have
+// its own subpath.
+const BARRELS = new Set(["index.js", "extras.js", "state.js", "widgets.js", "chrome.js"]);
 
 // All shipped JS modules on disk (excludes .d.ts type declarations).
 function diskModules() {
@@ -42,9 +42,9 @@ function exportTargets(value) {
 // target is a file under assets/js/. Excludes the "./assets/*" wildcard.
 function subpathModuleMap() {
   const map = new Map();
-  // Barrel keys map to index.js / extras.js / state.js / widgets.js, not to a
-  // per-module subpath.
-  const BARREL_KEYS = new Set([".", "./extras", "./state", "./widgets", "./assets/*"]);
+  // Barrel keys map to index.js / extras.js / state.js / widgets.js / chrome.js,
+  // not to a per-module subpath.
+  const BARREL_KEYS = new Set([".", "./extras", "./state", "./widgets", "./chrome", "./assets/*"]);
   for (const [key, value] of Object.entries(pkg.exports)) {
     if (BARREL_KEYS.has(key)) continue;
     const target = typeof value === "string" ? value : value?.default;
@@ -86,15 +86,17 @@ describe("package.json exports map", () => {
     expect(dangling, `export targets with no file: ${dangling.join(", ")}`).toEqual([]);
   });
 
-  it("the barrels are exposed via the root, ./extras, ./state, and ./widgets keys", () => {
+  it("the barrels are exposed via the root, ./extras, ./state, ./widgets, and ./chrome keys", () => {
     const rootTarget = pkg.exports["."]?.default ?? pkg.exports["."];
     const extrasTarget = pkg.exports["./extras"]?.default ?? pkg.exports["./extras"];
     const stateTarget = pkg.exports["./state"]?.default ?? pkg.exports["./state"];
     const widgetsTarget = pkg.exports["./widgets"]?.default ?? pkg.exports["./widgets"];
+    const chromeTarget = pkg.exports["./chrome"]?.default ?? pkg.exports["./chrome"];
     expect(basename(rootTarget)).toBe("index.js");
     expect(basename(extrasTarget)).toBe("extras.js");
     expect(basename(stateTarget)).toBe("state.js");
     expect(basename(widgetsTarget)).toBe("widgets.js");
+    expect(basename(chromeTarget)).toBe("chrome.js");
   });
 
   // Prove the map actually RESOLVES, not just that the JSON looks right. Node

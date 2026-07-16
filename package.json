@@ -19,6 +19,10 @@
       "types": "./assets/js/state.d.ts",
       "default": "./assets/js/state.js"
     },
+    "./chrome": {
+      "types": "./assets/js/chrome.d.ts",
+      "default": "./assets/js/chrome.js"
+    },
     "./widgets": {
       "types": "./assets/js/widgets.d.ts",
       "default": "./assets/js/widgets.js"
@@ -44,17 +48,21 @@
     "./icons": "./assets/js/icons.js",
     "./inputs": "./assets/js/inputs.js",
     "./kernel": "./assets/js/kernel.js",
+    "./lazy": "./assets/js/lazy.js",
     "./markdown": "./assets/js/markdown.js",
     "./modal": "./assets/js/modal.js",
     "./net": "./assets/js/net.js",
     "./paginate": "./assets/js/paginate.js",
+    "./palette": "./assets/js/palette.js",
     "./popover": "./assets/js/popover.js",
     "./realtime": "./assets/js/realtime.js",
     "./select": "./assets/js/select.js",
     "./settings": "./assets/js/settings.js",
     "./shell": "./assets/js/shell.js",
+    "./shortcuts": "./assets/js/shortcuts.js",
     "./slider": "./assets/js/slider.js",
     "./sparkline": "./assets/js/sparkline.js",
+    "./states": "./assets/js/states.js",
     "./stats": "./assets/js/stats.js",
     "./store": "./assets/js/store.js",
     "./table": "./assets/js/table.js",

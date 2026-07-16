@@ -5,6 +5,7 @@ import * as core from "../../../assets/js/index.js";
 import * as extras from "../../../assets/js/extras.js";
 import * as state from "../../../assets/js/state.js";
 import * as widgets from "../../../assets/js/widgets.js";
+import * as chrome from "../../../assets/js/chrome.js";
 
 // Type-declaration parity guard.
 //
@@ -53,5 +54,11 @@ describe("type declaration parity", () => {
     const declared = readDecl("widgets.d.ts");
     const missing = Object.keys(widgets).filter((n) => !declared.has(n));
     expect(missing, `widgets exports missing from widgets.d.ts: ${missing.join(", ")}`).toEqual([]);
+  });
+
+  it("every runtime export of the chrome barrel is declared in chrome.d.ts", () => {
+    const declared = readDecl("chrome.d.ts");
+    const missing = Object.keys(chrome).filter((n) => !declared.has(n));
+    expect(missing, `chrome exports missing from chrome.d.ts: ${missing.join(", ")}`).toEqual([]);
   });
 });

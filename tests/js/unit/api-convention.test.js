@@ -664,3 +664,47 @@ describe("api-convention: widgets barrel coverage", () => {
     expect(typeof instance.destroy).toBe("function");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Chrome barrel coverage
+// ---------------------------------------------------------------------------
+//
+// The Phase 6B framework wave lives in the separate "tinymoon/chrome" barrel.
+// NONE of its exports are createX(opts) -> {el, ...} widget components: the
+// three state blocks + lazyMount + shortcut/palette registrations + palette
+// score are one-shot element factories, imperative openers, registration
+// functions, and a pure ranking utility -- the chrome-tier counterpart to the
+// core NOT_COMPONENTS list. They will never be reshaped into components.
+
+const CHROME_EXPORTS = [
+  // states.js — one-shot element factories + async orchestrator
+  "loadingBlock", "emptyBlock", "errorBlock", "renderAsync",
+  // lazy.js — IntersectionObserver-gated loader
+  "lazyMount",
+  // shortcuts.js — keyboard shortcut registration
+  "registerShortcut",
+  // palette.js — source registration, imperative open, opt-in install, ranker
+  "registerPaletteSource", "openPalette", "installPalette", "score",
+];
+
+describe("api-convention: chrome barrel coverage", () => {
+  it("chrome barrel exports exactly the expected names", async () => {
+    const chrome = await import("../../../assets/js/chrome.js");
+    const exportNames = Object.keys(chrome).sort();
+    expect(exportNames).toEqual([...CHROME_EXPORTS].sort());
+  });
+
+  it("the state blocks are one-shot element factories, not components", async () => {
+    const { loadingBlock, emptyBlock, errorBlock } = await import("../../../assets/js/chrome.js");
+    expect(loadingBlock()).toBeInstanceOf(HTMLElement);
+    expect(emptyBlock({ title: "x" })).toBeInstanceOf(HTMLElement);
+    expect(errorBlock({ message: "x" })).toBeInstanceOf(HTMLElement);
+  });
+
+  it("registrations return an unregister function, not an instance", async () => {
+    const { registerPaletteSource } = await import("../../../assets/js/chrome.js");
+    const off = registerPaletteSource(() => []);
+    expect(typeof off).toBe("function");
+    off();
+  });
+});

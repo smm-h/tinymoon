@@ -12,13 +12,17 @@ import { resolve, join } from "node:path";
 //   - shell.js OWNS these nodes (creates them, wires the seam).
 //   - view.js is the ctx plumbing (its ctx.setSub delegates to setPageSub);
 //     it references the ids only in comments, never as DOM access.
+//   - lazy.js resolves #tm-content as the DEFAULT IntersectionObserver root so
+//     that consumers never have to reach for the shell scroller themselves —
+//     it is sanctioned framework infrastructure doing the encapsulation, not a
+//     consumer breaching it. The resolution is internal and overridable.
 //
 // The check targets actual DOM-access calls, not doc/comment mentions, so a
 // wiki string like `#tm-content` is fine.
 
 const REPO = resolve(import.meta.dirname, "../../..");
 const ASSETS_JS = join(REPO, "assets", "js");
-const EXCLUDE = new Set(["shell.js", "view.js"]);
+const EXCLUDE = new Set(["shell.js", "view.js", "lazy.js"]);
 
 // getElementById("tm-page-sub" | "tm-content"), or a querySelector[All] whose
 // selector string contains "#tm-page-sub" / "#tm-content".
