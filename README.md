@@ -12,9 +12,9 @@ npm (core + extras):
 npm install tinymoon
 ```
 
-The npm package exports two barrels: `"tinymoon"` (core primitives) and `"tinymoon/extras"` (wiki, networking, settings). Assets are available at `"tinymoon/assets/*"`.
+The npm package exports barrels: `"tinymoon"` (core primitives), `"tinymoon/extras"` (wiki, networking, settings), `"tinymoon/state"` (store + reconciler), `"tinymoon/widgets"` (data-display), and `"tinymoon/chrome"` (async-state blocks, lazy mounting, shortcuts, command palette). Assets are available at `"tinymoon/assets/*"`.
 
-Every shipped module is also importable by subpath -- `"tinymoon/select"`, `"tinymoon/dom"`, `"tinymoon/net"`, and so on, one per file in `assets/js/`. There is no build step and no tree-shaking, so subpaths are the way to import just what you use. Typed consumption goes through the two barrels (`.d.ts` declarations cover `"tinymoon"` and `"tinymoon/extras"`); the subpaths are for granular runtime imports and ship no per-module type declarations. `"tinymoon/auditor"` is a dev-only conformance module, not part of any barrel.
+Every shipped module is also importable by subpath -- `"tinymoon/select"`, `"tinymoon/dom"`, `"tinymoon/net"`, and so on, one per file in `assets/js/`. There is no build step and no tree-shaking, so subpaths are the way to import just what you use. Typed consumption goes through the barrels (`.d.ts` declarations cover `"tinymoon"`, `"tinymoon/extras"`, `"tinymoon/state"`, `"tinymoon/widgets"`, and `"tinymoon/chrome"`); the subpaths are for granular runtime imports and ship no per-module type declarations. `"tinymoon/auditor"` is a dev-only conformance module, not part of any barrel.
 
 PyPI (assets + conformance checker CLI):
 
@@ -154,8 +154,20 @@ With npm, use bare specifiers by adding an import map:
 - `api(path)` -- GET JSON from a same-origin path
 - `post(path, body, onError?)` -- POST JSON to a same-origin path
 - `createSettings(opts)` -- localStorage-backed settings store with schema validation (the returned store exposes `.subscribe(key, cb)` like any state store)
+- `cycleTheme(store)` -- cycle a settings store's theme `dark -> light -> system` (the tri-state theme: `applyTheme()` resolves a stored `"system"` to the OS light/dark preference and re-resolves live on OS change, while storing `"system"`)
+- `THEME_BOOT_SNIPPET` -- an exported inline pre-paint script string; drop it into a `<script>` in `<head>` **before** your stylesheets so `<html data-theme>` is set before the first paint (no light/dark flash). It resolves a stored `"system"` value against the OS and assumes the default storage key `"tm-settings"` (replace that one literal if your `storageKey` differs). Touches only `localStorage`/`matchMedia`/`documentElement` -- nothing the conformance scanners flag.
 - `createWikiView(opts)` -- wiki view factory with table of contents and deep-linkable sections
 - `renderDocMd(md)` -- block-level markdown to DOM (paragraphs, subheadings, lists)
+
+### Chrome (`tinymoon/chrome`)
+
+The Phase 6B framework wave. A separate barrel (not the core `tinymoon` index) purely for size discipline -- the frozen core byte ceiling has no room for the extra re-export lines. Each module is also importable by its own subpath (`tinymoon/palette`, `tinymoon/shortcuts`, ...).
+
+- `loadingBlock(opts?)` / `emptyBlock(opts)` / `errorBlock(opts)` -- one-shot async-state element blocks (static-first, reduced-motion-safe, built on the `.empty` widgets.css style)
+- `renderAsync(container, promise, opts)` -- swap loading/data/empty/error blocks into a container as a promise settles
+- `lazyMount(target, loadFn, opts?)` -- IntersectionObserver-gated loader with a concurrency pump (default 3-wide), draining in visibility order; returns `cancel()`
+- `registerShortcut(combo, handler, opts?)` -- keyboard shortcut binder on one shared listener ("mod+k" combos, overlay-aware suppression, `global`/`allowInInputs` opts, duplicate-combo hard error)
+- `registerPaletteSource(fn)` / `openPalette()` / `installPalette(opts?)` -- opt-in command palette: source aggregation, debounced + stale-discarding querying, built-in subsequence match/rank, and (via `installPalette`) a global toggle shortcut seeded from the shell's routes
 
 ### State (`tinymoon/state`)
 
@@ -202,7 +214,7 @@ Design tokens let you re-theme and re-accent; they do not let you opt out of the
 
 No overhead -- as a number, not a vibe. Shipped CSS, JS, and fonts have hard byte ceilings enforced by CI; nothing bloats quietly.
 
-- **Budgets are per-tier.** Every shipped file belongs to exactly one budgeted tier, each with its own hard ceiling. New capability tiers land as their own tiers, each carrying its own budget -- never charged against core. The full tier set: **JS** -- `core` (the original frozen module set), `controls-js` (new-generation controls: time picker, combobox, multi-select, accordion), `state-js` (store + reconciler), `widgets-js` (data-display widgets), `chrome-js` (shell-and-chrome structural modules: the view factory, drawer, tab panels, icon button, and preset grid), and `dev` (dev-only modules, classified but uncounted); **CSS** -- `css` (the four base sheets) and `widgets-css` (the optional data-display sheet); plus **`fonts`** (the four vendored woff2 files). New-generation modules budget in their own tier even when they are still exported from the core barrel.
+- **Budgets are per-tier.** Every shipped file belongs to exactly one budgeted tier, each with its own hard ceiling. New capability tiers land as their own tiers, each carrying its own budget -- never charged against core. The full tier set: **JS** -- `core` (the original frozen module set), `controls-js` (new-generation controls: time picker, combobox, multi-select, accordion), `state-js` (store + reconciler), `widgets-js` (data-display widgets), `chrome-js` (shell-and-chrome modules: the Phase 6A view factory, drawer, tab panels, icon button, and preset grid, plus the Phase 6B async-state blocks, lazy mounting, keyboard shortcuts, and command palette), and `dev` (dev-only modules, classified but uncounted); **CSS** -- `css` (the four base sheets) and `widgets-css` (the optional data-display sheet); plus **`fonts`** (the four vendored woff2 files). New-generation modules budget in their own tier even when they are still exported from the core barrel.
 - **The core tier's existing APIs are frozen against breaking change.** What core exports today keeps its shape and behavior.
 - **Additive extensions are permitted.** New primitives and options can join a tier as long as they stay under its ceiling.
 - **The core ceiling is never raised.** Growth happens in new tiers, not by loosening core. Raising any ceiling is a deliberate reviewed decision, never a side effect.
