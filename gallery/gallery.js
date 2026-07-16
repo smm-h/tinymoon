@@ -13,6 +13,7 @@ import {
   createSwitch, copyButton, kebabButton,
   createCheckbox, createRadio, createFileInput,
   createSegmented, createTabs,
+  createInput, createTextarea, createField, createSlider,
   createDatePicker,
   cssVar,
   mountShell,
@@ -668,6 +669,36 @@ One convention for all primitives means no per-widget learning curve. No expando
 `,
   },
   {
+    id: "forms",
+    title: "Forms & FormData",
+    md: `
+Form controls wrap real, visible native elements, so a plain \`<form>\` and the browser's own \`FormData\` do all the collecting — there is no form state library.
+
+### Text fields {#forms-text}
+
+\`createInput({name, label})\` wraps a native \`<input>\`; \`createTextarea({name, label})\` wraps a \`<textarea>\`. Both build a self-labeling \`.field\` (a real \`<label for>\`, never \`aria-label\`) and expose \`.value\`, \`.set(v)\`, \`.get()\`, \`.focus()\`, and \`.setError(msg | null)\`. \`createInput\` accepts only text-like types — \`text\`, \`password\`, \`email\`, \`url\`, \`search\`, \`tel\`; \`checkbox\`, \`radio\`, \`file\`, \`range\`, \`number\`, and date/time are a hard error, because each has its own factory.
+
+### Sliders {#forms-slider}
+
+\`createSlider({name, label, min, max})\` wraps a native \`input[type=range]\` in a \`.tm-slider\` frame — keyboard (arrows, Home, End) and the slider role come free from the element. It surfaces two callbacks: **onInput** fires live during a drag, **onChange** fires once on release.
+
+### Fields, hints, and errors {#forms-field}
+
+\`createField({label, control, hint?})\` wraps any control — a slider, a select, a raw element — in a labeled field with an optional hint line. Both \`createField\` and the text controls expose \`.setError(msg)\`, which renders an inline \`.field-error\` and wires \`aria-invalid\` + \`aria-describedby\` on the control; \`.setError(null)\` clears it. Validation is native constraint validation plus this affordance — you own the logic.
+
+### Submitting {#forms-submit}
+
+Because every control is a real named form element, submission is ordinary DOM:
+
+\`\`\`
+const fd = new FormData(form);
+for (const [name, value] of fd.entries()) { /* ... */ }
+\`\`\`
+
+The **Forms** route composes \`createInput\`, \`createTextarea\`, \`createField\`, and \`createSlider\` in one form and toasts the collected \`FormData\` on submit.
+`,
+  },
+  {
     id: "theming",
     title: "Tokens and theming",
     md: `
@@ -894,6 +925,50 @@ const FormsView = {
     dpSection.appendChild(dpRow);
     form.appendChild(dpSection);
 
+    // text fields (createInput + createTextarea) — self-labeling .field
+    // controls that wrap real, visible native elements. The setError demo below
+    // drives the username field's inline validation line.
+    const textSection = el("div");
+    textSection.appendChild(el("div", "set-title", "Text fields"));
+    const nameInput = createInput({
+      name: "username",
+      label: "Username",
+      placeholder: "at least 3 characters",
+      value: "ada",
+    });
+    const bio = createTextarea({
+      name: "bio",
+      label: "Bio",
+      rows: 3,
+      placeholder: "a sentence or two",
+    });
+    textSection.appendChild(nameInput.el);
+    textSection.appendChild(bio.el);
+    form.appendChild(textSection);
+
+    // slider (createSlider) composed inside a createField for a labeled row
+    // with a hint. onInput drives the live readout; onChange commits a toast.
+    const sliderSection = el("div");
+    sliderSection.appendChild(el("div", "set-title", "Slider"));
+    const readout = el("span", "hash", "volume — 40");
+    const slider = createSlider({
+      name: "volume",
+      label: "Volume",
+      min: 0,
+      max: 100,
+      value: 40,
+      onInput: (v) => { readout.textContent = "volume — " + v; },
+      onChange: (v) => toast("Volume committed: " + v),
+    });
+    const sliderField = createField({
+      label: "Volume",
+      control: slider,
+      hint: "onInput fires live while dragging; onChange fires on release.",
+    });
+    sliderSection.appendChild(sliderField.el);
+    sliderSection.appendChild(readout);
+    form.appendChild(sliderSection);
+
     // select
     const selSection = el("div");
     selSection.appendChild(el("div", "set-title", "Select"));
@@ -923,6 +998,16 @@ const FormsView = {
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
+      // setError demo: soft-validate the username before submitting. A too-short
+      // value renders the inline .field-error line and aborts; a valid value
+      // clears it. (Native `required` is avoided here so the demo stays live.)
+      const uname = nameInput.get().trim();
+      if (uname.length < 3) {
+        nameInput.setError("Username needs at least 3 characters");
+        nameInput.focus();
+        return;
+      }
+      nameInput.setError(null);
       const fd = new FormData(form);
       const entries = [];
       for (const [k, v] of fd.entries()) {
