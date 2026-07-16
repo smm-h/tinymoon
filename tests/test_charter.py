@@ -230,8 +230,19 @@ REPLACEMENTS = {
     "checkbox": "createCheckbox",
     "radio": "createRadio",
     "file": "createFileInput",
+    "range": "createSlider",
+    "text": "createInput",
+    "password": "createInput",
+    "email": "createInput",
+    "url": "createInput",
+    "search": "createInput",
+    "tel": "createInput",
+    "number": "createNumber",
+    "time": "createTimePicker",
+    "date": "createDatePicker",
     "select": "createSelect",
     "dialog": "openModal",
+    "textarea": "createTextarea",
 }
 
 
