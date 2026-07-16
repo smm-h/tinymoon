@@ -31,10 +31,16 @@ import {
   api, post, ApiError, setAuthHeader,
   sse, socket,
   fmtTime, relativeTime, liveRelativeTime,
-  createSettings,
+  createSettings, cycleTheme,
   renderDocMd,
   createWikiView,
 } from "../assets/js/extras.js";
+
+import {
+  loadingBlock, emptyBlock, errorBlock, renderAsync,
+  lazyMount,
+  registerPaletteSource, installPalette,
+} from "../assets/js/chrome.js";
 
 import {
   createStore, bind, reconcile,
@@ -53,7 +59,7 @@ import {
 const settings = createSettings({
   storageKey: "tinymoon-gallery",
   defaults: {
-    theme: "dark",     // "dark" | "light"
+    theme: "dark",     // "dark" | "light" | "system"
     verbose: false,    // demo setting: chattier toasts
   },
 });
@@ -985,6 +991,98 @@ default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font
 \`\`\`
 
 The \`'unsafe-inline'\` for \`style-src\` covers the framework's computed style assignments (element.style). The \`data:\` allowance in \`img-src\` covers the inline grain SVG. No external fonts, CDNs, or network loads are needed — everything is vendored.
+`,
+  },
+  {
+    id: "chrome-async",
+    title: "Async-state blocks",
+    md: `
+The \`tinymoon/chrome\` barrel adds the Phase 6B framework wave. It is a separate barrel (not the core \`tinymoon\` index) purely for size discipline — the frozen core byte ceiling has no room for extra re-export lines.
+
+### State blocks {#state-blocks}
+
+\`loadingBlock({label?})\`, \`emptyBlock({title, sub?})\`, and \`errorBlock({message, onRetry?})\` are one-shot element factories (like \`badge\`/\`copyButton\` — a bare element, no instance, no \`destroy\`). They build on the existing \`.empty\` widgets.css block, so no new stylesheet is needed. They are **static-first**: the only motion is the shared \`.spin\` spinner inside \`loadingBlock\`, so they are reduced-motion-safe by construction.
+
+### renderAsync {#render-async}
+
+\`renderAsync(container, promise, {loading?, empty?, error?, onData})\` swaps the blocks into \`container\` as \`promise\` settles:
+
+- shows \`loadingBlock\` immediately;
+- on resolve, calls \`onData(data)\` — return a falsy value to show \`emptyBlock\` (the empty predicate), an \`Element\` to display it, or any other truthy value to signal you populated \`container\` yourself;
+- on reject, shows \`errorBlock\` (message taken from the error, merged with your \`error\` opts so you can pass an \`onRetry\`).
+
+It resolves to the data on success. On rejection it also resolves (to \`undefined\`) once the error block is shown — the failure surfaces as the visible error state, so a fire-and-forget call never trips an unhandled rejection. Wire recovery through \`error.onRetry\`.
+`,
+  },
+  {
+    id: "chrome-lazy",
+    title: "lazyMount",
+    md: `
+\`lazyMount(target, loadFn, {root?, rootMargin?, concurrency?})\` → \`cancel()\` loads elements only once they scroll into view, and runs at most \`concurrency\` (default 3) \`loadFn\`s at a time, draining in visibility order — so a viewport that reveals fifty candidates at once does not fire fifty simultaneous loads.
+
+- \`target\` is an Element or an array/NodeList of Elements.
+- \`loadFn(el)\` runs once per element when it first becomes visible; it may return a promise, which is awaited to gate the concurrency slot.
+- \`root\` defaults to the shell content scroller (\`#tm-content\`) when a shell is mounted, resolved internally — you never query shell internals. Pass \`null\` for the viewport, or an element to scope it.
+- \`cancel()\` disconnects the observer and drops not-yet-started candidates; loads already in flight run to completion.
+`,
+  },
+  {
+    id: "chrome-shortcuts",
+    title: "Keyboard shortcuts",
+    md: `
+\`registerShortcut(combo, handler, {allowInInputs?, global?})\` → \`unregister\` binds a shortcut on ONE shared module-level keydown listener.
+
+- **Combo syntax** is \`"mod+k"\` style: \`+\`-joined tokens, the last is the key. \`mod\` resolves to Cmd on Apple platforms and Ctrl elsewhere, so one registration is correct on every OS. For a single-character key the shift state is implied by the character itself (\`"?"\` already means Shift+/), so shift is not part of the signature there.
+- **Overlay suppression** — while a modal overlay (a modal, a modal drawer, or the command palette) is open, ordinary shortcuts are suppressed; only \`{global: true}\` shortcuts fire. That is what lets the palette's own toggle close it while it is open. Transient light-dismiss overlays (popover, menu, select) are Escape-dismissable and do not suppress shortcuts.
+- **Text entry** — a bare single-key combo does not fire inside an input/textarea/contenteditable unless \`allowInInputs\` is set; modifier combos always fire.
+- **No silent override** — registering an already-active combo is a hard error; unregister the first before rebinding.
+`,
+  },
+  {
+    id: "chrome-palette",
+    title: "Command palette",
+    md: `
+The command palette is a fuzzy, source-aggregating launcher on a native \`<dialog>\` (focus trap, backdrop, background inert). It is **not auto-installed** — an app opts in explicitly, honoring the mandatory-choice philosophy.
+
+### Sources {#palette-sources}
+
+\`registerPaletteSource(fn)\` → \`unregister\`, where \`fn(query)\` returns items — or a Promise of items — shaped \`{label, hint?, icon?, run()}\`. Every open re-queries all sources with the current input, debounced ~150ms, with stale-response discard so a slow source cannot overwrite a newer query.
+
+### Ranking {#palette-ranking}
+
+The palette applies a built-in **subsequence match + rank** over the aggregated items, so a source may return its full, unfiltered list and let the palette filter. Sources MAY pre-filter (e.g. a server-side fuzzy search); the built-in matcher still runs, so a pre-filtered item whose label does not subsequence-match the query would be dropped — return labels that contain the query if you pre-filter.
+
+### Opening {#palette-open}
+
+\`openPalette()\` opens the dialog (returns the existing handle if already open, so a toggle can detect and close it). \`installPalette({shortcut?})\` is the opt-in wiring: it binds a GLOBAL toggle (default \`mod+k\`) and seeds a nav source from a mounted shell's rendered routes. Keyboard model: type to filter, Up/Down to move, Enter to run, Escape to close.
+`,
+  },
+  {
+    id: "toast-action",
+    title: "Toast action",
+    md: `
+\`toast(msg, kind, {action: {label, onClick}})\` adds a single action button to a toast. An action **forces persistence** — the toast stays on screen (no auto-dismiss) until the action is taken or the toast is dismissed, and acting dismisses it. The container keeps \`role="status"\`, so the message is announced and the action button remains reachable in the live region before any dismissal.
+`,
+  },
+  {
+    id: "theme-tristate",
+    title: "Tri-state theme",
+    md: `
+The settings store's \`theme\` value may be \`"dark"\`, \`"light"\`, or \`"system"\`.
+
+- \`applyTheme()\` **stores** \`"system"\` untouched but **resolves** it to the concrete OS theme (via \`matchMedia("(prefers-color-scheme: dark)")\`) when writing \`<html data-theme>\`. It re-resolves live whenever the OS preference changes while the stored value is still \`"system"\`.
+- \`cycleTheme(store)\` cycles \`dark → light → system → dark\` and persists each step.
+
+### No-flash boot snippet {#theme-boot}
+
+\`THEME_BOOT_SNIPPET\` is an exported string: an inline pre-paint script. Drop it into a \`<script>\` in \`<head>\`, **before** your stylesheets, so \`<html data-theme>\` is set before the first paint and there is no light/dark flash:
+
+\`\`\`
+<script>/* paste THEME_BOOT_SNIPPET here */</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+\`\`\`
+
+The snippet reads the persisted settings blob, resolves a stored \`"system"\` value against the OS, and sets \`data-theme\`. It assumes the default storage key \`"tm-settings"\`; if your \`createSettings\` \`storageKey\` differs, replace that one literal. It touches only \`localStorage\`, \`matchMedia\`, and \`documentElement\` — nothing the conformance scanners flag.
 `,
   },
 ];
@@ -2269,18 +2367,100 @@ const ChromeView = createView({
   },
 });
 
-const themeBtn = el("button", "icon-btn");
-themeBtn.type = "button";
-themeBtn.setAttribute("aria-label", "Toggle theme");
-themeBtn.dataset.tooltip = "Toggle between the dark and light themes.";
-const paintThemeBtn = () => {
-  themeBtn.innerHTML = icon(settings.get("theme") === "dark" ? "sun" : "moon");
-};
-themeBtn.addEventListener("click", () => {
-  settings.set("theme", settings.get("theme") === "dark" ? "light" : "dark");
+// Tri-state theme cycle: dark → light → system, driven by cycleTheme(). The
+// icon reflects the STORED value (sun=dark, moon=light, gear=system), so the
+// "system" state is visible even though data-theme resolves to light/dark.
+const THEME_ICON = { dark: "sun", light: "moon", system: "gear" };
+const themeIcon = () => THEME_ICON[settings.get("theme")] || "gear";
+const themeBtnInstance = iconButton({
+  icon: themeIcon(),
+  tip: "Cycle theme: dark → light → system",
+  onClick: () => cycleTheme(settings),
 });
-window.addEventListener("tm:setting", (e) => { if (e.detail.key === "theme") paintThemeBtn(); });
+const themeBtn = themeBtnInstance.el;
+const paintThemeBtn = () => { themeBtnInstance.setIcon(themeIcon()); };
+window.addEventListener("tm:theme", paintThemeBtn);
 paintThemeBtn();
+
+// ---------- Async states + lazyMount demo ----------
+
+// A simulated fetch: resolves after a short delay with data, an empty list, or
+// a rejection, so renderAsync's loading → data / empty / error swap is visible.
+function fakeFetch(kind) {
+  return new Promise((res, rej) => setTimeout(() => {
+    if (kind === "error") rej(new Error("Simulated fetch failure"));
+    else if (kind === "empty") res([]);
+    else res(["Alpha", "Beta", "Gamma", "Delta"]);
+  }, 350));
+}
+
+const AsyncView = createView({
+  build(ctx) {
+    ctx.setSub("renderAsync + state blocks + lazyMount");
+    const root = ctx.root;
+    root.appendChild(el("h2", null, "Async states"));
+
+    // renderAsync: swap blocks per promise state.
+    const p1 = el("div", "panel");
+    p1.appendChild(el("h3", null, "renderAsync"));
+    p1.appendChild(el("p", "demo-note",
+      "renderAsync swaps a loading block for the resolved data, the empty block when there is none, or the error block on failure — static-first and reduced-motion-safe."));
+    const bar = el("div", "demo-row");
+    const results = el("div");
+    results.dataset.asyncResults = "";
+    const load = (kind) => renderAsync(results, fakeFetch(kind), {
+      loading: { label: "Fetching…" },
+      empty: { title: "No results", sub: "the fetch returned an empty list" },
+      error: { onRetry: () => load("data") },
+      onData: (rows) => {
+        if (!rows.length) return false;
+        const ul = el("ul");
+        rows.forEach((r) => ul.appendChild(el("li", null, r)));
+        return ul;
+      },
+    });
+    for (const [kind, label] of [["data", "Load data"], ["empty", "Load empty"], ["error", "Load error"]]) {
+      const b = el("button", "btn", label);
+      b.type = "button";
+      b.dataset.async = kind;
+      b.addEventListener("click", () => load(kind));
+      bar.appendChild(b);
+    }
+    p1.appendChild(bar);
+    p1.appendChild(results);
+    root.appendChild(p1);
+
+    // The three blocks, static.
+    const p2 = el("div", "panel");
+    p2.appendChild(el("h3", null, "State blocks"));
+    p2.appendChild(loadingBlock({ label: "Loading…" }));
+    p2.appendChild(emptyBlock({ title: "Nothing here yet", sub: "an empty collection" }));
+    p2.appendChild(errorBlock({ message: "Something went wrong", onRetry: () => toast("Retried", "ok") }));
+    root.appendChild(p2);
+
+    // lazyMount: each card loads only when scrolled into view, 3 in flight.
+    const p3 = el("div", "panel");
+    p3.appendChild(el("h3", null, "lazyMount"));
+    p3.appendChild(el("p", "demo-note",
+      "Each card loads only when it scrolls into view, at most 3 loads in flight, draining in visibility order. Scroll the box to trigger loads."));
+    const scroller = el("div", "lazy-scroller");
+    const cards = [];
+    for (let i = 0; i < 30; i++) {
+      const c = el("div", "lazy-card");
+      c.dataset.lazyCard = String(i);
+      c.appendChild(el("span", "demo-note", "card " + (i + 1) + " — pending"));
+      scroller.appendChild(c);
+      cards.push(c);
+    }
+    p3.appendChild(scroller);
+    root.appendChild(p3);
+    lazyMount(cards, (card) => new Promise((res) => setTimeout(() => {
+      card.classList.add("loaded");
+      card.querySelector(".demo-note").textContent = "card " + (Number(card.dataset.lazyCard) + 1) + " — loaded";
+      res();
+    }, 150)), { root: scroller, concurrency: 3 });
+  },
+});
 
 // Dogfood iconButton in the real topbar: a stateful "pin" toggle alongside the
 // theme button (topbarActions accepts Nodes, so we pass the instance's .el).
@@ -2324,6 +2504,10 @@ shell = mountShell({
     chrome: {
       title: "Shell & chrome", icon: "faders", view: () => ChromeView, eager: true,
       tip: "Shell & chrome -- the Phase 6A structural primitives: openDrawer (light + modal), createTabPanels, createGrid presets, iconButton, and shell.announce. Eager route: built at mount.",
+    },
+    async: {
+      title: "Async & lazy", icon: "download", view: () => AsyncView,
+      tip: "Async & lazy -- the Phase 6B async-state blocks (renderAsync driving loading/data/empty/error) and lazyMount (IntersectionObserver-gated, concurrency-pumped loading).",
     },
     state: {
       title: "State", icon: "faders", view: () => StateView,
@@ -2374,3 +2558,16 @@ shell = mountShell({
   topbarActions: [pinBtn.el, themeBtn],
   footer: { height: "40px", node: footerNode },
 });
+
+// ---------- command palette (opt-in) ----------
+
+// installPalette is explicit opt-in (nothing binds a global key behind your
+// back). It seeds a nav source from the shell's routes and binds mod+k. We add
+// a second source of gallery-specific commands beyond navigation.
+installPalette({ shortcut: "mod+k" });
+registerPaletteSource(() => [
+  { label: "Cycle theme", hint: "dark → light → system", icon: "sun", run: () => cycleTheme(settings) },
+  { label: "Show a toast", hint: "demo", icon: "check", run: () => toast("Hello from the command palette", "ok") },
+  { label: "Toast with an action", hint: "demo", icon: "note", run: () =>
+    toast("Saved a draft", "ok", { action: { label: "Undo", onClick: () => toast("Undone", "ok") } }) },
+]);

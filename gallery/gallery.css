@@ -195,3 +195,24 @@
   align-items: start;
 }
 .data-dashboard .data.tm-table { width: 100%; }
+
+/* Async & lazy demo: the lazyMount scroller and its cards. */
+.lazy-scroller {
+  height: 220px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-8);
+  padding: var(--space-8);
+  border: 1px solid var(--border-2);
+  margin-top: 10px;
+}
+.lazy-card {
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.lazy-card.loaded { border-color: var(--accent); background: var(--surface-3); }
