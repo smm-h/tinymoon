@@ -1,14 +1,28 @@
 """tinymoon conformance rule engine.
 
-Scans .html, .css, and .js files for violations of the framework's
-non-negotiables. Five rules, each a hard error -- there is no warning
-mode and no bypass:
+The checker guards tinymoon's IDENTITY SURFACE: the first-party bytes that
+render the framework's identity -- the HTML, CSS, JS, and fonts a page ships
+and paints. Every rule quantifies over RESOURCE LOADS (bytes fetched into the
+page) and RENDERED STYLING (how those bytes look), never over NAVIGATIONS. A
+navigation is a plain hyperlink the user may follow (<a href>, <area href>);
+it leaves or opens elsewhere and fetches nothing into the current page, so it
+was never a purity violation. Provenance -- whether bytes are first- or
+third-party -- is not modeled here; a later boundary construct will mark
+third-party provenance explicitly. Until then, every load the checker sees is
+treated as identity-surface bytes and must be vendored into the repo.
 
-- external-url:  no network loads (http://, https://, ws://, wss://, or
-  protocol-relative //host URLs) in HTML src/href/srcset/action/poster/
-  formaction/ping and <object data=>, CSS url()/@import, JS import
-  specifiers or string literals passed to fetch()/import() (including
-  template literals), and URLs in <script type="importmap"> JSON.
+Scans .html, .css, and .js files. Five rules, each a hard error -- there is
+no warning mode and no bypass:
+
+- external-url:  no external RESOURCE LOADS (http://, https://, ws://, wss://,
+  or protocol-relative //host URLs). Banned in HTML load attributes
+  (src/poster/srcset/ping, <object data=>, and href on any element OTHER
+  than <a>/<area>), in form submission targets (action/formaction -- a
+  submission ships user data off-origin, a load-class concern), in CSS
+  url()/@import, in JS import specifiers or string literals passed to
+  fetch()/import()/new WebSocket() (including template literals), and in
+  <script type="importmap"> JSON. LEGAL, never a violation: href on <a> and
+  <area> -- these are navigations, not loads, and need no allowlist.
   Exceptions: XML namespace identifiers (xmlns/xmlns:* attributes, and
   http(s)://www.w3.org/... identifiers inside data: URIs), URLs inside
   comments, and URLs in plain HTML prose. An optional allowlist file
@@ -608,9 +622,18 @@ class _HTMLScanner(HTMLParser):
                 continue
             if lname == "xmlns" or lname.startswith("xmlns:"):
                 continue  # namespace identifiers, not loads
-            if lname in (
-                "src", "href", "action", "poster", "formaction",
-            ):
+            if lname == "href":
+                # href on <a>/<area> is a NAVIGATION (a hyperlink the user
+                # follows), not a resource load -- always legal. On any other
+                # element (<link>, SVG <use>, ...) href fetches bytes into the
+                # page and stays a load.
+                if tag not in ("a", "area"):
+                    _check_external_url(
+                        value, line, self._path, self._allowlist, self._out
+                    )
+            elif lname in ("src", "action", "poster", "formaction"):
+                # src is a load; action/formaction ship user data off-origin
+                # on submit -- treated as a load-class concern.
                 _check_external_url(
                     value, line, self._path, self._allowlist, self._out
                 )

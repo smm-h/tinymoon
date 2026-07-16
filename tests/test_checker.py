@@ -4,7 +4,8 @@
   the checker must report EXACTLY the expected (line, rule-id) pairs.
 - Clean fixtures: edge cases that must NOT fire (xmlns in data: URIs,
   var() colors, border-radius: 0, allowlisted URLs, SVG <title> elements,
-  document.title, URLs in comments and prose).
+  document.title, URLs in comments and prose, external <a>/<area> href
+  navigations -- loads are banned, navigations are legal).
 - Self-conformance: the shipped assets/ and the gallery/ must scan clean.
 """
 
@@ -157,8 +158,10 @@ def test_allowlist_is_exact_match_only(tmp_path):
     (tmp_path / "tinymoon-allowlist.txt").write_text(
         "https://allowed.example.com/exactly-this\n"
     )
+    # A LOAD attribute (img src), not a navigation -- navigations are always
+    # legal, so the allowlist only applies to loads.
     (tmp_path / "page.html").write_text(
-        '<a href="https://allowed.example.com/exactly-this/other">x</a>\n'
+        '<img src="https://allowed.example.com/exactly-this/other" alt="x">\n'
     )
     violations = scan_dir(tmp_path)
     assert [(v.line, v.rule) for v in violations] == [(1, EXTERNAL_URL)]
