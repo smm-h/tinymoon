@@ -108,7 +108,7 @@ const NOT_COMPONENTS = [
   "cssVar", "ensureRoot", "getCopyData", "placeBelow",
   "registerCopyable", "unregisterCopyable",
   // shell.js — app shell + aria-live announcer
-  "mountShell", "announce",
+  "mountShell", "announce", "setPageSub",
   // view.js — view-object factory (returns a {root, built, build, refresh}
   // view object, not an {el, ...} component instance). Convenience over the
   // same view contract mountShell already accepts.
