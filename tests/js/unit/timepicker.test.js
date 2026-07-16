@@ -128,3 +128,83 @@ describe("createTimePicker", () => {
     expect(parent.children.length).toBe(0);
   });
 });
+
+// Toggle/dismissal behavior after the migration onto the shared light-dismiss
+// engine (dismiss.js). Openness is observed via the toggle's aria-expanded,
+// which closePicker always resets regardless of the happy-dom Popover fallback.
+// The picker is destroyed after each case so the module-level layer stack and
+// capture listener do not leak into sibling tests.
+describe("createTimePicker — light-dismiss toggle behavior", () => {
+  function pointerdown(el) {
+    el.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+  }
+
+  it("pressing the toggle while open closes the picker and it stays closed", async () => {
+    const { createTimePicker } = await import("../../../assets/js/timepicker.js");
+    const tp = createTimePicker({ name: "t", label: "T" });
+    document.body.appendChild(tp.el);
+    const toggleBtn = tp.el.querySelector(".tm-timepicker-toggle");
+
+    toggleBtn.click(); // open
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("true");
+
+    // The toggle is the registered trigger: its pointerdown dismisses AND
+    // claims the gesture, so the trailing click cannot reopen the picker.
+    pointerdown(toggleBtn);
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("false");
+
+    const trailing = new Event("click", { bubbles: true, cancelable: true });
+    toggleBtn.dispatchEvent(trailing);
+    expect(trailing.defaultPrevented).toBe(true);
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("false");
+
+    tp.destroy();
+  });
+
+  it("an outside pointerdown closes the picker", async () => {
+    const { createTimePicker } = await import("../../../assets/js/timepicker.js");
+    const tp = createTimePicker({ name: "t", label: "T" });
+    document.body.appendChild(tp.el);
+    const toggleBtn = tp.el.querySelector(".tm-timepicker-toggle");
+
+    toggleBtn.click();
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("true");
+
+    pointerdown(document.body);
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("false");
+
+    tp.destroy();
+  });
+
+  it("a pointerdown inside the popover does not close the picker", async () => {
+    const { createTimePicker } = await import("../../../assets/js/timepicker.js");
+    const tp = createTimePicker({ name: "t", label: "T" });
+    document.body.appendChild(tp.el);
+    const toggleBtn = tp.el.querySelector(".tm-timepicker-toggle");
+    const popover = tp.el.querySelector(".tm-timepicker-popover");
+
+    toggleBtn.click();
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("true");
+
+    const opt = popover.querySelector("[role='option']") || popover;
+    pointerdown(opt); // interior of a registered panel — "inside"
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("true");
+
+    tp.destroy();
+  });
+
+  it("Escape closes the picker via the kernel layer stack", async () => {
+    const { createTimePicker } = await import("../../../assets/js/timepicker.js");
+    const tp = createTimePicker({ name: "t", label: "T" });
+    document.body.appendChild(tp.el);
+    const toggleBtn = tp.el.querySelector(".tm-timepicker-toggle");
+
+    toggleBtn.click();
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("true");
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("false");
+
+    tp.destroy();
+  });
+});

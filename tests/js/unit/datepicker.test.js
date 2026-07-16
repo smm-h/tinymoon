@@ -132,3 +132,83 @@ describe("createDatePicker", () => {
     expect(textInput.value).toBe("");
   });
 });
+
+// Toggle/dismissal behavior after the migration onto the shared light-dismiss
+// engine (dismiss.js). Openness is observed via the toggle's aria-expanded,
+// which closeCalendar always resets regardless of the happy-dom Popover
+// fallback. The picker is destroyed after each case so the module-level layer
+// stack and capture listener do not leak into sibling tests.
+describe("createDatePicker — light-dismiss toggle behavior", () => {
+  function pointerdown(el) {
+    el.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+  }
+
+  it("pressing the toggle while open closes the calendar and it stays closed", async () => {
+    const { createDatePicker } = await import("../../../assets/js/datepicker.js");
+    const dp = createDatePicker({ name: "date", label: "Date" });
+    document.body.appendChild(dp.el);
+    const toggleBtn = dp.el.querySelector(".tm-datepicker-toggle");
+
+    toggleBtn.click(); // open
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("true");
+
+    // The toggle is the registered trigger: its pointerdown dismisses AND
+    // claims the gesture, so the trailing click cannot reopen the calendar.
+    pointerdown(toggleBtn);
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("false");
+
+    const trailing = new Event("click", { bubbles: true, cancelable: true });
+    toggleBtn.dispatchEvent(trailing);
+    expect(trailing.defaultPrevented).toBe(true);
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("false");
+
+    dp.destroy();
+  });
+
+  it("an outside pointerdown closes the calendar", async () => {
+    const { createDatePicker } = await import("../../../assets/js/datepicker.js");
+    const dp = createDatePicker({ name: "date", label: "Date" });
+    document.body.appendChild(dp.el);
+    const toggleBtn = dp.el.querySelector(".tm-datepicker-toggle");
+
+    toggleBtn.click();
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("true");
+
+    pointerdown(document.body);
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("false");
+
+    dp.destroy();
+  });
+
+  it("a pointerdown inside the popover does not close the calendar", async () => {
+    const { createDatePicker } = await import("../../../assets/js/datepicker.js");
+    const dp = createDatePicker({ name: "date", label: "Date" });
+    document.body.appendChild(dp.el);
+    const toggleBtn = dp.el.querySelector(".tm-datepicker-toggle");
+    const popover = dp.el.querySelector(".tm-datepicker-popover");
+
+    toggleBtn.click();
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("true");
+
+    const day = popover.querySelector("button.tm-datepicker-day") || popover;
+    pointerdown(day); // interior of a registered panel — "inside"
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("true");
+
+    dp.destroy();
+  });
+
+  it("Escape closes the calendar via the kernel layer stack", async () => {
+    const { createDatePicker } = await import("../../../assets/js/datepicker.js");
+    const dp = createDatePicker({ name: "date", label: "Date" });
+    document.body.appendChild(dp.el);
+    const toggleBtn = dp.el.querySelector(".tm-datepicker-toggle");
+
+    toggleBtn.click();
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("true");
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(toggleBtn.getAttribute("aria-expanded")).toBe("false");
+
+    dp.destroy();
+  });
+});

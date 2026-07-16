@@ -179,4 +179,33 @@ test.describe("Date picker", () => {
     await page.keyboard.press("Escape");
     await expect(popover).not.toBeVisible();
   });
+
+  // Light-dismiss engine migration: the toggle is a registered trigger, so a
+  // close-press claims the gesture and cannot immediately reopen the calendar.
+  test("pressing the toggle while open closes the calendar and it stays closed", async ({ page }) => {
+    const view = page.locator("#tm-content section.view:not(.hidden)");
+    const datepicker = view.locator(".tm-datepicker");
+    const toggleBtn = datepicker.locator(".tm-datepicker-toggle");
+    const popover = datepicker.locator(".tm-datepicker-popover");
+
+    await toggleBtn.click();
+    await expect(popover).toBeVisible();
+    await toggleBtn.click();
+    await expect(popover).not.toBeVisible();
+    await page.waitForTimeout(150);
+    await expect(popover).not.toBeVisible();
+  });
+
+  test("an outside pointerdown closes the calendar", async ({ page }) => {
+    const view = page.locator("#tm-content section.view:not(.hidden)");
+    const datepicker = view.locator(".tm-datepicker");
+    const toggleBtn = datepicker.locator(".tm-datepicker-toggle");
+    const popover = datepicker.locator(".tm-datepicker-popover");
+
+    await toggleBtn.click();
+    await expect(popover).toBeVisible();
+    // Press well away from the popover and the widget's control surface.
+    await page.mouse.click(5, 5);
+    await expect(popover).not.toBeVisible();
+  });
 });

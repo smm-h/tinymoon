@@ -9,6 +9,7 @@
 import { el } from "./dom.js";
 import { icon } from "./icons.js";
 import { pushLayer } from "./kernel.js";
+import { registerLightDismiss } from "./dismiss.js";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -122,7 +123,7 @@ export function createDatePicker(opts) {
 
   let focusDay = null; // the day number that has roving tabindex 0
   let removeLayer = null;
-  let onDocDown = null; // outside-click handler ref for cleanup
+  let removeDismiss = null; // light-dismiss unregister ref
   let destroyed = false;
   const handlers = []; // [element, event, handler, opts?] for cleanup
 
@@ -335,11 +336,8 @@ export function createDatePicker(opts) {
     }
     toggleBtn.setAttribute("aria-expanded", "true");
     removeLayer = pushLayer(() => closeCalendar());
-    // Outside click closes the calendar (popover="manual" does not auto-close)
-    onDocDown = (e) => {
-      if (!wrapper.contains(e.target)) closeCalendar();
-    };
-    document.addEventListener("pointerdown", onDocDown, true);
+    // Outside-pointer dismissal via the light-dismiss engine (toggle = trigger).
+    removeDismiss = registerLightDismiss({ panels: [popover, textInput], dismiss: closeCalendar, trigger: toggleBtn });
     // Focus the roving-focus day
     requestAnimationFrame(() => {
       const focused = tbody.querySelector("button[tabindex='0']");
@@ -349,7 +347,7 @@ export function createDatePicker(opts) {
 
   function closeCalendar() {
     if (removeLayer) { removeLayer(); removeLayer = null; }
-    if (onDocDown) { document.removeEventListener("pointerdown", onDocDown, true); onDocDown = null; }
+    if (removeDismiss) { removeDismiss(); removeDismiss = null; }
     try {
       if (isOpen()) popover.hidePopover();
     } catch (_) {
@@ -564,8 +562,8 @@ export function createDatePicker(opts) {
   });
 
   // Note: using popover="manual" so the browser never auto-dismisses.
-  // Closing is handled by: Escape (kernel layer stack), outside click
-  // (document pointerdown), and selectDate/closeCalendar calls.
+  // Closing is handled by: Escape (kernel layer stack), the light-dismiss
+  // engine (outside-pointer), and selectDate/closeCalendar calls.
 
   // ---- initial render ----
 

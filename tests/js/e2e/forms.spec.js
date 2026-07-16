@@ -272,3 +272,56 @@ test.describe("Forms view", () => {
     ).toHaveLength(0);
   });
 });
+
+// Time-picker toggle contract after migrating onto the shared light-dismiss
+// engine: pressing the clock toggle while open closes the popover and it STAYS
+// closed (the gesture-claim stops a close-press from immediately reopening),
+// an outside press closes it, and Escape closes it via the kernel layer stack.
+test.describe("Time picker light-dismiss + toggle", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/gallery/#/forms");
+    await expect(page.locator("#tm-app")).toBeVisible();
+    await expect(page.locator("#tm-page-title")).toHaveText("Forms");
+  });
+
+  test("opens on toggle click, closes on an outside pointerdown", async ({ page }) => {
+    const view = page.locator("#tm-content section.view:not(.hidden)");
+    const tp = view.locator(".tm-timepicker");
+    const toggle = tp.locator(".tm-timepicker-toggle");
+    const popover = tp.locator(".tm-timepicker-popover");
+
+    await toggle.click();
+    await expect(popover).toBeVisible();
+    // Press well away from the popover and its control surface.
+    await page.mouse.click(5, 5);
+    await expect(popover).not.toBeVisible();
+  });
+
+  test("pressing the toggle while open closes it and it stays closed", async ({ page }) => {
+    const view = page.locator("#tm-content section.view:not(.hidden)");
+    const tp = view.locator(".tm-timepicker");
+    const toggle = tp.locator(".tm-timepicker-toggle");
+    const popover = tp.locator(".tm-timepicker-popover");
+
+    await toggle.click();
+    await expect(popover).toBeVisible();
+    // The toggle is the registered trigger: pointerdown dismisses + claims the
+    // gesture, so the toggle's own open-only click handler cannot reopen it.
+    await toggle.click();
+    await expect(popover).not.toBeVisible();
+    await page.waitForTimeout(150);
+    await expect(popover).not.toBeVisible();
+  });
+
+  test("Escape closes the time picker", async ({ page }) => {
+    const view = page.locator("#tm-content section.view:not(.hidden)");
+    const tp = view.locator(".tm-timepicker");
+    const toggle = tp.locator(".tm-timepicker-toggle");
+    const popover = tp.locator(".tm-timepicker-popover");
+
+    await toggle.click();
+    await expect(popover).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(popover).not.toBeVisible();
+  });
+});

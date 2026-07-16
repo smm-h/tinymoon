@@ -15,6 +15,7 @@
 import { el } from "./dom.js";
 import { icon } from "./icons.js";
 import { pushLayer, placeBelow } from "./kernel.js";
+import { registerLightDismiss } from "./dismiss.js";
 
 // Canonicalize {h, m} to "HH:MM".
 function toHHMM(h, m) {
@@ -92,7 +93,7 @@ export function createTimePicker(opts) {
   let currentValue = opts.value && parseHHMM(opts.value) ? opts.value : null;
   let destroyed = false;
   let removeLayer = null;
-  let onDocDown = null;
+  let removeDismiss = null; // light-dismiss unregister ref
   const handlers = [];
 
   function listen(elem, event, handler, listenerOpts) {
@@ -248,8 +249,8 @@ export function createTimePicker(opts) {
     }
     toggleBtn.setAttribute("aria-expanded", "true");
     removeLayer = pushLayer(() => closePicker());
-    onDocDown = (e) => { if (!wrapper.contains(e.target)) closePicker(); };
-    document.addEventListener("pointerdown", onDocDown, true);
+    // Outside-pointer dismissal via the light-dismiss engine (toggle = trigger).
+    removeDismiss = registerLightDismiss({ panels: [popover, textInput], dismiss: closePicker, trigger: toggleBtn });
     requestAnimationFrame(() => {
       const sel = hourCol.querySelector("[tabindex='0']");
       if (sel) { sel.focus(); sel.scrollIntoView({ block: "center" }); }
@@ -260,7 +261,7 @@ export function createTimePicker(opts) {
 
   function closePicker() {
     if (removeLayer) { removeLayer(); removeLayer = null; }
-    if (onDocDown) { document.removeEventListener("pointerdown", onDocDown, true); onDocDown = null; }
+    if (removeDismiss) { removeDismiss(); removeDismiss = null; }
     try {
       if (isOpen()) popover.hidePopover();
     } catch (_) {
