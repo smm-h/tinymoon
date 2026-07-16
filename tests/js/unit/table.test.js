@@ -244,4 +244,52 @@ describe("createTable", () => {
     t.destroy();
     expect(parent.children.length).toBe(0);
   });
+
+  it("onRowClick fires with (row, index, event) for the clicked body row", async () => {
+    const { createTable } = await import("../../../assets/js/table.js");
+    const seen = [];
+    const rows = makeRows();
+    const t = createTable({ columns: COLS, rows, onRowClick: (row, index, ev) => seen.push([row, index, ev]) });
+    const bodyRows = t.el.querySelectorAll("tbody tr");
+    // Click a cell inside the second data row.
+    bodyRows[1].querySelector("td").click();
+    expect(seen.length).toBe(1);
+    expect(seen[0][0]).toBe(rows[1]);
+    expect(seen[0][1]).toBe(1);
+    expect(seen[0][2]).toBeInstanceOf(Object);
+  });
+
+  it("onRowClick does not fire for the sortable header or the 'more rows' note", async () => {
+    const { createTable } = await import("../../../assets/js/table.js");
+    let calls = 0;
+    const t = createTable({ columns: COLS, rows: makeRows(), maxRows: 1, onRowClick: () => { calls += 1; } });
+    t.el.querySelector("thead th.sortable").click(); // header sort, not a row click
+    const more = t.el.querySelector("tfoot .tm-table-more td");
+    more.click(); // the "more rows" footer note
+    expect(calls).toBe(0);
+  });
+
+  it("onRowClick survives a setRows re-render (delegated listener)", async () => {
+    const { createTable } = await import("../../../assets/js/table.js");
+    const seen = [];
+    const t = createTable({ columns: COLS, rows: makeRows(), onRowClick: (row, index) => seen.push(index) });
+    const next = [{ name: "z", size: 9 }, { name: "y", size: 8 }];
+    t.setRows(next);
+    t.el.querySelectorAll("tbody tr")[1].querySelector("td").click();
+    expect(seen).toEqual([1]);
+  });
+
+  it("onRowHover fires once per row transition and (null, -1) on table leave", async () => {
+    const { createTable } = await import("../../../assets/js/table.js");
+    const seen = [];
+    const rows = makeRows();
+    const t = createTable({ columns: COLS, rows, onRowHover: (row, index) => seen.push([row, index]) });
+    const cells = t.el.querySelectorAll("tbody tr")[0].querySelectorAll("td");
+    const fire = (node, type) => node.dispatchEvent(new Event(type, { bubbles: type === "mouseover" }));
+    fire(cells[0], "mouseover");
+    fire(cells[1], "mouseover"); // same row, different cell — must NOT re-fire
+    expect(seen).toEqual([[rows[0], 0]]);
+    fire(t.el, "mouseleave");
+    expect(seen).toEqual([[rows[0], 0], [null, -1]]);
+  });
 });

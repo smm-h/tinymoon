@@ -101,6 +101,18 @@ export interface TableOptions<Row = Record<string, unknown>> {
    * a space-separated string adds several. Return null/undefined/"" for no class.
    */
   rowClass?(row: Row): string | null | undefined;
+  /**
+   * Called when a body data row is activated by pointer. Delegated inside the
+   * widget, so it survives setRows() re-renders. `index` is the row's position
+   * in the current rows array; the tfoot "more rows" note never fires it.
+   */
+  onRowClick?(row: Row, index: number, event: MouseEvent): void;
+  /**
+   * Called when the pointer enters a body data row (`row`, `index`) and again
+   * with (`null`, `-1`) when it leaves the table. Fires once per row transition,
+   * not per cell. Only wired when provided.
+   */
+  onRowHover?(row: Row | null, index: number, event: MouseEvent): void;
 }
 
 export interface Table<Row = Record<string, unknown>> {

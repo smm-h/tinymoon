@@ -927,7 +927,7 @@ The \`tinymoon/widgets\` barrel is the **data-display** story — the widgets th
 
 ### Data table {#data-table}
 
-\`createTable({columns, rows?, maxRows?, onSort?, caption?, rowClass?})\` → \`{el, setRows, destroy}\`. Two decisions the API pins:
+\`createTable({columns, rows?, maxRows?, onSort?, caption?, rowClass?, onRowClick?, onRowHover?})\` → \`{el, setRows, destroy}\`. \`onRowClick(row, index, event)\` and \`onRowHover(row | null, index, event)\` are event-delegated inside the widget, so they survive \`setRows()\` re-renders and never fire for the header or the "more rows" note. Two decisions the API pins:
 
 - **Declarative rendering** — \`setRows(rows)\` re-renders the body wholesale. Per-row diffing is what the state barrel's \`reconcile()\` is for; a table redraws cheaply from an array.
 - **Caller-side sorting** — clicking a sortable header (or Enter/Space on it) cycles its \`aria-sort\` none → ascending → descending and calls \`onSort(key, direction)\`. The table **never sorts the rows itself and never mutates the array** you hand it — it only reports the request; you re-sort your data and call \`setRows()\`. This keeps sort semantics (locale, numeric vs. string, stability) in your hands.
@@ -2028,6 +2028,7 @@ const DataView = {
       { name: "auditor.js", kind: "module", size: 30000, status: "err" },
       { name: "primitives.css", kind: "stylesheet", size: 38000, status: "ok" },
     ];
+    const rowNote = el("p", "demo-note", "Hover a row to inspect it.");
     const table = createTable({
       caption: "Shipped assets",
       maxRows: 5,
@@ -2056,9 +2057,14 @@ const DataView = {
         }
         table.setRows(next);
       },
+      // Row-level pointer hooks (event-delegated inside the widget). Clicking a
+      // row toasts it; hovering reports the row into a live note.
+      onRowClick: (row) => toast("Row: " + row.name, "info"),
+      onRowHover: (row) => { rowNote.textContent = row ? "Hovering: " + row.name : "Hover a row to inspect it."; },
     });
     table.el.dataset.testid = "data-table";
     tp.appendChild(table.el);
+    tp.appendChild(rowNote);
     this.root.appendChild(tp);
 
     // virtual list — 10,000 rows, bounded DOM.

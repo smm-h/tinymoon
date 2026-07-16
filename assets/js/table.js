@@ -70,11 +70,18 @@ function addClasses(node, cls) {
 // rowClass(row) -> string | null: an optional per-row class hook. Both hooks
 //   only APPEND to the framework's own tr/td classes — they never replace them;
 //   null/undefined/"" means no class.
+// onRowClick(row, index, event): called when a body data row is activated by
+//   pointer. Delegated inside the widget (one listener), so it survives
+//   setRows() re-renders. index is the row's position in the current rows array
+//   and row is that array element; the tfoot "more rows" note never fires it.
+// onRowHover(row | null, index, event): called when the pointer enters a body
+//   data row (row + index) and again with (null, -1) when it leaves the table.
+//   Fires once per row transition, not per cell. Only wired when provided.
 export function createTable(opts) {
   if (!opts || !Array.isArray(opts.columns)) {
     throw new Error("createTable: columns array is required");
   }
-  const { columns, rows = [], maxRows, onSort, caption, rowClass } = opts;
+  const { columns, rows = [], maxRows, onSort, caption, rowClass, onRowClick, onRowHover } = opts;
 
   const table = el("table", "data tm-table");
   table.setAttribute("role", "grid");
@@ -235,13 +242,48 @@ export function createTable(opts) {
     }
   }
 
+  // Resolve the body data row a pointer event landed on, or null. The index is
+  // the row's position in currentRows (tbody holds exactly the shown data rows,
+  // in order); the tfoot "more" row lives outside tbody and never resolves.
+  function rowFromEvent(e) {
+    const tr = e.target.closest("tbody tr");
+    if (!tr || !tbody.contains(tr)) return null;
+    const index = Array.prototype.indexOf.call(tbody.children, tr);
+    if (index < 0 || index >= currentRows.length) return null;
+    return { index, row: currentRows[index] };
+  }
+
   function onClick(e) {
     const th = e.target.closest("th.sortable");
-    if (th && table.contains(th)) cycleSort(Number(th.dataset.col));
+    if (th && table.contains(th)) { cycleSort(Number(th.dataset.col)); return; }
+    if (onRowClick) {
+      const hit = rowFromEvent(e);
+      if (hit) onRowClick(hit.row, hit.index, e);
+    }
+  }
+
+  // Hover delegation: collapse per-cell mouseover noise into one call per row
+  // transition, and one (null, -1) call when the pointer leaves the table.
+  let hoverIndex = -1;
+  function onMouseover(e) {
+    const hit = rowFromEvent(e);
+    const idx = hit ? hit.index : -1;
+    if (idx === hoverIndex) return;
+    hoverIndex = idx;
+    onRowHover(hit ? hit.row : null, idx, e);
+  }
+  function onMouseleave(e) {
+    if (hoverIndex === -1) return;
+    hoverIndex = -1;
+    onRowHover(null, -1, e);
   }
 
   table.addEventListener("keydown", onKeydown);
   table.addEventListener("click", onClick);
+  if (onRowHover) {
+    table.addEventListener("mouseover", onMouseover);
+    table.addEventListener("mouseleave", onMouseleave);
+  }
 
   function setRows(next) {
     // Keep the caller's array by identity; never sort or mutate it.
@@ -254,6 +296,10 @@ export function createTable(opts) {
   function destroy() {
     table.removeEventListener("keydown", onKeydown);
     table.removeEventListener("click", onClick);
+    if (onRowHover) {
+      table.removeEventListener("mouseover", onMouseover);
+      table.removeEventListener("mouseleave", onMouseleave);
+    }
     if (table.parentNode) table.parentNode.removeChild(table);
   }
 
