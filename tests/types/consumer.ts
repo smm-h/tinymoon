@@ -94,6 +94,8 @@ import {
   openPalette,
   installPalette,
   score,
+  registerLightDismiss,
+  registerOverlayTrigger,
 } from "tinymoon/chrome";
 
 // -- state barrel ("tinymoon/state") ------------------------------------------
@@ -624,3 +626,21 @@ const uninstallPalette: () => void = installPalette({ shortcut: "mod+k" });
 uninstallPalette();
 offPaletteSource();
 ref(offShortcut, cancelLazy, rankScore);
+
+// dismiss: light-dismiss layer registration + declarative trigger invoker.
+const panelEl: HTMLElement = el("div");
+const triggerEl: HTMLElement = el("button");
+const offDismiss: () => void = registerLightDismiss({
+  panels: [panelEl],
+  dismiss: () => ref("dismissed"),
+  trigger: triggerEl,
+});
+offDismiss();
+const offTrigger: () => void = registerOverlayTrigger(triggerEl, ({ trigger, onClose }) => {
+  ref(trigger);
+  const overlay: HTMLElement = el("div");
+  overlay.id = "demo-overlay";
+  registerLightDismiss({ panels: [overlay], dismiss: () => onClose(), trigger });
+  return { el: overlay, close: () => onClose() };
+});
+offTrigger();

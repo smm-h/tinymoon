@@ -36,6 +36,7 @@
     "./controls": "./assets/js/controls.js",
     "./ctxmenu": "./assets/js/ctxmenu.js",
     "./datepicker": "./assets/js/datepicker.js",
+    "./dismiss": "./assets/js/dismiss.js",
     "./dom": "./assets/js/dom.js",
     "./drawer": "./assets/js/drawer.js",
     "./embed": "./assets/js/embed.js",

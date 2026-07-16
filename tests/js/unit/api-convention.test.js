@@ -685,6 +685,8 @@ const CHROME_EXPORTS = [
   "registerShortcut",
   // palette.js — source registration, imperative open, opt-in install, ranker
   "registerPaletteSource", "openPalette", "installPalette", "score",
+  // dismiss.js — light-dismiss layer registration + declarative trigger invoker
+  "registerLightDismiss", "registerOverlayTrigger",
 ];
 
 describe("api-convention: chrome barrel coverage", () => {

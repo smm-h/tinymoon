@@ -117,6 +117,12 @@ _CHROME_JS = frozenset({
     # frozen (the 6B modules are surfaced from the "tinymoon/chrome" barrel, not
     # the core index barrel, precisely because core has no byte headroom).
     "states.js", "lazy.js", "shortcuts.js", "palette.js", "chrome.js",
+    # Light-dismiss engine + declarative overlay-trigger invoker (dismiss.js).
+    # Conceptually kernel infrastructure (outside-pointer dismissal beside the
+    # Escape/hashchange stack), but budgeted here rather than core: the frozen
+    # core-js ceiling had no headroom for the engine, so per the Size promise it
+    # lands in a new tier. Core overlay modules import it relatively.
+    "dismiss.js",
 })
 
 # Dev-only modules: not shipped in any barrel, not counted in size budgets.

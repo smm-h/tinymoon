@@ -169,3 +169,59 @@ export function openPalette(): PaletteHandle;
  * mounted shell's rendered routes. Returns a function that unregisters both.
  */
 export function installPalette(opts?: InstallPaletteOpts): () => void;
+
+// -- dismiss.js ---------------------------------------------------------------
+
+/** Options for {@link registerLightDismiss}. */
+export interface LightDismissOpts {
+  /** Elements whose interior counts as "inside" (a press there never dismisses). */
+  panels: Element[];
+  /** Called to close the overlay when an outside press lands. */
+  dismiss: () => void;
+  /**
+   * Trigger element(s) that toggle the overlay. A press on a trigger while this
+   * layer is topmost dismisses it AND claims the pointer gesture (suppresses the
+   * trailing click), so a close-press cannot immediately reopen the overlay.
+   */
+  trigger?: Element | Element[];
+}
+
+/** The overlay handle an {@link OverlayOpener} returns. */
+export interface OverlayHandle {
+  /** The overlay's root element (its `id`, if any, becomes `aria-controls`). */
+  el?: Element;
+  /** Close the overlay. */
+  close(): void;
+}
+
+/** Context passed to an {@link OverlayOpener}. */
+export interface OverlayTriggerContext {
+  /** The trigger element — pass it through as the overlay's light-dismiss `trigger`. */
+  trigger: Element;
+  /** Call when the overlay closes by ANY path so the trigger's state resets. */
+  onClose: () => void;
+}
+
+/** Opens an overlay for {@link registerOverlayTrigger} and returns its handle. */
+export type OverlayOpener = (ctx: OverlayTriggerContext) => OverlayHandle;
+
+/**
+ * Register a light-dismiss overlay layer on the kernel's central outside-pointer
+ * registry (one document capture-phase pointerdown listener, LIFO stack — only
+ * the topmost layer is consulted per press). Returns an unregister function.
+ */
+export function registerLightDismiss(opts: LightDismissOpts): () => void;
+
+/**
+ * Declarative invoker contract: the framework owns `triggerEl`'s click handler
+ * and open/closed state. On click while closed it calls `opener({trigger,
+ * onClose})` (which opens the overlay, light-dismiss-registers it with the
+ * trigger, calls `onClose` on any close, and returns its handle); on click while
+ * open it closes via that handle. Reflects state as `aria-expanded` (and
+ * `aria-controls` when the overlay element has an `id`). Double-registering the
+ * same element throws. Returns an unregister function.
+ */
+export function registerOverlayTrigger(
+  triggerEl: Element,
+  opener: OverlayOpener,
+): () => void;

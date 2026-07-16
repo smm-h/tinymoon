@@ -14,3 +14,4 @@ export { loadingBlock, emptyBlock, errorBlock, renderAsync } from "./states.js";
 export { lazyMount } from "./lazy.js";
 export { registerShortcut } from "./shortcuts.js";
 export { registerPaletteSource, openPalette, installPalette, score } from "./palette.js";
+export { registerLightDismiss, registerOverlayTrigger } from "./dismiss.js";
