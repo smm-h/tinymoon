@@ -29,6 +29,15 @@
   --on-accent: #ffffff;
   --green: #2fbf71;
   --red: #e5484d;
+  /* red ladder: --red is the error ACCENT (badge/toast/field borders + small
+     error text). The danger BUTTON needs a solid fill dark enough for white
+     text, so --red-solid is a deeper red (--red itself is too light: white on
+     it is only 3.9:1). --red-solid-hi is the darker hover; --on-red is the
+     button label; --red-glow mirrors --accent-glow for the hover shadow. */
+  --red-solid: #cc2f35;
+  --red-solid-hi: #b3282d;
+  --on-red: #ffffff;
+  --red-glow: color-mix(in srgb, var(--red-solid) 35%, transparent);
   /* gold: the warn/caution status color. Mirrors the accent ladder — a solid
      shade for text and borders, a translucent soft fill, and an alpha step for
      glows. The badge warn variant and "neutral"/caution stat deltas pull it.

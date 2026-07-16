@@ -126,6 +126,13 @@ TEXT_PAIRS = [
     ("gold", "bg", 4.5),
     ("gold", "surface", 4.5),
     ("gold", "surface-2", 4.5),
+    # The .btn.danger label (--on-red) renders as text on the solid danger fill
+    # (--red-solid) and its hover shade (--red-solid-hi), so both must clear the
+    # 4.5:1 AA text floor. This is exactly why the danger button uses --red-solid
+    # (a deep red) and not the lighter error-accent --red, on which white text is
+    # only ~3.9:1.
+    ("on-red", "red-solid", 4.5),
+    ("on-red", "red-solid-hi", 4.5),
 ]
 
 # Non-text UI component pairs: 3:1 (WCAG AA SC 1.4.11)

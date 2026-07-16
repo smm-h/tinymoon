@@ -306,6 +306,8 @@ const WidgetsView = {
     primary.addEventListener("click", () => toast("Primary button clicked"));
     const ghost = el("button", "btn ghost", "Ghost");
     ghost.addEventListener("click", () => toast("Ghost button clicked"));
+    const danger = el("button", "btn danger", "Delete");
+    danger.addEventListener("click", () => toast("Danger button clicked", "err"));
     const disabled = el("button", "btn", "Disabled");
     disabled.disabled = true;
     const ib = el("button", "icon-btn");
@@ -317,6 +319,7 @@ const WidgetsView = {
     brow.appendChild(plain);
     brow.appendChild(primary);
     brow.appendChild(ghost);
+    brow.appendChild(danger);
     brow.appendChild(disabled);
     brow.appendChild(ib);
     brow.appendChild(ibOn);

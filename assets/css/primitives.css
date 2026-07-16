@@ -38,6 +38,18 @@
 }
 .btn.ghost { background: none; border-color: transparent; color: var(--text-dim); }
 .btn.ghost:hover { color: var(--text); border-color: var(--border-2); }
+/* Destructive action. Solid red fill with white label (--red-solid is dark
+   enough to clear 4.5:1 with --on-red; the error-accent --red is not). */
+.btn.danger {
+  background: var(--red-solid);
+  border-color: var(--red-solid);
+  color: var(--on-red);
+}
+.btn.danger:hover {
+  background: var(--red-solid-hi);
+  border-color: var(--red-solid-hi);
+  box-shadow: 0 0 16px var(--red-glow);
+}
 
 .icon-btn {
   display: inline-flex;
