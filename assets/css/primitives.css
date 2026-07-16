@@ -753,9 +753,17 @@ dialog.tm-drawer::backdrop { background: var(--backdrop); backdrop-filter: blur(
   grid-template-columns: 1fr 1fr;
   grid-template-areas: "a b" "c d";
 }
+/* Asymmetric 3-slot presets: a row of two plus one full-width cell. The
+   spanning cell uses grid-column (not a named area) so the layout collapses
+   cleanly on narrow screens — span 1/-1 becomes the single stacked column. */
+.tm-grid[data-preset="2+1"],
+.tm-grid[data-preset="1+2"] { grid-template-columns: 1fr 1fr; }
+.tm-grid[data-preset="2+1"] > .tm-grid-slot:nth-child(3) { grid-column: 1 / -1; }
+.tm-grid[data-preset="1+2"] > .tm-grid-slot:nth-child(1) { grid-column: 1 / -1; }
 /* Narrow screens collapse multi-column presets to a single stacked column. */
 @media (max-width: 640px) {
-  .tm-grid[data-preset="2x1"], .tm-grid[data-preset="2x2"] {
+  .tm-grid[data-preset="2x1"], .tm-grid[data-preset="2x2"],
+  .tm-grid[data-preset="2+1"], .tm-grid[data-preset="1+2"] {
     grid-template-columns: 1fr;
     grid-template-areas: none;
   }

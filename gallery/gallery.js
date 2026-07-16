@@ -749,7 +749,7 @@ For a proper toggle button, wrap the trigger with \`registerOverlayTrigger(trigg
 
 ### createGrid {#create-grid}
 
-\`createGrid({preset, slots?})\` → \`{el, slots, setPreset, destroy}\` is a CSS-first rectangular layout primitive. The four presets — \`1x1\`, \`2x1\`, \`1x2\`, \`2x2\` (columns×rows) — are plain \`.tm-grid[data-preset]\` classes, so a grid can be authored in HTML with no JS. It is a **content** primitive, not a shell mode. No preset switcher is baked in; compose \`createSegmented\` with \`grid.setPreset()\` (as the demo does).
+\`createGrid({preset, slots?})\` → \`{el, slots, setPreset, destroy}\` is a CSS-first rectangular layout primitive. The presets — the rectangular \`1x1\`, \`2x1\`, \`1x2\`, \`2x2\` plus two asymmetric 3-slot layouts, \`2+1\` (a row of two above one full-width cell) and \`1+2\` (one full-width cell above a row of two) — are plain \`.tm-grid[data-preset]\` classes, so a grid can be authored in HTML with no JS. It is a **content** primitive, not a shell mode. No preset switcher is baked in; compose \`createSegmented\` with \`grid.setPreset()\` (as the demo does).
 
 ### iconButton {#icon-button}
 
@@ -2444,6 +2444,8 @@ const ChromeView = createView({
         { value: "2x1", label: "2×1" },
         { value: "1x2", label: "1×2" },
         { value: "2x2", label: "2×2" },
+        { value: "2+1", label: "2+1" },
+        { value: "1+2", label: "1+2" },
       ],
       value: "2x2",
       onChange: (v) => { grid.setPreset(v); paint(); },

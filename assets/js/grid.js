@@ -8,12 +8,14 @@
 // view, it does not change the app frame. Compose it with createSegmented (see
 // the gallery) to build a preset switcher — none is baked in, by design.
 //
-// Presets are columns×rows: "1x1" (1 slot), "2x1" (2 side by side), "1x2"
-// (2 stacked), "2x2" (4).
+// Presets are rectangular layouts: "1x1" (1 slot), "2x1" (2 side by side),
+// "1x2" (2 stacked), "2x2" (4), plus two asymmetric 3-slot presets — "2+1"
+// (a row of two above one full-width cell) and "1+2" (one full-width cell above
+// a row of two).
 
 import { el } from "./dom.js";
 
-const CELLS = { "1x1": 1, "2x1": 2, "1x2": 2, "2x2": 4 };
+const CELLS = { "1x1": 1, "2x1": 2, "1x2": 2, "2x2": 4, "2+1": 3, "1+2": 3 };
 
 // createGrid({preset, slots?}) → {el, slots, setPreset(preset), destroy()}.
 // `slots` (optional) is an array of nodes placed into the slots in order.

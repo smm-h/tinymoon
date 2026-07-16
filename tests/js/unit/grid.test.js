@@ -24,6 +24,19 @@ describe("createGrid", () => {
     expect(g.el.classList.contains("tm-grid")).toBe(true);
   });
 
+  it("supports the asymmetric 3-slot presets 2+1 and 1+2", () => {
+    const a = createGrid({ preset: "2+1" });
+    expect(a.slots.length).toBe(3);
+    expect(a.el.dataset.preset).toBe("2+1");
+    const b = createGrid({ preset: "1+2" });
+    expect(b.slots.length).toBe(3);
+    expect(b.el.dataset.preset).toBe("1+2");
+    // setPreset switches between symmetric and asymmetric presets.
+    a.setPreset("1+2");
+    expect(a.slots.length).toBe(3);
+    expect(a.el.dataset.preset).toBe("1+2");
+  });
+
   it("each slot is a .tm-grid-slot child of the grid, in order", () => {
     const g = createGrid({ preset: "2x2" });
     const children = [...g.el.children];
@@ -61,7 +74,7 @@ describe("createGrid", () => {
   });
 
   it("primitives.css defines a selector for every preset", () => {
-    for (const preset of ["1x1", "2x1", "1x2", "2x2"]) {
+    for (const preset of ["1x1", "2x1", "1x2", "2x2", "2+1", "1+2"]) {
       expect(CSS).toContain(`.tm-grid[data-preset="${preset}"]`);
     }
   });

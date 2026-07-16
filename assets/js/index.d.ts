@@ -162,7 +162,7 @@ export function createTabPanels(opts: TabPanelsOpts): TabPanelsInstance;
 // -- grid.js ------------------------------------------------------------------
 
 /** Rectangular grid presets (columns×rows). */
-export type GridPreset = "1x1" | "2x1" | "1x2" | "2x2";
+export type GridPreset = "1x1" | "2x1" | "1x2" | "2x2" | "2+1" | "1+2";
 export interface GridOpts {
   preset: GridPreset;
   /** Nodes placed into the grid slots in order. */
