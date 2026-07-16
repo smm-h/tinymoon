@@ -164,6 +164,10 @@
           "native-control"
         ],
         [
+          5,
+          "native-control"
+        ],
+        [
           6,
           "native-control"
         ],
@@ -179,6 +183,10 @@
       "native-control.js": [
         [
           3,
+          "native-control"
+        ],
+        [
+          4,
           "native-control"
         ],
         [

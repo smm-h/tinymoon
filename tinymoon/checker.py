@@ -28,10 +28,13 @@ no warning mode and no bypass:
   comments, and URLs in plain HTML prose. An optional allowlist file
   (tinymoon-allowlist.txt at the scanned dir root, one exact URL per
   line, # comments allowed) exempts exact matches.
-- native-control: no <select> or <input type=checkbox|radio|file> in HTML,
-  and no JS creation of the same (el("select"...), createElement("select"),
-  .type = "checkbox" assignments, setAttribute("type", "radio"), ...).
-  <dialog> is permitted (used internally by the framework's modal).
+- native-control: no <select>, <dialog>, or <input type=checkbox|radio|file>
+  in HTML, and no JS creation of the same (el("select"...),
+  createElement("dialog"), .type = "checkbox" assignments,
+  setAttribute("type", "radio"), ...). tinymoon's own modules legitimately
+  create the native <select> and <dialog> that back createSelect and
+  openModal; the FRAMEWORK-OWN allowance (below) exempts those files, keyed
+  on location so a consumer's <dialog> always fires.
 - title-attr: no title= attributes in HTML (SVG <title> child ELEMENTS are
   fine -- only the attribute is banned), and no JS `.title =` /
   setAttribute("title", ...) on elements. `document.title` is the page
@@ -78,15 +81,18 @@ The tm-embed BOUNDARY CONTRACT (provenance in HTML source):
   documents it (tests/fixtures/clean/embed-abuse.html).
 
 The FRAMEWORK-OWN allowance (native-control in tinymoon's own modules):
-  tinymoon's own shipped modules legitimately create the hidden native
-  <select> that backs createSelect (form participation). The checker
-  suppresses its JS native-control patterns for files whose resolved path
-  lies WITHIN tinymoon's own packaged assets directory -- the same location
-  assets_path() returns (REPO/assets when self-scanning the source repo, the
-  installed ``tinymoon/assets`` when scanning a wheel). The allowance is keyed
-  on LOCATION, never on filename: a consumer file named ``select.js`` never
+  tinymoon's own shipped modules legitimately create the native controls that
+  back its primitives: the hidden native <select> behind createSelect (form
+  participation) and the native <dialog> behind openModal (focus trap, inert
+  background, top-layer, ::backdrop for free). The checker suppresses its JS
+  native-control patterns for files whose resolved path lies WITHIN tinymoon's
+  own packaged assets directory -- the same location assets_path() returns
+  (REPO/assets when self-scanning the source repo, the installed
+  ``tinymoon/assets`` when scanning a wheel). The allowance is keyed on
+  LOCATION, never on filename: a consumer file named ``select.js`` never
   qualifies. This is why select.js can write ``document.createElement("select")``
-  plainly instead of obfuscating it past the scanner.
+  and modal.js ``document.createElement("dialog")`` plainly instead of
+  obfuscating them past the scanner.
 
 The VENDOR QUARANTINE (provenance for whole third-party FILES):
   The tm-embed boundary types provenance INSIDE HTML source. The quarantine
@@ -582,9 +588,9 @@ _JS_WEBSOCKET_URL_RE = re.compile(
     r"""\bWebSocket\s*\(\s*(["'])([^"']+)\1"""
 )
 
-_JS_EL_NATIVE_RE = re.compile(r"""\bel\s*\(\s*(["'])(select)\1""")
+_JS_EL_NATIVE_RE = re.compile(r"""\bel\s*\(\s*(["'])(select|dialog)\1""")
 _JS_CREATE_NATIVE_RE = re.compile(
-    r"""\bcreateElement\s*\(\s*(["'])(select)\1""", re.IGNORECASE
+    r"""\bcreateElement\s*\(\s*(["'])(select|dialog)\1""", re.IGNORECASE
 )
 _JS_TYPE_ASSIGN_RE = re.compile(
     r"""\.\s*type\s*=(?!=)\s*(["'])(checkbox|radio|file)\1"""
@@ -634,8 +640,9 @@ def scan_js(text, path, allowlist, line_offset=0, framework_own=False):
 
     ``framework_own`` is True when the file lives inside tinymoon's own
     packaged assets (see _is_framework_own). For those files the native-control
-    patterns are suppressed: the framework legitimately creates the hidden
-    native <select> that backs createSelect. All other rules still apply.
+    patterns are suppressed: the framework legitimately creates the native
+    <select> that backs createSelect and the native <dialog> that backs
+    openModal. All other rules still apply.
     """
     out = []
     src = _strip_js_comments(text)
@@ -657,8 +664,9 @@ def scan_js(text, path, allowlist, line_offset=0, framework_own=False):
         _check_external_url(m.group(1), line_of(m.start()), path, allowlist, out)
 
     # Native-control creation is suppressed for tinymoon's own shipped modules
-    # (framework_own): they legitimately create the hidden native <select> that
-    # backs createSelect. Consumer files always fire.
+    # (framework_own): they legitimately create the native <select> that backs
+    # createSelect and the native <dialog> that backs openModal. Consumer files
+    # always fire.
     if not framework_own:
         for pat, what in (
             (_JS_EL_NATIVE_RE, lambda m: m.group(2)),
@@ -909,7 +917,7 @@ class _HTMLScanner(HTMLParser):
                     _check_external_url(
                         url, line, self._path, self._allowlist, local
                     )
-        if tag == "select":
+        if tag in ("select", "dialog"):
             local.append(
                 Violation(
                     self._path,

@@ -231,6 +231,7 @@ REPLACEMENTS = {
     "radio": "createRadio",
     "file": "createFileInput",
     "select": "createSelect",
+    "dialog": "openModal",
 }
 
 

@@ -16,6 +16,7 @@
     "file"
   ],
   "banned_native_tags": [
+    "dialog",
     "select"
   ],
   "source_exts": [
