@@ -30,6 +30,17 @@ describe("createSwitch", () => {
     expect(sw.el.getAttribute("aria-checked")).toBe("false");
   });
 
+  it("get() reports the current on/off state (parity with checkbox/radio)", async () => {
+    const { createSwitch } = await import("../../../assets/js/controls.js");
+    const sw = createSwitch({ label: "Toggle", value: true, onChange: () => {} });
+    expect(sw.get()).toBe(true);
+    sw.set(false);
+    expect(sw.get()).toBe(false);
+    // A click flips the state and get() reflects it.
+    sw.el.click();
+    expect(sw.get()).toBe(true);
+  });
+
   it("throws without label", async () => {
     const { createSwitch } = await import("../../../assets/js/controls.js");
     expect(() => createSwitch({ value: false })).toThrow("label is required");

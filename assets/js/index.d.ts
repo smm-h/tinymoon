@@ -53,6 +53,7 @@ export interface SwitchOpts {
 export interface SwitchInstance {
   el: HTMLElement;
   set(value: boolean): void;
+  get(): boolean;
   destroy(): void;
 }
 export function createSwitch(opts: SwitchOpts): SwitchInstance;

@@ -28,7 +28,7 @@ export function copyButton(getText, tipText) {
   return b;
 }
 
-// createSwitch({value, onChange, label}) → {el, set(v), destroy()}.
+// createSwitch({value, onChange, label}) → {el, set(v), get(), destroy()}.
 // A role="switch" button for instant-effect settings toggles. Not
 // form-participating. Throws without a label.
 export function createSwitch(opts) {
@@ -44,8 +44,9 @@ export function createSwitch(opts) {
     b.setAttribute("aria-checked", String(!!v));
   }
   set(value);
+  function get() { return b.classList.contains("on"); }
   function onClick() {
-    const v = !b.classList.contains("on");
+    const v = !get();
     set(v);
     onChange(v);
   }
@@ -54,7 +55,7 @@ export function createSwitch(opts) {
     b.removeEventListener("click", onClick);
     if (b.parentNode) b.parentNode.removeChild(b);
   }
-  return { el: b, set, destroy };
+  return { el: b, set, get, destroy };
 }
 
 // createSegmented({name, label, items: [{value, label, icon?, disabled?}],
