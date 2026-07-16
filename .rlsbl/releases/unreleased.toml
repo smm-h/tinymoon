@@ -1,9 +1,11 @@
 # Version bump type: patch, minor, major, hotfix, or prerelease
-bump = ""
+bump = "minor"
 # Short description of this release (required)
-description = ""
+description = "The augmentation release: forms, data display, state, realtime, and app-chrome primitive families; an isolation-boundary model (tm-embed, vendor quarantine) and expanded conformance enforcement; per-tier size budgets with subpath exports and typed barrels."
 # Optional context explaining why these changes were made
-context = ""
+context = """
+A coordinated framework build-out driven by real consumer needs: the widget families (inputs, slider, table, virtual list, tree, filters, feed, charts, drawer, palette, view factory), the L2 state story (store/bind/reconcile), realtime transports, the identity-surface doctrine with loads-vs-navigations re-scoping, the tm-embed boundary and hash-pinned vendor quarantine, the native-control ban expansion now that every replacement factory ships, portable conformance artifacts for non-Python consumers, and the package restructure into budgeted tiers (core frozen, widgets/state/chrome/controls tiers, five stylesheets, tokens.json). Validated end-to-end against a real consumer migration before release.
+"""
 # Pre-release identifier: alpha, beta, rc, or stable
 # preid = ""
 # Set to true to generate a blog post for this release
