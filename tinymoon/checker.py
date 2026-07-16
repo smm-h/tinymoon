@@ -28,13 +28,33 @@ no warning mode and no bypass:
   comments, and URLs in plain HTML prose. An optional allowlist file
   (tinymoon-allowlist.txt at the scanned dir root, one exact URL per
   line, # comments allowed) exempts exact matches.
-- native-control: no <select>, <dialog>, or <input type=checkbox|radio|file>
-  in HTML, and no JS creation of the same (el("select"...),
-  createElement("dialog"), .type = "checkbox" assignments,
-  setAttribute("type", "radio"), ...). tinymoon's own modules legitimately
-  create the native <select> and <dialog> that back createSelect and
-  openModal; the FRAMEWORK-OWN allowance (below) exempts those files, keyed
-  on location so a consumer's <dialog> always fires.
+- native-control: no native form/dialog controls in HTML, and no JS creation
+  of the same. The banned surface is:
+    * elements: <select>, <dialog>, <textarea>;
+    * <input type=...> for every type that has a shipped replacement factory:
+      checkbox, radio, file, range, text, password, email, url, search, tel,
+      number, time, date.
+  A bare <input> with NO type attribute (or an empty type=) also fires: the
+  HTML default for a typeless input is "text", so omitting the attribute must
+  not become a trivial evasion. Two input types stay LEGAL and never fire:
+    * type="hidden" -- it renders nothing, so it has no identity surface (the
+      datepicker/timepicker/combobox wrap a hidden input for form value
+      carriage); and
+    * type="color" -- there is NO replacement factory for a color input yet,
+      and the ban-ships-its-replacement charter gate forbids banning a control
+      with no migration target. When a color primitive ships, "color" joins the
+      ban here (this is the one documented FUTURE ban).
+  JS creation is caught for the element tags (el("select"...),
+  createElement("textarea"), ...) and for explicit type LITERALS
+  (.type = "email" assignments, setAttribute("type", "range"), ...); a bare
+  el("input")/createElement("input") with no literal type assignment is a
+  known JS bypass (see below). tinymoon's own modules legitimately create the
+  native controls that back its primitives -- the hidden <select>/<dialog> and
+  the VISIBLE native <input>/<textarea>/<input type=range|number> behind
+  createInput/createTextarea/createNumber/createSlider/createDatePicker/
+  createTimePicker/createSelect/openModal; the FRAMEWORK-OWN allowance (below)
+  exempts those files, keyed on location so a consumer's <dialog> or bare
+  <input> always fires.
 - title-attr: no title= attributes in HTML (SVG <title> child ELEMENTS are
   fine -- only the attribute is banned), and no JS `.title =` /
   setAttribute("title", ...) on elements. `document.title` is the page
@@ -83,8 +103,12 @@ The tm-embed BOUNDARY CONTRACT (provenance in HTML source):
 The FRAMEWORK-OWN allowance (native-control in tinymoon's own modules):
   tinymoon's own shipped modules legitimately create the native controls that
   back its primitives: the hidden native <select> behind createSelect (form
-  participation) and the native <dialog> behind openModal (focus trap, inert
-  background, top-layer, ::backdrop for free). The checker suppresses its JS
+  participation), the native <dialog> behind openModal (focus trap, inert
+  background, top-layer, ::backdrop for free), and the VISIBLE native controls
+  behind the styled-native factories -- the <input>/<textarea> behind
+  createInput/createTextarea, the <input type=number> behind createNumber, the
+  <input type=range> behind createSlider, and the text inputs behind the
+  datepicker/timepicker/combobox. The checker suppresses its JS
   native-control patterns for files whose resolved path lies WITHIN tinymoon's
   own packaged assets directory -- the same location assets_path() returns
   (REPO/assets when self-scanning the source repo, the installed
@@ -142,6 +166,16 @@ Known bypasses remaining for future work:
 - JS string concatenation: URLs built from string concatenation
   ("https://" + host) are not detected.
 - eval/Function: dynamically constructed code is not analyzed.
+- JS bare-input creation: a plain el("input")/createElement("input") with no
+  literal type assignment on the element is NOT flagged, even though a typeless
+  input renders as "text". The regex layer cannot correlate the creation site
+  with a later `.type = "hidden"` assignment on the same variable without flow
+  analysis, so flagging every bare el("input") would false-positive on the
+  legitimate hidden-input pattern (a consumer creating a hidden form field, and
+  the framework's own datepicker/timepicker/combobox). Explicit type literals
+  ARE caught; the tree-sitter rewrite will close the bare-input gap. Note this
+  is JS-only: in HTML a bare <input> IS flagged, because the element is fully
+  specified at one location (no type attribute == text, definitively).
 """
 
 import hashlib
@@ -177,7 +211,20 @@ QUARANTINE_DIRNAME = "third_party"
 PROVENANCE_FILENAME = "PROVENANCE.toml"
 _SHA256_RE = re.compile(r"[0-9a-fA-F]{64}")
 
-_BANNED_INPUT_TYPES = ("checkbox", "radio", "file")
+# Native <input type=...> values that are banned because each has a shipped
+# replacement factory (checkbox/radio/file -> createCheckbox/createRadio/
+# createFileInput; range -> createSlider; text/password/email/url/search/tel ->
+# createInput; number -> createNumber; time -> createTimePicker; date ->
+# createDatePicker). Deliberately EXCLUDED: "hidden" (renders nothing, no
+# identity surface) and "color" (no replacement factory yet -- the
+# ban-ships-its-replacement charter gate forbids banning it until a color
+# primitive ships; that is the one documented future ban). See the doctrine
+# header's native-control section. A typeless <input> defaults to "text", so it
+# fires too (handled at the scan site, not by adding "" here).
+_BANNED_INPUT_TYPES = (
+    "checkbox", "radio", "file", "range", "text", "password", "email", "url",
+    "search", "tel", "number", "time", "date",
+)
 
 # HTML attribute load/navigation semantics -- the single source of truth for
 # which attributes are RESOURCE LOADS (subject to external-url) and on which
@@ -588,15 +635,28 @@ _JS_WEBSOCKET_URL_RE = re.compile(
     r"""\bWebSocket\s*\(\s*(["'])([^"']+)\1"""
 )
 
-_JS_EL_NATIVE_RE = re.compile(r"""\bel\s*\(\s*(["'])(select|dialog)\1""")
+# The banned native element tag alternation. tests/test_charter.py and
+# scripts/gen_conformance_json.py derive the banned-native-tag set by extracting
+# this capture group from the two regexes below (the `[\w|]+` group), so growing
+# the alternation here automatically grows the charter mapping and rules.json.
+_JS_EL_NATIVE_RE = re.compile(r"""\bel\s*\(\s*(["'])(select|dialog|textarea)\1""")
 _JS_CREATE_NATIVE_RE = re.compile(
-    r"""\bcreateElement\s*\(\s*(["'])(select|dialog)\1""", re.IGNORECASE
+    r"""\bcreateElement\s*\(\s*(["'])(select|dialog|textarea)\1""", re.IGNORECASE
+)
+# Explicit input-type LITERAL assignments. The type alternation mirrors
+# _BANNED_INPUT_TYPES (bare el("input") with no literal type is a known bypass;
+# see the doctrine header). "hidden" and "color" are absent by design.
+_JS_TYPE_ALT = (
+    "checkbox|radio|file|range|text|password|email|url|search|tel|"
+    "number|time|date"
 )
 _JS_TYPE_ASSIGN_RE = re.compile(
-    r"""\.\s*type\s*=(?!=)\s*(["'])(checkbox|radio|file)\1"""
+    r"""\.\s*type\s*=(?!=)\s*(["'])(""" + _JS_TYPE_ALT + r""")\1"""
 )
 _JS_TYPE_SETATTR_RE = re.compile(
-    r"""\bsetAttribute\s*\(\s*(["'])type\1\s*,\s*(["'])(checkbox|radio|file)\2"""
+    r"""\bsetAttribute\s*\(\s*(["'])type\1\s*,\s*(["'])("""
+    + _JS_TYPE_ALT
+    + r""")\2"""
 )
 
 # Captures the trailing receiver identifier (greedy, so a leftmost match
@@ -917,7 +977,7 @@ class _HTMLScanner(HTMLParser):
                     _check_external_url(
                         url, line, self._path, self._allowlist, local
                     )
-        if tag in ("select", "dialog"):
+        if tag in ("select", "dialog", "textarea"):
             local.append(
                 Violation(
                     self._path,
@@ -926,16 +986,20 @@ class _HTMLScanner(HTMLParser):
                     f"native <{tag}> -- use the framework's own primitives",
                 )
             )
-        elif tag == "input" and attr_map.get("type", "").lower() in _BANNED_INPUT_TYPES:
-            local.append(
-                Violation(
-                    self._path,
-                    line,
-                    NATIVE_CONTROL,
-                    f'native <input type="{attr_map["type"].lower()}">'
-                    " -- use the framework's own primitives",
+        elif tag == "input":
+            # A typeless <input> (or an empty type=) defaults to "text" per the
+            # HTML spec, so omitting the attribute must not evade the ban.
+            itype = attr_map.get("type", "").strip().lower() or "text"
+            if itype in _BANNED_INPUT_TYPES:
+                local.append(
+                    Violation(
+                        self._path,
+                        line,
+                        NATIVE_CONTROL,
+                        f'native <input type="{itype}">'
+                        " -- use the framework's own primitives",
+                    )
                 )
-            )
         if not suppressed:
             self._out.extend(local)
 
