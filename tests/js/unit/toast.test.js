@@ -162,4 +162,31 @@ describe("toast", () => {
     const root = document.getElementById("tm-toast-root");
     expect(root.getAttribute("popover")).toBe("manual");
   });
+
+  // -- Action button --
+
+  it("an action toast renders one action button with the given label", () => {
+    toast("saved", "ok", { action: { label: "Undo", onClick: () => {} } });
+    const root = document.getElementById("tm-toast-root");
+    const actions = root.querySelectorAll(".toast-action");
+    expect(actions.length).toBe(1);
+    expect(actions[0].textContent).toBe("Undo");
+  });
+
+  it("an action forces persistence (no auto-dismiss past the default lifetime)", () => {
+    toast("saved", "ok", { action: { label: "Undo", onClick: () => {} } });
+    const root = document.getElementById("tm-toast-root");
+    // Well past the default ok lifetime (3200ms) + removal (200ms).
+    vi.advanceTimersByTime(10000);
+    expect(root.querySelectorAll(".toast").length).toBe(1);
+  });
+
+  it("clicking the action runs onClick and dismisses the toast", () => {
+    const onClick = vi.fn();
+    toast("saved", "ok", { action: { label: "Undo", onClick } });
+    const root = document.getElementById("tm-toast-root");
+    root.querySelector(".toast-action").click();
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(root.querySelectorAll(".toast").length).toBe(0);
+  });
 });
