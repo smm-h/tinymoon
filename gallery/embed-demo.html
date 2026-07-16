@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tinymoon embed demo (same-origin)</title>
+<link rel="stylesheet" href="../assets/css/tokens.css">
+<link rel="stylesheet" href="../assets/css/base.css">
+</head>
+<body style="padding: var(--space-16);">
+<h2>Framed same-origin content</h2>
+<p>This page is loaded inside a <strong>sandboxed iframe</strong> by the
+gallery's Embed route. It is served same-origin, so the gallery stays
+checker-clean while still demonstrating the isolation boundary. A real
+deployment would point the frame at a foreign network surface (a map, a
+dashboard, an OAuth page); those external cases live in the test fixtures,
+never in the shipped gallery.</p>
+<p><a href="#top">A navigation link inside the frame</a> stays inside the
+frame's own browsing context.</p>
+</body>
+</html>

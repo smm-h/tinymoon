@@ -10,6 +10,7 @@ const ROUTES = [
   ["forms", "Forms"],
   ["wiki", "Wiki"],
   ["custom", "Custom component"],
+  ["embed", "Embed"],
   ["content", "Content-first"],
 ];
 

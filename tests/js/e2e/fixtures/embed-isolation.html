@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>embed shadow isolation fixture</title>
+<!-- Full framework CSS so the light-DOM identity rules (incl. base.css's
+     global `* { border-radius: 0 !important }`) are active. The point of the
+     test is that NONE of it crosses into the shadow root, and none of the
+     shadow's garish CSS leaks back out. This fixture lives under tests/ and is
+     NOT scanned by the conformance checker, so it may use raw color literals
+     to make the leak assertions unambiguous. -->
+<link rel="stylesheet" href="../../../../assets/css/tokens.css">
+<link rel="stylesheet" href="../../../../assets/css/base.css">
+<link rel="stylesheet" href="../../../../assets/css/primitives.css">
+</head>
+<body style="padding: 2rem;">
+
+<!-- Light-DOM elements OUTSIDE the embed. -->
+<button id="outside-btn" class="btn" type="button">Outside framework button</button>
+<div id="outside-foreign" class="foreign">Outside element sharing the "foreign" class</div>
+<div id="mount"></div>
+
+<script type="module">
+import { createEmbed } from "../../../../assets/js/embed.js";
+
+// Shadow embed with deliberately garish foreign CSS. openForTest = OPEN root so
+// the test can reach in through the documented seam (instance.shadowRoot).
+const embed = createEmbed({
+  mode: "shadow",
+  label: "Foreign widget",
+  openForTest: true,
+  content:
+    "<style>"
+    + ".foreign {"
+    + "  background: #ff00ff;"        /* hotpink fill */
+    + "  color: #ffff00;"             /* yellow text */
+    + "  border: 6px solid #00ff00;"  /* lime border */
+    + "  border-radius: 18px;"        /* rounded — banned on the identity surface */
+    + "  font-family: cursive;"
+    + "  padding: 14px;"
+    + "}"
+    + "</style>"
+    + "<div class='foreign' id='inside-foreign'>Foreign vendor UI</div>"
+    + "<button class='btn' id='inside-btn' type='button'>Inside button</button>",
+});
+document.getElementById("mount").appendChild(embed.el);
+// Expose the instance so the test can use the openForTest shadowRoot seam.
+window.__embed = embed;
+</script>
+</body>
+</html>

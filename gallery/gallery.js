@@ -8,7 +8,7 @@
 
 import {
   $$, el, icon,
-  toast, setToastErrorHook, openModal, createSelect, openPopover,
+  toast, setToastErrorHook, openModal, createSelect, createEmbed, openPopover,
   registerCtx, registerCtxFooter,
   createSwitch, copyButton, kebabButton,
   createCheckbox, createRadio, createFileInput,
@@ -942,6 +942,67 @@ const FormsView = {
   refresh() {},
 };
 
+// ---------- embed view ----------
+
+// The isolation boundary. Both demos use SAME-ORIGIN / self-contained content
+// so the gallery stays checker-clean and auditor-clean; the genuinely external
+// cases (a foreign iframe src waived only inside the marker) live in the test
+// fixtures, never in the shipped gallery.
+const EmbedView = {
+  root: null,
+  built: false,
+
+  build() {
+    if (this.built) return;
+    this.built = true;
+
+    const p = panel("Isolation boundary", "compare");
+    const note = el("p", null,
+      "createEmbed wraps a FOREIGN surface off the identity surface. Two explicit modes: a sandboxed iframe for foreign network surfaces, and a shadow root for foreign DOM/CSS. The static checker and the runtime auditor both key on the data-tm-embed marker to waive the wrapped subtree.");
+    note.style.marginTop = "0";
+    note.style.color = "var(--text-dim)";
+    note.style.fontSize = "13px";
+    p.appendChild(note);
+
+    // iframe mode — same-origin content keeps the gallery checker-clean.
+    p.appendChild(el("div", "set-title", "iframe mode — sandboxed, same-origin"));
+    const iframeRow = el("div", "demo-row");
+    this.iframeEmbed = createEmbed({
+      mode: "iframe",
+      label: "Framed same-origin demo page",
+      src: "embed-demo.html",
+    });
+    this.iframeEmbed.el.style.width = "100%";
+    iframeRow.appendChild(this.iframeEmbed.el);
+    p.appendChild(iframeRow);
+
+    // shadow mode — deliberately garish foreign CSS, sealed inside the root so
+    // it cannot restyle the gallery around it. Named colors + a rounded corner
+    // that would be banned on the identity surface prove the isolation.
+    p.appendChild(el("div", "set-title", "shadow mode — foreign CSS, non-leaking"));
+    const shadowRow = el("div", "demo-row");
+    this.shadowEmbed = createEmbed({
+      mode: "shadow",
+      label: "Foreign widget (garish CSS, contained)",
+      content:
+        "<style>"
+        + ".foreign { font-family: cursive; background: hotpink; color: yellow;"
+        + " border: 6px dashed lime; border-radius: 18px; padding: 14px; }"
+        + "</style>"
+        + "<div class='foreign'>Foreign vendor UI. Its garish styling "
+        + "(hotpink fill, lime dashed border, rounded corners) is sealed inside "
+        + "the shadow root and cannot leak out to restyle the gallery.</div>",
+    });
+    this.shadowEmbed.el.style.width = "100%";
+    shadowRow.appendChild(this.shadowEmbed.el);
+    p.appendChild(shadowRow);
+
+    this.root.appendChild(p);
+  },
+
+  refresh() {},
+};
+
 // ---------- mount ----------
 
 const themeBtn = el("button", "icon-btn");
@@ -990,6 +1051,10 @@ shell = mountShell({
     custom: {
       title: "Custom component", icon: "wave", view: () => CustomView,
       tip: "Custom component -- a consumer-defined view following the contract, indistinguishable from a built-in.",
+    },
+    embed: {
+      title: "Embed", icon: "compare", view: () => EmbedView,
+      tip: "Embed -- the isolation boundary: a sandboxed iframe (same-origin demo) and a shadow root sealing garish foreign CSS.",
     },
     content: {
       title: "Content-first", icon: "docs",
