@@ -171,7 +171,7 @@ No overhead -- as a number, not a vibe. Shipped CSS, JS, and fonts have hard byt
 `tinymoon check` scans `.html`, `.css`, and `.js` files and enforces the framework's non-negotiables as hard errors:
 
 - **external-url** -- no external resource loads (no `http://`, `https://`, or `//host` URLs fetched into the page from HTML, CSS, or JS; form `action`/`formaction` count as loads). Plain `<a>`/`<area>` hyperlink navigations are legal
-- **native-control** -- no native `<select>`, `<dialog>`, or `<input type=checkbox|radio|file>`
+- **native-control** -- no native `<select>`, `<dialog>`, or `<input type=checkbox|radio|file>`; use the framework primitives (`createSelect`, `openModal`, ...). tinymoon's own modules that legitimately wrap these natives (e.g. `openModal` builds on a native `<dialog>`) are exempt via the framework-own allowance, keyed on location so a consumer's `<dialog>` always fires
 - **title-attr** -- no `title=` attributes (use the tooltip primitive)
 - **border-radius** -- no `border-radius` other than `0`/`0px`
 - **raw-color** -- no color literals outside `:root`/`html[data-theme]` token definitions
