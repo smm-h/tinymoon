@@ -1,0 +1,7 @@
+# Pinned, clean-passing quarantine: vendor.css is full of charter violations
+# (raw colors, a rounded corner) yet the scan passes because the file is
+# third-party bytes pinned by sha256.
+[[file]]
+path = "vendor.css"
+origin = "test fixture simulating a vendored third-party stylesheet"
+sha256 = "08ec7cb9ed94300ab767474876996e79e2f7f58cce4b426ba32048f48baf95cd"

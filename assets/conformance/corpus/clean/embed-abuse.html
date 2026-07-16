@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<body>
+<!--
+  ABUSE DOCUMENTATION (self-defeating by construction).
+
+  This subtree carries data-tm-embed yet wraps FIRST-PARTY-looking UI: a
+  native <select>, a raw-color inline style, a rounded corner, and a title=
+  tooltip. The checker PASSES all of it, because the marker declares the
+  content foreign and provably off the identity surface.
+
+  The abuse punishes only the abuser. Inside a real createEmbed this same
+  markup renders in a sandboxed <iframe> (its scripts, storage, and
+  same-origin access severed) or in a shadow root (the framework's identity
+  tokens never inherit across the boundary). So this "first-party" UI is
+  non-functional the moment it is actually wrapped: the switch never wires
+  up, the colors never resolve, the control never submits. Claiming the
+  boundary for first-party UI does not smuggle it past the identity surface;
+  it just breaks it. That is why the checker does not police the abuse -- the
+  isolation mechanics already do.
+-->
+<div data-tm-embed class="tm-embed">
+<div class="tm-embed-body" style="border-radius: 12px; color: #ff0000;">
+<select><option>one</option></select>
+<button type="button" title="looks native">Go</button>
+</div>
+</div>
+</body>
+</html>

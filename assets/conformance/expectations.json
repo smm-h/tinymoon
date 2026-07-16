@@ -1,0 +1,339 @@
+{
+  "_generated": "generated — do not edit, regenerate via scripts/gen_conformance_json.py",
+  "source": "tests/fixtures/ (corpus) scanned by tinymoon.checker",
+  "regenerate": "scripts/gen_conformance_json.py",
+  "roots": {
+    "clean": {
+      "clean.css": [],
+      "clean.html": [],
+      "clean.js": [],
+      "embed-abuse.html": [],
+      "embed-boundary.html": [],
+      "navigation.html": []
+    },
+    "violations": {
+      "border-radius.css": [
+        [
+          2,
+          "border-radius"
+        ],
+        [
+          5,
+          "border-radius"
+        ],
+        [
+          14,
+          "border-radius"
+        ]
+      ],
+      "border-radius.html": [
+        [
+          4,
+          "border-radius"
+        ]
+      ],
+      "border-radius.js": [
+        [
+          4,
+          "border-radius"
+        ],
+        [
+          5,
+          "border-radius"
+        ]
+      ],
+      "embed-boundary.html": [
+        [
+          7,
+          "external-url"
+        ]
+      ],
+      "external-url-attrs.html": [
+        [
+          4,
+          "external-url"
+        ],
+        [
+          5,
+          "external-url"
+        ],
+        [
+          6,
+          "external-url"
+        ],
+        [
+          7,
+          "external-url"
+        ],
+        [
+          8,
+          "external-url"
+        ],
+        [
+          8,
+          "external-url"
+        ]
+      ],
+      "external-url-importmap.html": [
+        [
+          4,
+          "external-url"
+        ]
+      ],
+      "external-url-template.js": [
+        [
+          4,
+          "external-url"
+        ],
+        [
+          5,
+          "external-url"
+        ]
+      ],
+      "external-url-ws.js": [
+        [
+          1,
+          "external-url"
+        ],
+        [
+          2,
+          "external-url"
+        ]
+      ],
+      "external-url.css": [
+        [
+          1,
+          "external-url"
+        ],
+        [
+          2,
+          "external-url"
+        ],
+        [
+          4,
+          "external-url"
+        ],
+        [
+          7,
+          "external-url"
+        ],
+        [
+          10,
+          "external-url"
+        ]
+      ],
+      "external-url.html": [
+        [
+          4,
+          "external-url"
+        ],
+        [
+          5,
+          "external-url"
+        ],
+        [
+          8,
+          "external-url"
+        ],
+        [
+          9,
+          "external-url"
+        ]
+      ],
+      "external-url.js": [
+        [
+          1,
+          "external-url"
+        ],
+        [
+          2,
+          "external-url"
+        ],
+        [
+          5,
+          "external-url"
+        ],
+        [
+          6,
+          "external-url"
+        ]
+      ],
+      "native-control.html": [
+        [
+          4,
+          "native-control"
+        ],
+        [
+          6,
+          "native-control"
+        ],
+        [
+          7,
+          "native-control"
+        ],
+        [
+          8,
+          "native-control"
+        ]
+      ],
+      "native-control.js": [
+        [
+          3,
+          "native-control"
+        ],
+        [
+          6,
+          "native-control"
+        ],
+        [
+          8,
+          "native-control"
+        ]
+      ],
+      "raw-color-extra-fns.css": [
+        [
+          1,
+          "raw-color"
+        ],
+        [
+          2,
+          "raw-color"
+        ],
+        [
+          3,
+          "raw-color"
+        ],
+        [
+          4,
+          "raw-color"
+        ],
+        [
+          5,
+          "raw-color"
+        ]
+      ],
+      "raw-color.css": [
+        [
+          5,
+          "raw-color"
+        ],
+        [
+          6,
+          "raw-color"
+        ],
+        [
+          9,
+          "raw-color"
+        ],
+        [
+          10,
+          "raw-color"
+        ],
+        [
+          14,
+          "raw-color"
+        ]
+      ],
+      "raw-color.html": [
+        [
+          4,
+          "raw-color"
+        ],
+        [
+          5,
+          "raw-color"
+        ]
+      ],
+      "raw-color.js": [
+        [
+          4,
+          "raw-color"
+        ],
+        [
+          5,
+          "raw-color"
+        ],
+        [
+          6,
+          "raw-color"
+        ]
+      ],
+      "title-attr.html": [
+        [
+          4,
+          "title-attr"
+        ],
+        [
+          5,
+          "title-attr"
+        ]
+      ],
+      "title-attr.js": [
+        [
+          4,
+          "title-attr"
+        ],
+        [
+          5,
+          "title-attr"
+        ],
+        [
+          7,
+          "title-attr"
+        ]
+      ]
+    },
+    "quarantine/mismatch": {
+      "third_party/vendor.css": [
+        [
+          1,
+          "unpinned-vendor"
+        ]
+      ]
+    },
+    "quarantine/missing": {
+      "third_party/PROVENANCE.toml": [
+        [
+          1,
+          "unpinned-vendor"
+        ]
+      ]
+    },
+    "quarantine/nomanifest": {
+      "third_party/vendor.css": [
+        [
+          1,
+          "unpinned-vendor"
+        ]
+      ]
+    },
+    "quarantine/outside": {
+      "vendor.css": [
+        [
+          2,
+          "raw-color"
+        ],
+        [
+          3,
+          "raw-color"
+        ],
+        [
+          4,
+          "raw-color"
+        ],
+        [
+          5,
+          "border-radius"
+        ]
+      ]
+    },
+    "quarantine/traversal": {
+      "third_party/PROVENANCE.toml": [
+        [
+          1,
+          "unpinned-vendor"
+        ]
+      ]
+    }
+  }
+}

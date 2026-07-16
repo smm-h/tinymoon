@@ -1,0 +1,12 @@
+# Path traversal: an entry tries to pin a file OUTSIDE the quarantine
+# directory. Rejected -- the quarantine can never launder a file elsewhere in
+# the tree. real.css is pinned normally and stays exempt.
+[[file]]
+path = "real.css"
+origin = "test fixture, properly pinned vendored stylesheet"
+sha256 = "08ec7cb9ed94300ab767474876996e79e2f7f58cce4b426ba32048f48baf95cd"
+
+[[file]]
+path = "../escape.css"
+origin = "test fixture attempting to pin a file outside the quarantine"
+sha256 = "08ec7cb9ed94300ab767474876996e79e2f7f58cce4b426ba32048f48baf95cd"

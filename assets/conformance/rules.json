@@ -1,0 +1,116 @@
+{
+  "_generated": "generated — do not edit, regenerate via scripts/gen_conformance_json.py",
+  "source": "tinymoon/checker.py",
+  "rules": [
+    "external-url",
+    "native-control",
+    "title-attr",
+    "border-radius",
+    "raw-color",
+    "encoding-error",
+    "unpinned-vendor"
+  ],
+  "banned_input_types": [
+    "checkbox",
+    "radio",
+    "file"
+  ],
+  "banned_native_tags": [
+    "select"
+  ],
+  "source_exts": [
+    ".css",
+    ".html",
+    ".js"
+  ],
+  "skip_dirs": [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "dist",
+    "node_modules"
+  ],
+  "allowlist": {
+    "filename": "tinymoon-allowlist.txt",
+    "match": "exact",
+    "note": "placed at the scanned directory root; one exact URL per line, '#' comments allowed; exempts only exact external-url load matches -- navigations are already legal and need no entry"
+  },
+  "quarantine": {
+    "dirname": "third_party",
+    "manifest": "PROVENANCE.toml",
+    "note": "files under the quarantine directory are exempt from all rules only when pinned by their exact sha256 in the manifest that sits beside them; every other state is an unpinned-vendor hard error"
+  },
+  "conformance_corpus_dirname": "conformance",
+  "attribute_semantics": {
+    "navigation_href_elements": [
+      "a",
+      "area"
+    ],
+    "namespace_identifier_attrs": [
+      "xmlns",
+      "xmlns:*"
+    ],
+    "title_attribute": {
+      "rule": "title-attr",
+      "note": "the title= ATTRIBUTE is banned; the SVG <title> child ELEMENT is fine"
+    },
+    "loads": [
+      {
+        "attr": "href",
+        "elements": "*",
+        "except_elements": [
+          "a",
+          "area"
+        ],
+        "value": "single-url",
+        "kind": "load",
+        "note": "a NAVIGATION (never a load) on <a>/<area>; a load on every other element"
+      },
+      {
+        "attr": "src",
+        "elements": "*",
+        "value": "single-url",
+        "kind": "load"
+      },
+      {
+        "attr": "action",
+        "elements": "*",
+        "value": "single-url",
+        "kind": "load"
+      },
+      {
+        "attr": "poster",
+        "elements": "*",
+        "value": "single-url",
+        "kind": "load"
+      },
+      {
+        "attr": "formaction",
+        "elements": "*",
+        "value": "single-url",
+        "kind": "load"
+      },
+      {
+        "attr": "data",
+        "elements": [
+          "object"
+        ],
+        "value": "single-url",
+        "kind": "load"
+      },
+      {
+        "attr": "ping",
+        "elements": "*",
+        "value": "space-separated-url-list",
+        "kind": "load"
+      },
+      {
+        "attr": "srcset",
+        "elements": "*",
+        "value": "srcset-candidate-list",
+        "kind": "load",
+        "note": "comma-separated candidates; the first token of each candidate is the URL"
+      }
+    ]
+  }
+}

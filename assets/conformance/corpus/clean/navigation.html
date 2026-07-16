@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<body>
+<!-- Navigations, not loads: a hyperlink the user follows fetches nothing
+     into this page. External href on <a>/<area> is always legal and needs
+     no allowlist. Contrast with load attributes (src, poster, <link href>,
+     form action) which remain banned. -->
+<a href="https://external.example.com/some/page">external link</a>
+<a href="//external.example.com/protocol-relative">protocol-relative link</a>
+<map name="m">
+<area shape="rect" coords="0,0,10,10" href="https://external.example.com/region" alt="region">
+</map>
+</body>
+</html>
