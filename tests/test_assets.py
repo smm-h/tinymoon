@@ -12,5 +12,6 @@ def test_assets_path_contents():
     assert (path / "css" / "base.css").is_file()
     assert (path / "css" / "shell.css").is_file()
     assert (path / "css" / "primitives.css").is_file()
+    assert (path / "css" / "widgets.css").is_file()
     assert (path / "js" / "index.js").is_file()
     assert list((path / "fonts").glob("*.woff2"))

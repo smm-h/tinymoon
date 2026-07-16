@@ -16,6 +16,7 @@ var requiredAssets = []string{
 	"css/base.css",
 	"css/shell.css",
 	"css/primitives.css",
+	"css/widgets.css",
 	"js/index.js",
 	"fonts/ibm-plex-sans-latin.woff2",
 	"fonts/space-grotesk-latin.woff2",

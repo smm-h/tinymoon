@@ -28,7 +28,7 @@ REPO = Path(__file__).resolve().parent.parent
 # this file, in review -- never as a side effect.
 #
 # Baselines (re-measured after Phase 8 module restructure):
-#   assets/css/*.css      (4 files)  -- measured elsewhere
+#   assets/css/*.css      (4 base sheets + widgets)  -- measured elsewhere
 #   assets/fonts/*.woff2  (4 files)  -- measured elsewhere
 #
 # JS is split into core and extras tiers:
@@ -69,17 +69,24 @@ _DEV_JS = frozenset({
     "auditor.js",
 })
 
-# CSS sheets: base, primitives, shell, tokens -- one row for now. Splitting a
-# sheet out with its own ceiling later means adding another "css" row.
+# CSS sheets: base, primitives, shell, tokens -- the four base sheets every
+# app links. The data-display widget layer (widgets.css) is split into its own
+# "widgets-css" row below, since apps that render no data widgets can omit it.
 _CSS_SHEETS = frozenset({
     "base.css", "primitives.css", "shell.css", "tokens.css",
 })
+
+# Data-display widget layer: badges, cards, stats + data tables, empty state.
+# Optional fifth sheet -- linked after primitives.css only by apps that render
+# these widgets. Measured baseline 4,881 bytes; ceiling is baseline + 25%.
+_WIDGETS_CSS = frozenset({"widgets.css"})
 
 BUDGETS = [
     BudgetRow("core-js", "js", _CORE_JS, 118_000, True),
     BudgetRow("extras-js", "js", _EXTRAS_JS, 11_000, True),
     BudgetRow("dev-js", "js", _DEV_JS, None, False),
     BudgetRow("css", "css", _CSS_SHEETS, 57_000, True),
+    BudgetRow("widgets-css", "css", _WIDGETS_CSS, 6_100, True),  # baseline 4,881
     BudgetRow("fonts", "font", "fonts/*.woff2", 122_000, True),
 ]
 
