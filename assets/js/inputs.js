@@ -167,8 +167,8 @@ export function createNumber(opts) {
   field.appendChild(labelEl);
   field.appendChild(row);
 
-  // Clamp a raw number to [min, max] and to the step grid relative to min (or
-  // 0). Rounding to the step precision avoids float noise like 0.30000000004.
+  // Clamp a raw number to the [min, max] range. Step-grid snapping is done by
+  // stepBy, not here; this only bounds the value.
   function clamp(n) {
     let v = n;
     if (min !== null) v = Math.max(min, v);

@@ -151,6 +151,13 @@ describe("createFileInput", () => {
     expect(input.name).toBe("doc");
   });
 
+  it("hidden input[type=file] carries the label as its accessible name", async () => {
+    const { createFileInput } = await import("../../../assets/js/controls.js");
+    const fi = createFileInput({ name: "doc", label: "Upload" });
+    const input = fi.el.querySelector("input");
+    expect(input.getAttribute("aria-label")).toBe("Upload");
+  });
+
   it("getFiles() returns a FileList", async () => {
     const { createFileInput } = await import("../../../assets/js/controls.js");
     const fi = createFileInput({ name: "doc", label: "Upload" });

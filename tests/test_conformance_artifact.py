@@ -174,3 +174,4 @@ def test_rules_json_metadata_and_shape():
     assert checker.UNPINNED_VENDOR in doc["rules"]
     assert doc["banned_input_types"] == list(checker._BANNED_INPUT_TYPES)
     assert "select" in doc["banned_native_tags"]
+    assert "dialog" in doc["banned_native_tags"]
