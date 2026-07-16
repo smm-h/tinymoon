@@ -148,6 +148,94 @@ describe("createTable", () => {
     expect(first.tabIndex).toBe(-1);
   });
 
+  it("rowClass appends a per-row class without replacing the framework classes", async () => {
+    const { createTable } = await import("../../../assets/js/table.js");
+    const t = createTable({
+      columns: COLS,
+      rows: [
+        { name: "a", size: 1, status: "err" },
+        { name: "b", size: 2, status: "ok" },
+      ],
+      rowClass: (row) => (row.status === "err" ? "row-err" : null),
+    });
+    const trs = t.el.querySelectorAll("tbody tr");
+    // The framework's own role is intact; the hook class is appended.
+    expect(trs[0].getAttribute("role")).toBe("row");
+    expect(trs[0].classList.contains("row-err")).toBe(true);
+    // null -> no class added (only whatever framework classes exist, none here).
+    expect(trs[1].classList.contains("row-err")).toBe(false);
+    expect(trs[1].className).toBe("");
+  });
+
+  it("rowClass supports a space-separated list of classes", async () => {
+    const { createTable } = await import("../../../assets/js/table.js");
+    const t = createTable({
+      columns: COLS,
+      rows: [{ name: "a", size: 1 }],
+      rowClass: () => "one two",
+    });
+    const tr = t.el.querySelector("tbody tr");
+    expect(tr.classList.contains("one")).toBe(true);
+    expect(tr.classList.contains("two")).toBe(true);
+  });
+
+  it("cellClass appends a per-cell class from the cell value and row", async () => {
+    const { createTable } = await import("../../../assets/js/table.js");
+    const t = createTable({
+      columns: [
+        { key: "name", label: "Name" },
+        { key: "size", label: "Size", cellClass: (v) => (v > 1 ? "big" : "small") },
+      ],
+      rows: [
+        { name: "a", size: 1 },
+        { name: "b", size: 5 },
+      ],
+    });
+    const sizeCells = t.el.querySelectorAll("tbody tr td:nth-child(2)");
+    // The framework's own role is intact; the hook class is appended.
+    expect(sizeCells[0].getAttribute("role")).toBe("gridcell");
+    expect(sizeCells[0].classList.contains("small")).toBe(true);
+    expect(sizeCells[1].classList.contains("big")).toBe(true);
+  });
+
+  it("re-applies rowClass and cellClass on setRows", async () => {
+    const { createTable } = await import("../../../assets/js/table.js");
+    const t = createTable({
+      columns: [
+        { key: "name", label: "Name" },
+        { key: "size", label: "Size", cellClass: (v) => (v > 1 ? "big" : "small") },
+      ],
+      rows: [{ name: "a", size: 1 }],
+      rowClass: (row) => (row.flag ? "flagged" : null),
+    });
+    // Initial render: no flag, size 1.
+    expect(t.el.querySelector("tbody tr").classList.contains("flagged")).toBe(false);
+    expect(t.el.querySelector("tbody tr td:nth-child(2)").classList.contains("small")).toBe(true);
+    // setRows re-renders wholesale and re-runs both hooks against the new rows.
+    t.setRows([{ name: "z", size: 9, flag: true }]);
+    const tr = t.el.querySelector("tbody tr");
+    expect(tr.classList.contains("flagged")).toBe(true);
+    expect(tr.querySelector("td:nth-child(2)").classList.contains("big")).toBe(true);
+  });
+
+  it("evaluates a function key exactly once per cell even with a cellClass hook", async () => {
+    const { createTable } = await import("../../../assets/js/table.js");
+    let calls = 0;
+    createTable({
+      columns: [
+        {
+          key: (row) => { calls += 1; return row.size; },
+          label: "Size",
+          cellClass: (v) => (v > 0 ? "pos" : "zero"),
+        },
+      ],
+      rows: [{ size: 3 }, { size: 4 }],
+    });
+    // Two rows -> the function key runs exactly twice (once per cell), not four
+    // times: the value is computed once and shared with format + cellClass.
+    expect(calls).toBe(2);
+  });
+
   it("destroy detaches the table", async () => {
     const { createTable } = await import("../../../assets/js/table.js");
     const parent = document.createElement("div");

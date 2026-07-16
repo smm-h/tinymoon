@@ -184,7 +184,7 @@ The data-display story: badges, stats, tables, trees, and charts. Optional -- li
 - `badge(text, variant?)` -- one-shot status chip (bare `<span>`, not a component)
 - `createStat(opts)` -- single metric tile with an optional trend delta
 - `renderStats(items)` -- a row of stat tiles from an array
-- `createTable(opts)` -- keyboard-navigable data table with client-side column sort
+- `createTable(opts)` -- keyboard-navigable data table with client-side column sort and `rowClass`/`cellClass` hooks
 - `createVirtualList(opts)` -- fixed-height windowed list for large datasets
 - `createTree(opts)` -- APG-pattern tree view with keyboard navigation
 - `createFilterBar(opts)` -- slot container for filter controls

@@ -32,10 +32,10 @@ function cellValue(col, row) {
 // Fill a cell element with a column's rendered content. `format(value, row)` may
 // return a string OR a live DOM Node; a Node is appended as-is (so a cell can
 // hold a badge, a button, any element). Absent a format, the raw value is
-// stringified into textContent.
-function fillCell(cell, col, row) {
+// stringified into textContent. `value` is precomputed by the caller so a
+// function `key` (and any cellClass hook) evaluates exactly once per cell.
+function fillCell(cell, col, row, value) {
   cell.textContent = "";
-  const value = cellValue(col, row);
   if (typeof col.format === "function") {
     const out = col.format(value, row);
     if (out instanceof Node) cell.appendChild(out);
@@ -49,18 +49,32 @@ function applyAlign(cell, align) {
   if (align) cell.style.textAlign = align;
 }
 
+// Append caller-supplied classes to a framework node WITHOUT replacing the
+// framework's own classes. A hook (rowClass / cellClass) may return a single
+// class, a space-separated list, or null/undefined/"" for "no class".
+function addClasses(node, cls) {
+  if (cls == null || cls === "") return;
+  for (const name of String(cls).split(/\s+/)) {
+    if (name) node.classList.add(name);
+  }
+}
+
 // createTable({columns, rows?, maxRows?, onSort?, caption?}) →
 //   {el, setRows(rows), destroy}
 //
 // columns: [{ key: string | (row)=>any, label, align?, sortable?,
-//             format?(value,row) -> string | Node }]
+//             format?(value,row) -> string | Node,
+//             cellClass?(value,row) -> string | null }]
 // maxRows: cap the rendered body; extra rows collapse into a "N more rows not
 //          shown" footer note (the data is not sorted or dropped, just unshown).
+// rowClass(row) -> string | null: an optional per-row class hook. Both hooks
+//   only APPEND to the framework's own tr/td classes — they never replace them;
+//   null/undefined/"" means no class.
 export function createTable(opts) {
   if (!opts || !Array.isArray(opts.columns)) {
     throw new Error("createTable: columns array is required");
   }
-  const { columns, rows = [], maxRows, onSort, caption } = opts;
+  const { columns, rows = [], maxRows, onSort, caption, rowClass } = opts;
 
   const table = el("table", "data tm-table");
   table.setAttribute("role", "grid");
@@ -115,12 +129,15 @@ export function createTable(opts) {
       const row = currentRows[r];
       const tr = el("tr");
       tr.setAttribute("role", "row");
+      if (typeof rowClass === "function") addClasses(tr, rowClass(row));
       columns.forEach((col, c) => {
         const td = el("td");
         td.setAttribute("role", "gridcell");
         td.dataset.col = String(c);
         applyAlign(td, col.align);
-        fillCell(td, col, row);
+        const value = cellValue(col, row);
+        fillCell(td, col, row, value);
+        if (typeof col.cellClass === "function") addClasses(td, col.cellClass(value, row));
         tr.appendChild(td);
       });
       tbody.appendChild(tr);

@@ -72,6 +72,12 @@ export interface TableColumn<Row = Record<string, unknown>> {
   sortable?: boolean;
   /** Render the cell. May return a string or a live DOM Node. */
   format?(value: unknown, row: Row): string | Node;
+  /**
+   * Optional per-cell class hook. The returned class(es) are APPENDED to the
+   * cell's framework classes, never replacing them; a space-separated string
+   * adds several. Return null/undefined/"" for no class.
+   */
+  cellClass?(value: unknown, row: Row): string | null | undefined;
 }
 
 export interface TableOptions<Row = Record<string, unknown>> {
@@ -89,6 +95,12 @@ export interface TableOptions<Row = Record<string, unknown>> {
   onSort?(key: string | ((row: Row) => unknown), direction: SortDirection): void;
   /** Optional table caption. */
   caption?: string;
+  /**
+   * Optional per-row class hook, applied at render and on setRows. The returned
+   * class(es) are APPENDED to the row's framework classes, never replacing them;
+   * a space-separated string adds several. Return null/undefined/"" for no class.
+   */
+  rowClass?(row: Row): string | null | undefined;
 }
 
 export interface Table<Row = Record<string, unknown>> {
