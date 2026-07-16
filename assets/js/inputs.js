@@ -13,10 +13,12 @@
 // location inside the packaged assets, not on any obfuscation).
 
 import { el } from "./dom.js";
+import { icon } from "./icons.js";
 
 // Text-like input types createInput accepts. checkbox / radio / file / range /
-// number / time / date all have (or will get) dedicated factories and are a
-// hard error here -- routing them through createInput would bypass those.
+// number / time / date all have dedicated factories and are a hard error here
+// -- routing them through createInput would bypass those. (number -> createNumber
+// below, in this same module.)
 const ALLOWED_TYPES = new Set(["text", "password", "email", "url", "search", "tel"]);
 
 let idCounter = 0;
@@ -111,6 +113,96 @@ export function createInput(opts) {
   field.appendChild(input);
 
   return wireTextField(input, field, opts);
+}
+
+// createNumber({name, label, value?, min?, max?, step?, placeholder?,
+//   required?, disabled?, onChange?, onInput?}) -> same instance contract as
+//   createInput (value getter, set(v), get(), focus(), setError(msg|null),
+//   destroy()). Wraps a real, visible <input type="number"> (native keyboard
+//   arrows and constraint validation stay intact; the browser spinners are
+//   hidden by base.css) framed by two custom stepper buttons that respect
+//   min/max/step. name + label are required (hard error).
+export function createNumber(opts) {
+  if (!opts || !opts.name) throw new Error("createNumber: name is required");
+  if (!opts.label) throw new Error("createNumber: label is required");
+
+  const id = nextId("tm-number");
+  const min = opts.min === undefined || opts.min === null ? null : Number(opts.min);
+  const max = opts.max === undefined || opts.max === null ? null : Number(opts.max);
+  const step = opts.step === undefined || opts.step === null ? 1 : Number(opts.step);
+
+  const field = el("div", "field");
+
+  const labelEl = el("label", null, opts.label);
+  labelEl.setAttribute("for", id);
+
+  const row = el("div", "tm-number");
+
+  const down = el("button", "icon-btn tm-number-step");
+  down.type = "button";
+  down.setAttribute("aria-label", "Decrease " + opts.label);
+  down.innerHTML = icon("minus");
+
+  const input = el("input", "tm-input tm-number-input");
+  input.type = "number";
+  input.id = id;
+  input.name = opts.name;
+  if (opts.value !== undefined) input.value = String(opts.value);
+  if (opts.placeholder) input.placeholder = opts.placeholder;
+  if (opts.required) input.required = true;
+  if (min !== null) input.min = String(min);
+  if (max !== null) input.max = String(max);
+  input.step = String(step);
+  if (opts.disabled) { input.disabled = true; down.disabled = true; }
+
+  const up = el("button", "icon-btn tm-number-step");
+  up.type = "button";
+  up.setAttribute("aria-label", "Increase " + opts.label);
+  up.innerHTML = icon("plus");
+  if (opts.disabled) up.disabled = true;
+
+  row.appendChild(down);
+  row.appendChild(input);
+  row.appendChild(up);
+  field.appendChild(labelEl);
+  field.appendChild(row);
+
+  // Clamp a raw number to [min, max] and to the step grid relative to min (or
+  // 0). Rounding to the step precision avoids float noise like 0.30000000004.
+  function clamp(n) {
+    let v = n;
+    if (min !== null) v = Math.max(min, v);
+    if (max !== null) v = Math.min(max, v);
+    return v;
+  }
+  function stepBy(dir) {
+    if (input.disabled) return;
+    const base = input.value === "" ? (min !== null ? min : 0) : Number(input.value);
+    if (Number.isNaN(base)) return;
+    const decimals = (String(step).split(".")[1] || "").length;
+    let next = clamp(base + dir * step);
+    next = Number(next.toFixed(decimals));
+    input.value = String(next);
+    // Fire the same events a keystroke would, so onInput/onChange and any
+    // consumer wiring see the stepper as an ordinary edit.
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  const onDown = () => stepBy(-1);
+  const onUp = () => stepBy(1);
+  down.addEventListener("click", onDown);
+  up.addEventListener("click", onUp);
+
+  const instance = wireTextField(input, field, opts);
+  // Extend teardown to also drop the stepper-button listeners.
+  const baseDestroy = instance.destroy;
+  instance.destroy = function () {
+    down.removeEventListener("click", onDown);
+    up.removeEventListener("click", onUp);
+    baseDestroy();
+  };
+  return instance;
 }
 
 // createTextarea({name, label, value?, placeholder?, required?, rows?,
