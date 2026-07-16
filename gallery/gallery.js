@@ -816,6 +816,8 @@ Form controls wrap real, visible native elements, so a plain \`<form>\` and the 
 
 \`createSlider({name, label, min, max})\` wraps a native \`input[type=range]\` in a \`.tm-slider\` frame — keyboard (arrows, Home, End) and the slider role come free from the element. It surfaces two callbacks: **onInput** fires live during a drag, **onChange** fires once on release.
 
+\`variant: "seek"\` is a **semantically distinct** slider, not a cosmetic chrome-blanking flag: an **invisible position scrubber laid over app-drawn visuals** (a waveform or timeline canvas). It renders the same native-range mechanics inside a \`.tm-slider.tm-slider-seek\` wrapper whose framework CSS makes the track and thumb visually transparent while keeping the **full-area hit target**, the **focus-visible outline**, and the **slider ARIA** (role, valuenow) intact. **The app owns the visual representation drawn underneath** — the seek variant only scrubs over it. An unknown variant is a hard error. See it live on the **Forms** route's overlay-scrubber demo.
+
 ### Fields, hints, and errors {#forms-field}
 
 \`createField({label, control, hint?})\` wraps any control — a slider, a select, a raw element — in a labeled field with an optional hint line. Both \`createField\` and the text controls expose \`.setError(msg)\`, which renders an inline \`.field-error\` and wires \`aria-invalid\` + \`aria-describedby\` on the control; \`.setError(null)\` clears it. Validation is native constraint validation plus this affordance — you own the logic.
@@ -1451,9 +1453,83 @@ const FormsView = {
 
     p.appendChild(form);
     this.root.appendChild(p);
+
+    // Seek slider (createSlider variant:"seek"): an invisible position scrubber
+    // laid over app-drawn visuals. THIS view draws the waveform strip on a
+    // canvas (every color pulled live via cssVar, never a literal); the seek
+    // slider sits on top as a transparent, full-area, keyboard-seekable hit
+    // target with the slider role + value intact. The app owns the visuals.
+    const seekPanel = panel("Seek slider — overlay scrubber", "wave");
+    seekPanel.appendChild(el("p", "hash",
+      "variant:\"seek\" renders the same native-range mechanics inside a transparent .tm-slider-seek wrapper — a full-area scrubber over app-drawn visuals. The waveform below is this view's canvas; the slider only seeks. Arrows/Home/End move it; the slider role and value stay intact."));
+
+    const strip = el("div", "seek-demo");
+    const waveCanvas = el("canvas", "seek-wave");
+    // The waveform is decorative chrome the app draws; the slider carries the
+    // accessible name, so the canvas is hidden from the accessibility tree.
+    waveCanvas.setAttribute("aria-hidden", "true");
+    strip.appendChild(waveCanvas);
+
+    let seekPos = 30;
+    const seekReadout = el("span", "hash", "position — 30");
+
+    const drawWave = () => {
+      const w = waveCanvas.clientWidth || 600;
+      const h = waveCanvas.clientHeight || 64;
+      waveCanvas.width = w * devicePixelRatio;
+      waveCanvas.height = h * devicePixelRatio;
+      const ctx = waveCanvas.getContext("2d");
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+      ctx.clearRect(0, 0, w, h);
+      const playedX = (seekPos / 100) * w;
+      // The already-seeked portion gets a soft accent wash (non-text signal).
+      ctx.fillStyle = cssVar("--accent-soft");
+      ctx.fillRect(0, 0, playedX, h);
+      // Fake waveform bars: accent up to the playhead, muted border past it.
+      for (let x = 4; x < w; x += 6) {
+        const amp = Math.abs(Math.sin(x / 22) * Math.cos(x / 60)) * (h / 2 - 4);
+        ctx.strokeStyle = x <= playedX ? cssVar("--accent") : cssVar("--border-2");
+        ctx.beginPath();
+        ctx.moveTo(x, h / 2 - amp);
+        ctx.lineTo(x, h / 2 + amp);
+        ctx.stroke();
+      }
+      // Playhead line at the current position.
+      ctx.strokeStyle = cssVar("--accent-hi");
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(playedX, 0);
+      ctx.lineTo(playedX, h);
+      ctx.stroke();
+    };
+
+    const seek = createSlider({
+      name: "seek-position",
+      label: "Seek position",
+      min: 0,
+      max: 100,
+      value: seekPos,
+      variant: "seek",
+      onInput: (v) => { seekPos = v; seekReadout.textContent = "position — " + v; drawWave(); },
+      onChange: (v) => toast("Seeked to " + v),
+    });
+    seek.el.dataset.testid = "seek-slider";
+    strip.appendChild(seek.el);
+
+    seekPanel.appendChild(strip);
+    const seekRow = el("div", "demo-row");
+    seekRow.style.marginTop = "var(--space-10)";
+    seekRow.appendChild(seekReadout);
+    seekPanel.appendChild(seekRow);
+    this.root.appendChild(seekPanel);
+
+    // The canvas needs layout to size against, so it paints in refresh() (run on
+    // every visit) and repaints on theme change like every other canvas here.
+    this._drawWave = drawWave;
+    window.addEventListener("tm:theme", drawWave);
   },
 
-  refresh() {},
+  refresh() { if (this._drawWave) this._drawWave(); },
 };
 
 // ---------- embed view ----------

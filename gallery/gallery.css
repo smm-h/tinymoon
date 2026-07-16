@@ -60,6 +60,14 @@
 .gal-row-warn td { background: var(--gold-soft); }
 .gal-row-err td { background: color-mix(in srgb, var(--red) 12%, transparent); }
 
+/* Seek-slider overlay demo: an app-drawn waveform strip with a transparent
+   variant:"seek" scrubber laid over its full area. The app owns positioning —
+   the framework's .tm-slider-seek only blanks the chrome; here we stretch it to
+   cover the canvas. */
+.seek-demo { position: relative; height: 64px; border: 1px solid var(--border-2); background: var(--surface); }
+.seek-demo .seek-wave { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.seek-demo .tm-slider-seek { position: absolute; inset: 0; }
+
 /* chrome demo (Phase 6A): grid slots + explanatory notes */
 .demo-note { color: var(--text-dim); font-size: var(--text-2xs); margin-top: 10px; }
 .grid-cell {

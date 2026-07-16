@@ -137,6 +137,31 @@ input[type="range"]:focus-visible { outline: 1px solid var(--accent); outline-of
 }
 .tm-slider input[type="range"]:disabled { opacity: 0.45; cursor: default; }
 
+/* Seek variant (createSlider variant:"seek"): an invisible position scrubber
+   the app lays over its OWN visuals (a waveform / timeline canvas). Same native
+   range mechanics — only the chrome is blanked. The track and thumb go visually
+   transparent while the input fills the wrapper for a full-area hit target; the
+   focus-visible outline and slider ARIA are inherited from the base rules above,
+   so keyboard seeking and screen-reader value announcements stay intact. The
+   app owns the visual representation drawn underneath. */
+.tm-slider-seek { position: relative; height: 100%; }
+.tm-slider-seek input[type="range"] {
+  height: 100%;
+  margin: 0;
+  border-color: transparent;
+  background: transparent;
+}
+.tm-slider-seek input[type="range"]::-webkit-slider-thumb {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.tm-slider-seek input[type="range"]::-moz-range-thumb {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
 .field { display: flex; flex-direction: column; gap: var(--space-5); }
 .field > label {
   font-family: var(--font-mono);

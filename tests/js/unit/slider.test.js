@@ -89,6 +89,54 @@ describe("createSlider", () => {
     expect(s.el.style.getPropertyValue("--tm-slider-fill")).toBe("50%");
   });
 
+  it("variant 'seek' adds the tm-slider-seek class alongside tm-slider", async () => {
+    const { createSlider } = await import("../../../assets/js/slider.js");
+    const s = createSlider({ name: "pos", label: "Position", min: 0, max: 100, variant: "seek" });
+    // The seek wrapper keeps the base .tm-slider identity AND adds the variant.
+    expect(s.el.classList.contains("tm-slider")).toBe(true);
+    expect(s.el.classList.contains("tm-slider-seek")).toBe(true);
+  });
+
+  it("the default slider has no variant class", async () => {
+    const { createSlider } = await import("../../../assets/js/slider.js");
+    const s = createSlider({ name: "v", label: "V", min: 0, max: 100 });
+    expect(s.el.classList.contains("tm-slider")).toBe(true);
+    expect(s.el.classList.contains("tm-slider-seek")).toBe(false);
+  });
+
+  it("throws on an unknown variant", async () => {
+    const { createSlider } = await import("../../../assets/js/slider.js");
+    expect(() => createSlider({ name: "v", label: "V", min: 0, max: 100, variant: "bogus" }))
+      .toThrow("unknown variant");
+  });
+
+  it("the seek variant keeps the same native range mechanics, ARIA, and value behavior", async () => {
+    const { createSlider } = await import("../../../assets/js/slider.js");
+    const live = [];
+    const s = createSlider({
+      name: "pos", label: "Position", min: 0, max: 100, step: 5, value: 20,
+      variant: "seek",
+      onInput: (v) => live.push(v),
+    });
+    const range = s.el.querySelector("input");
+    // Identical native-range identity: type, ARIA role (implicit via type=range),
+    // accessible name, min/max/step, and value all match the default variant.
+    expect(range.type).toBe("range");
+    expect(range.getAttribute("aria-label")).toBe("Position");
+    expect(range.min).toBe("0");
+    expect(range.max).toBe("100");
+    expect(range.step).toBe("5");
+    expect(range.value).toBe("20");
+    expect(s.value).toBe(20);
+    // Keyboard/drag mechanics are unchanged: an input event still reports live.
+    range.value = "45";
+    range.dispatchEvent(new Event("input"));
+    expect(live).toEqual([45]);
+    // set()/get() work identically.
+    s.set(60);
+    expect(s.get()).toBe(60);
+  });
+
   it("destroy removes the slider from its parent", async () => {
     const { createSlider } = await import("../../../assets/js/slider.js");
     const parent = document.createElement("div");

@@ -288,6 +288,18 @@ export function createNumber(opts: NumberOpts): InputInstance;
 
 // -- slider.js ----------------------------------------------------------------
 
+/**
+ * Slider identity. Omit for the default chromed slider (filled track + thumb).
+ * `"seek"` is a semantically distinct slider: an invisible position scrubber
+ * laid over app-drawn visuals (a waveform/timeline canvas). It renders the same
+ * native-range mechanics inside a `.tm-slider.tm-slider-seek` wrapper whose
+ * framework CSS blanks the track and thumb while keeping the full-area hit
+ * target, the focus-visible outline, and the slider ARIA (role/valuenow) intact.
+ * The app owns the visual representation drawn underneath — the seek variant is
+ * only the scrubber over it. Any unknown variant is a hard error.
+ */
+export type SliderVariant = "seek";
+
 export interface SliderOpts {
   name: string;
   label: string;
@@ -296,6 +308,8 @@ export interface SliderOpts {
   step?: number;
   value?: number;
   disabled?: boolean;
+  /** Slider identity; omit for the default chromed slider. See SliderVariant. */
+  variant?: SliderVariant;
   /** Fires once on commit (native "change" event). */
   onChange?: (value: number, event: Event) => void;
   /** Fires live during a drag (native "input" event). Extends the house

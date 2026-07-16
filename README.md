@@ -109,7 +109,7 @@ With npm, use bare specifiers by adding an import map:
 - `createFileInput(opts)` -- hidden-native file input facade (form-participating)
 - `createNumber(opts)` -- number stepper wrapping a native `input[type=number]` with custom +/- buttons (form-participating)
 - `createSegmented(opts)` -- segmented control with hidden radios (form-participating)
-- `createSlider(opts)` -- styled-native range slider (form-participating; onInput = live, onChange = commit)
+- `createSlider(opts)` -- styled-native range slider (form-participating; onInput = live, onChange = commit; `variant: "seek"` is an invisible position scrubber for app-drawn waveform/timeline visuals)
 - `createTabs(opts)` -- tab bar (not form-participating)
 - `createSelect(opts)` -- custom dropdown select
 - `createCombobox(opts)` -- typeahead combobox with debounced async `onFilter` and stale-response discard (form-participating)

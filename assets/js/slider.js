@@ -1,37 +1,33 @@
-// tinymoon — createSlider: a range control wrapped in a `.tm-slider` frame.
-// The native <input type="range"> supplies keyboard support (Arrow keys, Home,
-// End, Page Up/Down) and the slider ARIA role for free; the wrapper class is
-// the sanctioned framework construct, and the filled track / sharp thumb are
-// drawn entirely by CSS via the --tm-slider-fill custom property.
-//
-// Two callbacks, by convention:
-//   onInput  — fires live during a drag (the native "input" event)
-//   onChange — fires once on commit (the native "change" event)
-// This split extends tinymoon's usual single-onChange convention; it is the
-// one place where the input/commit distinction is worth surfacing.
-//
-// Written plainly: the conformance checker exempts native-element creation in
-// tinymoon's own shipped modules (framework-own allowance).
+// tinymoon — createSlider: a native <input type="range"> in a `.tm-slider`
+// frame (keyboard + slider ARIA come free; track/thumb are pure CSS via the
+// --tm-slider-fill property). Two callbacks: onInput fires live during a drag,
+// onChange once on commit. variant:"seek" is a distinct identity — an invisible
+// position scrubber over app-drawn visuals; see SliderVariant in index.d.ts and
+// the .tm-slider-seek CSS. The checker exempts native creation in own modules.
 
 import { el } from "./dom.js";
 
 let idCounter = 0;
 
-// createSlider({name, label, min, max, step?, value?, disabled?, onChange,
-//   onInput?}) -> {el, value (getter), set(v), get(), destroy()}.
-// name, label, min, and max are required (hard error).
+const VARIANTS = new Set(["seek"]);
+
+// createSlider({name, label, min, max, step?, value?, disabled?, variant?,
+//   onChange, onInput?}) -> {el, value (getter), set(v), get(), destroy()}.
 export function createSlider(opts) {
   if (!opts || !opts.name) throw new Error("createSlider: name is required");
   if (!opts.label) throw new Error("createSlider: label is required");
   if (opts.min === undefined || opts.min === null) throw new Error("createSlider: min is required");
   if (opts.max === undefined || opts.max === null) throw new Error("createSlider: max is required");
+  if (opts.variant !== undefined && !VARIANTS.has(opts.variant)) {
+    throw new Error("createSlider: unknown variant " + JSON.stringify(opts.variant));
+  }
 
   const min = Number(opts.min);
   const max = Number(opts.max);
   const step = opts.step !== undefined ? Number(opts.step) : 1;
   const id = "tm-slider-" + (++idCounter);
 
-  const wrap = el("div", "tm-slider");
+  const wrap = el("div", opts.variant === "seek" ? "tm-slider tm-slider-seek" : "tm-slider");
 
   const range = el("input", "tm-slider-input");
   range.type = "range";
@@ -40,8 +36,8 @@ export function createSlider(opts) {
   range.min = String(min);
   range.max = String(max);
   range.step = String(step);
-  // A slider is a single control: an aria-label is its accessible name. When
-  // composed inside createField, the field's <label for> associates as well.
+  // An aria-label is the single control's accessible name (createField also
+  // associates its <label for> when composed).
   range.setAttribute("aria-label", opts.label);
   range.value = String(opts.value !== undefined ? Number(opts.value) : min);
   if (opts.disabled) range.disabled = true;

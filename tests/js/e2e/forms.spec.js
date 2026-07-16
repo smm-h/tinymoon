@@ -212,6 +212,44 @@ test.describe("Forms view", () => {
     await expect(range).toHaveValue("100");
   });
 
+  test("seek-variant slider overlays the waveform strip and is keyboard-seekable", async ({ page }) => {
+    const view = page.locator("#tm-content section.view:not(.hidden)");
+    const strip = view.locator(".seek-demo");
+    await expect(strip).toBeVisible();
+    // The app-drawn waveform canvas is decorative (hidden from the a11y tree).
+    await expect(strip.locator("canvas.seek-wave")).toHaveAttribute("aria-hidden", "true");
+
+    // The seek variant is a .tm-slider that also carries the .tm-slider-seek
+    // identity class — same native-range mechanics, blanked chrome.
+    const wrap = view.locator("[data-testid='seek-slider']");
+    await expect(wrap).toHaveClass(/tm-slider/);
+    await expect(wrap).toHaveClass(/tm-slider-seek/);
+
+    // The overlay input is a real range with slider ARIA (role + accessible name).
+    const range = wrap.locator("input[type='range'][name='seek-position']");
+    await expect(range).toHaveAttribute("aria-label", "Seek position");
+    await expect(range).toHaveJSProperty("value", "30");
+
+    // Keyboard seeking works exactly like a chromed slider.
+    await range.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(range).toHaveValue("31");
+    await page.keyboard.press("Home");
+    await expect(range).toHaveValue("0");
+    await page.keyboard.press("End");
+    await expect(range).toHaveValue("100");
+  });
+
+  test("axe-core reports zero violations on the seek-slider overlay", async ({ page }) => {
+    const results = await new AxeBuilder({ page })
+      .include(".seek-demo")
+      .analyze();
+    expect(
+      results.violations,
+      "axe violations: " + results.violations.map((v) => v.id + ": " + v.description).join("; "),
+    ).toHaveLength(0);
+  });
+
   test("axe-core reports zero violations on the Phase 3A controls", async ({ page }) => {
     // Scoped to the `.field` wrappers, which in this view belong solely to the
     // controls this phase adds: createInput, createTextarea, and the
