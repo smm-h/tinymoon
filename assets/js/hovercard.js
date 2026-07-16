@@ -104,6 +104,21 @@ document.addEventListener("pointerdown", (e) => {
 
 document.addEventListener("scroll", (e) => {
   if (hcEl && hcEl.contains(e.target)) return;
+  // Keyboard-engaged hovercard: the trigger (or a focused element inside the
+  // hovercard) still holds focus. A scroll here is almost always the browser
+  // bringing the freshly-focused trigger into view -- scroll events dispatch
+  // asynchronously, so this fires just after the synchronous focusin that
+  // showed the card. Dismissing would tear the card down the instant a keyboard
+  // user tabs to an offscreen trigger, so keep it glued to the trigger instead.
+  // Hover-mode cards (trigger not focused) still dismiss: scrolling breaks the
+  // pointer relationship.
+  const active = document.activeElement;
+  const focusEngaged = hcEl && hcEl.classList.contains("show") && active && hcTarget &&
+    (active === hcTarget || hcTarget.contains(active) || hcEl.contains(active));
+  if (focusEngaged && hcTarget.isConnected) {
+    placeBelow(hcTarget, hcEl);
+    return;
+  }
   hideHovercard();
 }, true);
 
