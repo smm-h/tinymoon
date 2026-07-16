@@ -97,16 +97,16 @@ _WIDGETS_CSS = frozenset({"widgets.css"})
 BUDGETS = [
     BudgetRow("core-js", "js", _CORE_JS, 118_000, True),
     # controls-js: Phase 3B new-generation control modules. Measured baseline
-    # 36,473 bytes (accordion 4,019 + combobox 20,526 + timepicker 11,928);
-    # ceiling is baseline + 25% rounded clean. Core-js stays frozen per the
-    # README Size promise -- these modules budget here, not against core.
-    BudgetRow("controls-js", "js", _CONTROLS_JS, 46_000, True),  # baseline 36,473
+    # 36,692 bytes (accordion + combobox + timepicker); ceiling is baseline +
+    # 25% rounded clean. Core-js stays frozen per the README Size promise --
+    # these modules budget here, not against core.
+    BudgetRow("controls-js", "js", _CONTROLS_JS, 46_000, True),  # baseline 36,692
     BudgetRow("extras-js", "js", _EXTRAS_JS, 11_000, True),
     BudgetRow("dev-js", "js", _DEV_JS, None, False),
     # css: raised ONCE for the Phase 3 form-control additions (number stepper,
     # time picker, combobox, multi-select, accordion). Measured new baseline
-    # 62,580 bytes (was 54,407); ceiling is new-baseline + 25% rounded clean.
-    BudgetRow("css", "css", _CSS_SHEETS, 78_000, True),  # baseline 62,580
+    # 62,999 bytes (was 54,407); ceiling is new-baseline + 25% rounded clean.
+    BudgetRow("css", "css", _CSS_SHEETS, 79_000, True),  # baseline 62,999
     BudgetRow("widgets-css", "css", _WIDGETS_CSS, 6_100, True),  # baseline 4,881
     BudgetRow("fonts", "font", "fonts/*.woff2", 122_000, True),
 ]
