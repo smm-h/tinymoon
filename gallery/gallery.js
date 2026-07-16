@@ -23,7 +23,9 @@ import {
 } from "../assets/js/index.js";
 
 import {
-  api, post,
+  api, post, ApiError, setAuthHeader,
+  sse, socket,
+  fmtTime, relativeTime, liveRelativeTime,
   createSettings,
   renderDocMd,
   createWikiView,
@@ -557,32 +559,87 @@ const WidgetsView = {
     accPanel.appendChild(acc.el);
     this.root.appendChild(accPanel);
 
-    // net helpers (extras barrel: api + post)
+    // net helpers (extras barrel: api + post + ApiError + setAuthHeader)
     const netPanel = panel("API helpers (extras)", "docs");
     const netNote = el("p", null,
-      "The extras barrel exports api(path) and post(path, body, onError) for same-origin JSON APIs. No server is running, so these buttons demonstrate the error paths.");
+      "The extras barrel exports api(path, {signal?, headers?}) and post(path, body, onError?, {signal?, headers?}) for same-origin JSON APIs. A non-OK response throws an ApiError carrying {status, statusText, path, detail}; detail is surfaced from the body's detail OR error field. No API server is mounted, so these buttons hit paths the static server has no file for and demonstrate the ApiError path.");
     netNote.style.marginTop = "0";
     netNote.style.color = "var(--text-dim)";
     netNote.style.fontSize = "13px";
     netPanel.appendChild(netNote);
     const netRow = el("div", "demo-row");
+    // api(): a missing path 404s -> ApiError. We surface the structured fields.
     const getBtn = el("button", "btn", "api(\"/status\")");
     getBtn.addEventListener("click", () => {
-      api("/status").then((d) => toast("GET /status: " + JSON.stringify(d))).catch((e) => toast(e.message, "err"));
+      api("/status")
+        .then((d) => toast("GET /status: " + JSON.stringify(d)))
+        .catch((e) => {
+          if (e instanceof ApiError) {
+            toast("ApiError " + e.status + " on " + e.path + " — " + (e.detail || e.message), "err");
+          } else {
+            toast(e.message, "err");
+          }
+        });
     });
+    // post(): onError fires with the error's message BEFORE the promise rejects.
     const postBtn = el("button", "btn", "post(\"/echo\", {x: 1})");
     postBtn.addEventListener("click", () => {
-      post("/echo", { x: 1 }, (msg) => toast(msg, "err")).catch(() => {});
+      post("/echo", { x: 1 }, (msg, status) => toast("onError: " + status + " — " + msg, "err")).catch(() => {});
+    });
+    // abort: an AbortController cancels the in-flight request.
+    const abortBtn = el("button", "btn", "abort a request");
+    abortBtn.addEventListener("click", () => {
+      const ctrl = new AbortController();
+      const pending = api("/slow", { signal: ctrl.signal })
+        .then(() => toast("completed"))
+        .catch((e) => toast(e.name === "AbortError" ? "request aborted" : e.message, "err"));
+      ctrl.abort();
+      return pending;
     });
     netRow.appendChild(getBtn);
     netRow.appendChild(postBtn);
+    netRow.appendChild(abortBtn);
     netPanel.appendChild(netRow);
+    const authNote = el("p", "hash",
+      "This app registered a setAuthHeader() getter at boot, so every api()/post() call above now carries an Authorization header. The hook is single-registration (a second call is a hard error), mirroring setToastErrorHook. EventSource and WebSocket cannot carry custom headers, so the auth hook does not reach the realtime transports.");
+    authNote.style.marginTop = "0";
+    netPanel.appendChild(authNote);
     const mdDemo = el("div");
     mdDemo.style.marginTop = "var(--space-12)";
     mdDemo.appendChild(el("div", "set-title", "renderDocMd (extras)"));
     mdDemo.appendChild(renderDocMd("A doc paragraph with **bold**, `code`, and [a link](#/wiki/view-contract).\n\n- List item one\n- List item two"));
     netPanel.appendChild(mdDemo);
     this.root.appendChild(netPanel);
+
+    // formatting helpers (extras barrel: fmtTime + relativeTime + liveRelativeTime)
+    const fmtPanel = panel("Formatting (extras)", "clock");
+    const fmtNote = el("p", null,
+      "fmtTime(seconds) renders a media duration as m:ss or h:mm:ss. relativeTime(date) localizes a relative time via Intl.RelativeTimeFormat. liveRelativeTime(el, date) keeps an element's text fresh from ONE shared ticker. fmtTime returns here after being removed in 0.4.0.");
+    fmtNote.style.marginTop = "0";
+    fmtNote.style.color = "var(--text-dim)";
+    fmtNote.style.fontSize = "13px";
+    fmtPanel.appendChild(fmtNote);
+    const fmtList = el("div", "fmt-list");
+    for (const secs of [42, 90, 3661, 37230]) {
+      const r = el("div", "tok-row");
+      r.appendChild(el("div", "tok-name mono", "fmtTime(" + secs + ")"));
+      r.appendChild(el("div", "tok-val mono", fmtTime(secs)));
+      fmtList.appendChild(r);
+    }
+    for (const [label, ms] of [["5 minutes ago", Date.now() - 5 * 60000], ["in 2 hours", Date.now() + 2 * 3600000]]) {
+      const r = el("div", "tok-row");
+      r.appendChild(el("div", "tok-name mono", "relativeTime(" + label + ")"));
+      r.appendChild(el("div", "tok-val mono", relativeTime(ms)));
+      fmtList.appendChild(r);
+    }
+    const liveRow = el("div", "tok-row");
+    liveRow.appendChild(el("div", "tok-name mono", "liveRelativeTime (page opened)"));
+    const liveVal = el("div", "tok-val mono");
+    liveRelativeTime(liveVal, Date.now());
+    liveRow.appendChild(liveVal);
+    fmtList.appendChild(liveRow);
+    fmtPanel.appendChild(fmtList);
+    this.root.appendChild(fmtPanel);
   },
 
   refresh() {},
@@ -604,6 +661,12 @@ registerCtxFooter(() => [
 // toast error hook (extension point): mirror error toasts into the console
 // log — visible when pressing "Error toast" on the Widgets page.
 setToastErrorHook((msg, opts) => console.error("[gallery] error toast: " + msg, opts));
+
+// auth header hook (extension point): a single module-level getter whose
+// headers are merged into every api()/post() request. Demonstrated on the
+// Widgets page's API-helpers panel. Realtime transports (sse/socket) cannot
+// carry custom headers, so this hook intentionally does not reach them.
+setAuthHeader(() => ({ Authorization: "Bearer gallery-demo-token" }));
 
 // verbose demo setting: narrate setting changes
 window.addEventListener("tm:setting", (e) => {
@@ -749,6 +812,44 @@ tinymoon's state story is deliberately small — level **L2**: a store, a binder
 ### Why L2 and not a render layer {#state-l2}
 
 A declarative render layer would mean a diffing runtime, a component model, and a build step — all of which the charter forbids. L2 gives you the two things that actually hurt to hand-roll (targeted subscriptions and correct keyed list reordering) while keeping the mental model "build once, mutate in place." Everything stays vanilla ES modules with zero dependencies.
+`,
+  },
+  {
+    id: "realtime",
+    title: "Realtime: sse and socket",
+    md: `
+The extras barrel ships two realtime transports, thin wrappers over the browser's own primitives. Both take a **relative, same-origin path** and throw on an absolute or external URL — routing every connection through a relative path is what keeps consumer code conformance-clean (the checker bans external \`ws://\`/\`wss://\`/\`http(s)://\` literals), and the socket wrapper resolves the scheme and host from \`location\` so you never hand-write a \`wss://\` connection literal yourself. See it live on the **Realtime** route.
+
+### sse {#realtime-sse}
+
+\`sse(path, {onMessage, onError?, onOpen?, events?}) → {close()}\` wraps \`EventSource\`. Each \`message\` event's \`data\` is auto-parsed as JSON with a raw-string fallback, delivered as \`onMessage(data, event)\`; named server events are subscribed via the \`events\` map. Reconnection is **browser-native**: after a drop the browser reconnects and resends the last event id in the \`Last-Event-ID\` header, so a server that stamps events with \`id:\` can resume the stream.
+
+### socket {#realtime-socket}
+
+\`socket(path, {onMessage, onError?, onOpen?, onReconnect?, reconnect?, protocols?}) → {send(data), close()}\` wraps \`WebSocket\`. Incoming frames are auto-parsed (JSON, raw-string fallback); \`send()\` stringifies objects and passes strings through. On an **abnormal** close the socket reconnects with **framework-owned exponential backoff** — 1000ms first, ×2 each attempt, capped at 30000ms, reset on a successful open — unless you pass \`reconnect: false\`. \`onReconnect()\` fires only after a *successful* reconnection: resync (replay from a cursor, refetch a snapshot) is application-level, so the framework signals the moment and leaves the strategy to you. \`send()\` while the socket is not open **throws** — there is deliberately no silent buffering, so the same call behaves the same way every time.
+
+### Auth {#realtime-auth}
+
+\`setAuthHeader(getter)\` merges headers into every \`api()\`/\`post()\` request, but it does **not** reach the realtime transports: browser \`EventSource\` and \`WebSocket\` cannot carry custom request headers. Use a same-origin cookie or a query parameter for realtime auth — a browser-platform limitation stated plainly, not worked around.
+`,
+  },
+  {
+    id: "transcript-recipe",
+    title: "Recipe: a streaming transcript",
+    md: `
+This is a **recipe, not a widget**. tinymoon ships no chat/transcript component — and it does not need to, because the existing primitives compose into one. This recipe proves that the store, the reconciler, the realtime transports, and \`el()\` are *sufficient* to build a streaming-chat-transcript pattern, so you can write your own without waiting for a bespoke component. See it live on the **Transcript recipe** route (a synthetic ticker stands in for the server there, since the gallery has no backend).
+
+### The composition {#recipe-composition}
+
+- **Source** — \`socket(path, {onMessage})\` (or \`sse\`). Each message its \`onMessage\` delivers is appended to a store key. In the demo a \`setInterval\` plays the part of the socket.
+- **State** — a \`createStore({messages: []})\`. Appending is immutable: \`set("messages", [...prev, msg])\`. A **capped buffer** trims the oldest beyond a retention limit (the demo keeps 200 messages, a stand-in for a ~256KB document budget) so a long-running stream never grows the DOM without bound.
+- **Render** — \`reconcile(container, messages, m => m.id, {create, update})\`. The list is **append-only and keyed**, so reconcile reuses every existing node on each append and trim — node identity survives, which is what lets a collapsed block stay collapsed as new messages arrive.
+- **Blocks** — each message is a collapsible \`el()\` disclosure: a header \`<button aria-expanded>\` toggles a \`collapsed\` flag *in the store* (immutably), and \`update\` reflects it onto the node. Timestamps stay fresh via \`liveRelativeTime\`, one shared ticker across every block.
+- **Auto-scroll** — the viewport pins to the tail while you are at the bottom; scrolling up **pauses** the follow and reveals a jump-to-latest control, so incoming messages append without yanking your view.
+
+### Why a recipe and not a component {#recipe-why}
+
+A shipped transcript widget would bake in decisions — message shape, grouping, virtualization, retention — that belong to the app. The recipe keeps those in your hands while proving the primitives carry the weight. If you find yourself copying this recipe verbatim across apps, that is a signal to extract *your* component, styled and shaped for *your* domain — not a gap in the framework.
 `,
   },
   {
@@ -1344,6 +1445,259 @@ const StateView = {
   refresh() {},
 };
 
+// ---------- realtime view (sse / socket lifecycle) ----------
+
+// The realtime transports, live. There is no realtime server behind the
+// gallery, so the socket connects to a nonexistent same-origin endpoint on
+// purpose: the connection fails and the framework-owned backoff drives the
+// closed -> reconnecting lifecycle, which is exactly what this demo surfaces.
+// The socket is button-gated (it never auto-connects) so a route walk stays
+// free of connection-failure console noise.
+const RealtimeView = {
+  root: null,
+  built: false,
+  sock: null,
+  stream: null,
+  attempts: 0,
+
+  build() {
+    if (this.built) return;
+    this.built = true;
+
+    const p = panel("Realtime — sse · socket", "compare");
+    const note = el("p", null,
+      "sse(path, {onMessage}) wraps EventSource; socket(path, {onMessage, onReconnect?, reconnect?}) wraps WebSocket with framework-owned exponential backoff (1000ms, ×2, capped at 30000ms). Paths are relative/same-origin only — an absolute or external URL is a hard error, which is what keeps consumer code conformance-clean. No realtime server is mounted, so Connect targets a nonexistent endpoint to show the closed → reconnecting lifecycle.");
+    note.style.marginTop = "0";
+    note.style.color = "var(--text-dim)";
+    note.style.fontSize = "13px";
+    p.appendChild(note);
+
+    const status = el("div", "realtime-status mono", "idle");
+    status.dataset.testid = "realtime-status";
+    const setStatus = (s) => { status.textContent = s; };
+
+    const row = el("div", "demo-row");
+    const connectBtn = el("button", "btn primary", "Connect");
+    const disconnectBtn = el("button", "btn", "Disconnect");
+    const sseBtn = el("button", "btn", "SSE connect");
+    const sseStopBtn = el("button", "btn", "SSE close");
+    disconnectBtn.disabled = true;
+    sseStopBtn.disabled = true;
+
+    // sse() demo: EventSource against a nonexistent endpoint. The browser owns
+    // reconnection (it resends Last-Event-ID); onError surfaces the drop.
+    sseBtn.addEventListener("click", () => {
+      if (this.stream) return;
+      sseBtn.disabled = true;
+      sseStopBtn.disabled = false;
+      setStatus("SSE connecting… (browser-native reconnection)");
+      this.stream = sse("/sse/nonexistent-demo-stream", {
+        onMessage: (data) => setStatus("SSE message: " + JSON.stringify(data)),
+        onOpen: () => setStatus("SSE connected"),
+        onError: () => setStatus("SSE error — EventSource will retry automatically"),
+      });
+    });
+    sseStopBtn.addEventListener("click", () => {
+      if (this.stream) { this.stream.close(); this.stream = null; }
+      sseBtn.disabled = false;
+      sseStopBtn.disabled = true;
+      setStatus("SSE closed by user");
+    });
+
+    connectBtn.addEventListener("click", () => {
+      if (this.sock) return;
+      this.attempts = 0;
+      connectBtn.disabled = true;
+      disconnectBtn.disabled = false;
+      setStatus("connecting…");
+      this.sock = socket("/ws/nonexistent-demo-endpoint", {
+        onMessage: (data) => setStatus("message: " + JSON.stringify(data)),
+        onOpen: () => setStatus("connected"),
+        onError: () => {
+          this.attempts += 1;
+          setStatus("disconnected — reconnecting (attempt " + this.attempts + ", backoff grows to a 30s cap)");
+        },
+        onReconnect: () => setStatus("reconnected — a real app would resync here"),
+      });
+    });
+
+    disconnectBtn.addEventListener("click", () => {
+      if (this.sock) { this.sock.close(); this.sock = null; }
+      connectBtn.disabled = false;
+      disconnectBtn.disabled = true;
+      setStatus("closed by user (no further reconnects)");
+    });
+
+    row.appendChild(connectBtn);
+    row.appendChild(disconnectBtn);
+    row.appendChild(sseBtn);
+    row.appendChild(sseStopBtn);
+    p.appendChild(row);
+    p.appendChild(status);
+
+    const relNote = el("p", "hash",
+      "The socket's onReconnect() fires only after a SUCCESSFUL reconnection (never here — the endpoint does not exist) because resync is application-level: the framework signals the moment, you choose the strategy. send() while closed throws — there is no silent buffering.");
+    relNote.style.marginTop = "var(--space-12)";
+    p.appendChild(relNote);
+
+    this.root.appendChild(p);
+  },
+
+  refresh() {},
+};
+
+// ---------- transcript recipe (store · reconcile · realtime · primitives) ----
+
+// A RECIPE, not a shipped widget: it proves the existing primitives compose
+// into a streaming-chat-transcript pattern without a new component. A real app
+// would feed this from socket()/sse(); here a synthetic interval stands in for
+// the server so the gallery needs no backend. The store holds an append-only
+// keyed message list; reconcile() owns the DOM node identity; each block is a
+// collapsible el()-built disclosure; auto-scroll pins to the bottom and pauses
+// when you scroll up; the buffer is capped (oldest messages drop).
+const TRANSCRIPT_ROLES = ["system", "agent", "user"];
+const TRANSCRIPT_LINES = [
+  "Session opened. Wiring the store subscription and the reconciler.",
+  "How does the transcript stay pinned to the newest message?",
+  "It pins while you are at the bottom. Scroll up and it pauses, revealing a jump-to-latest control; new messages then append without yanking your view.",
+  "Streaming a longer block to show the collapsible body. Click any header to collapse or expand it — the store carries the collapsed flag, reconcile() reuses the node, so the toggle survives every reorder and trim. This is the whole point: no bespoke widget, just store + reconcile + el().",
+  "Buffer note: the recipe caps retained messages (here 200, a stand-in for a ~256KB document budget) and drops the oldest, so a long-running stream never grows the DOM without bound.",
+  "user acknowledged.",
+];
+
+// The append-only transcript store (module-level so the demo survives route
+// switches, exactly like the State route's store).
+const MAX_TRANSCRIPT_MESSAGES = 200;
+const transcriptStore = createStore({ messages: [] });
+
+const TranscriptView = {
+  root: null,
+  built: false,
+  timer: null,
+  seq: 0,
+  pinned: true, // auto-scroll follows the tail until the user scrolls up
+
+  build() {
+    if (this.built) return;
+    this.built = true;
+
+    const p = panel("Transcript recipe — store · reconcile · realtime", "docs");
+    const note = el("p", null,
+      "A RECIPE composing the primitives — not a shipped widget. A synthetic ticker stands in for a socket()/sse() feed. The store holds an append-only keyed list; reconcile() preserves node identity across appends and trims; each block is a collapsible el() disclosure; auto-scroll pins to the tail and pauses on scroll-up; the buffer is capped so the DOM never grows without bound.");
+    note.style.marginTop = "0";
+    note.style.color = "var(--text-dim)";
+    note.style.fontSize = "13px";
+    p.appendChild(note);
+
+    // The scroll viewport. Its scroll position drives the pin/pause state.
+    this.scroll = el("div", "transcript-scroll");
+    this.scroll.dataset.testid = "transcript-scroll";
+    this.list = el("div", "transcript-list");
+    this.scroll.appendChild(this.list);
+    this.scroll.addEventListener("scroll", () => {
+      const atBottom =
+        this.scroll.scrollHeight - this.scroll.scrollTop - this.scroll.clientHeight < 24;
+      this.pinned = atBottom;
+      this.resume.classList.toggle("hidden", this.pinned);
+    });
+    p.appendChild(this.scroll);
+
+    // Jump-to-latest affordance, shown only while paused (scrolled up).
+    this.resume = el("button", "btn ghost transcript-resume hidden", "Paused — jump to latest");
+    this.resume.dataset.testid = "transcript-resume";
+    this.resume.addEventListener("click", () => {
+      this.pinned = true;
+      this.scrollToTail();
+      this.resume.classList.add("hidden");
+    });
+    p.appendChild(this.resume);
+
+    this.root.appendChild(p);
+
+    this.offMessages = transcriptStore.subscribe("messages", () => this.render());
+    this.render();
+    this.start();
+  },
+
+  render() {
+    reconcile(this.list, transcriptStore.get("messages"), (m) => m.id, {
+      create: (m) => this.createBlock(m),
+      update: (node, m) => this.updateBlock(node, m),
+    });
+    if (this.pinned) this.scrollToTail();
+  },
+
+  createBlock(m) {
+    const block = el("div", "transcript-block role-" + m.role + (m.collapsed ? " collapsed" : ""));
+    block.dataset.testid = "transcript-block";
+    block.dataset.msgId = m.id;
+
+    const head = el("button", "transcript-head");
+    head.type = "button";
+    head.setAttribute("aria-expanded", String(!m.collapsed));
+    const chev = el("span", "transcript-chevron");
+    chev.innerHTML = icon("chevron");
+    head.appendChild(chev);
+    head.appendChild(el("span", "transcript-role", m.role));
+    const time = el("span", "transcript-time mono");
+    // liveRelativeTime keeps the timestamp fresh from one shared ticker.
+    this.offTimes = this.offTimes || [];
+    this.offTimes.push(liveRelativeTime(time, m.ts));
+    head.appendChild(time);
+    head.addEventListener("click", () => this.toggleCollapse(m.id));
+    block.appendChild(head);
+
+    const body = el("div", "transcript-body");
+    body.textContent = m.text;
+    block.appendChild(body);
+    return block;
+  },
+
+  updateBlock(node, m) {
+    node.classList.toggle("collapsed", !!m.collapsed);
+    node.querySelector(".transcript-head").setAttribute("aria-expanded", String(!m.collapsed));
+  },
+
+  // Toggle a message's collapsed flag immutably (new object + new array), so
+  // the store emits and reconcile() updates in place.
+  toggleCollapse(id) {
+    const next = transcriptStore.get("messages").map(
+      (m) => (m.id === id ? { ...m, collapsed: !m.collapsed } : m),
+    );
+    transcriptStore.set("messages", next);
+  },
+
+  scrollToTail() {
+    this.scroll.scrollTop = this.scroll.scrollHeight;
+  },
+
+  // The synthetic source: append a message, trimming to the cap. In a real app
+  // this body is an onMessage handler from socket()/sse().
+  start() {
+    this.stop();
+    this.timer = setInterval(() => {
+      const n = ++this.seq;
+      const msg = {
+        id: "m" + n,
+        role: TRANSCRIPT_ROLES[n % TRANSCRIPT_ROLES.length],
+        text: "#" + n + " · " + TRANSCRIPT_LINES[n % TRANSCRIPT_LINES.length],
+        ts: Date.now(),
+        collapsed: false,
+      };
+      const next = [...transcriptStore.get("messages"), msg];
+      // Capped buffer: drop the oldest beyond the retention limit.
+      if (next.length > MAX_TRANSCRIPT_MESSAGES) next.splice(0, next.length - MAX_TRANSCRIPT_MESSAGES);
+      transcriptStore.set("messages", next);
+    }, 600);
+  },
+
+  stop() {
+    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+  },
+
+  refresh() {},
+};
+
 // ---------- mount ----------
 
 const themeBtn = el("button", "icon-btn");
@@ -1396,6 +1750,14 @@ shell = mountShell({
     state: {
       title: "State", icon: "faders", view: () => StateView,
       tip: "State -- the L2 state story live: a store, bound widgets, and a keyed reconciled list, all mutating in place. No declarative render layer.",
+    },
+    realtime: {
+      title: "Realtime", icon: "compare", view: () => RealtimeView,
+      tip: "Realtime -- sse() and socket() wrappers, live: connect to a nonexistent endpoint to watch the framework-owned reconnect backoff drive the closed/reconnecting lifecycle.",
+    },
+    transcript: {
+      title: "Transcript recipe", icon: "docs", view: () => TranscriptView,
+      tip: "Transcript recipe -- store + reconcile + realtime + primitives composed into a streaming-chat-transcript pattern: append-only keyed list, collapsible blocks, auto-scroll with pause-on-scroll-up, capped buffer. A recipe, not a widget.",
     },
     embed: {
       title: "Embed", icon: "compare", view: () => EmbedView,
