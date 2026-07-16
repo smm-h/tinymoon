@@ -217,6 +217,14 @@ export function mountShell(config) {
   let currentRoute = null;
   let currentHash = null;
 
+  // mountView: resolve + first-mount root + build.
+  function mountView(spec) {
+    const view = resolveView(spec);
+    if (!view.root) { view.root = el("section", "view hidden"); content.appendChild(view.root); }
+    view.build();
+    return view;
+  }
+
   function route() {
     const raw = location.hash.replace(/^#\//, "") || defaultRoute;
     if (currentHash === raw) return;
@@ -253,12 +261,7 @@ export function mountShell(config) {
     });
     setTitle(r.title, "");
     $$(".view", content).forEach((v) => v.classList.add("hidden"));
-    const view = resolveView(r.view);
-    if (!view.root) {
-      view.root = el("section", "view hidden");
-      content.appendChild(view.root);
-    }
-    view.build();
+    const view = mountView(r.view);
     if (sub && view.setSub) view.setSub(sub);
     view.root.classList.remove("hidden");
     if (!sameView) {
@@ -275,16 +278,10 @@ export function mountShell(config) {
     if (onRoute) onRoute(name, sub || null);
   }
 
-  // Eager routes: create the root and build() at mount (hidden). build() is
-  // idempotent, so the router's build() on first visit is a no-op.
+  // Eager routes: build the view (hidden) at mount. build() is idempotent, so
+  // the router's build() on first visit is a no-op.
   for (const [, r] of Object.entries(routes)) {
-    if (!r.eager) continue;
-    const view = resolveView(r.view);
-    if (!view.root) {
-      view.root = el("section", "view hidden");
-      content.appendChild(view.root);
-    }
-    view.build();
+    if (r.eager) mountView(r.view);
   }
 
   window.addEventListener("hashchange", route);

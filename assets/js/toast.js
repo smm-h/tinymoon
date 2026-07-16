@@ -106,9 +106,18 @@ export function toast(msg, kind, opts) {
 
   promoteIfNeeded(root);
 
-  // Resolve duration: explicit 0 = persistent; falsy but not 0 = default.
+  // opts.action = {label, onClick}: a persistent action button; acting dismisses.
+  const action = opts && opts.action;
+  if (action) {
+    const ab = el("button", "toast-action", action.label);
+    ab.type = "button";
+    ab.addEventListener("click", () => { action.onClick(); removeToast(entry); });
+    t.insertBefore(ab, dismiss);
+  }
+
+  // Resolve duration: explicit 0, or an action, = persistent; falsy non-0 = default.
   const rawDuration = opts && opts.duration;
-  const persistent = rawDuration === 0;
+  const persistent = rawDuration === 0 || !!action;
   const life = persistent ? 0 : (rawDuration || (isErr ? 5200 : 3200));
 
   function startFade() {
