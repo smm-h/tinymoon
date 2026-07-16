@@ -8,10 +8,14 @@
 // cssVar — read a live CSS custom property off :root
 // ---------------------------------------------------------------------------
 
-// cssVar(name) → the trimmed computed value of a CSS custom property on
-// :root. Canvas rendering and layout math pull live token values through this.
-export function cssVar(name) {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+// cssVar(name, scope?) → the trimmed computed value of a CSS custom property.
+// Canvas rendering and layout math pull live token values through this. By
+// default the property is read off :root (documentElement), where the token
+// layer lives; pass an optional `scope` element to resolve a property against
+// a different subtree (e.g. an element hosting a foreign shadow root, whose
+// tokens may differ). Omitting `scope` preserves the historical behavior.
+export function cssVar(name, scope) {
+  return getComputedStyle(scope || document.documentElement).getPropertyValue(name).trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -85,16 +89,25 @@ export function placeBelow(anchor, panel, opts) {
 // ensureRoot — lazy singleton root elements on document.body
 // ---------------------------------------------------------------------------
 
-// ensureRoot(id, attrs?) → gets or creates a div#id on document.body. The
+// ensureRoot(id, attrs?, host?) → gets or creates a div#id inside `host`. The
 // optional attrs object sets attributes (e.g. {role: "menu"}) on every call,
 // whether the element is freshly created or already exists. This guarantees
 // required attributes are present even when an earlier caller omitted them.
-export function ensureRoot(id, attrs) {
-  let node = document.getElementById(id);
+//
+// `host` defaults to document.body (the historical behavior). Pass a different
+// host element or shadow root to scope a singleton root into an isolated
+// subtree — the lookup is scoped to that host, so two hosts can each own an
+// independent root with the same id. When host is document.body the fast
+// document-level getElementById path is used, keeping existing callers exact.
+export function ensureRoot(id, attrs, host) {
+  const parent = host || document.body;
+  let node = parent === document.body
+    ? document.getElementById(id)
+    : parent.querySelector('[id="' + id + '"]');
   if (!node) {
     node = document.createElement("div");
     node.id = id;
-    document.body.appendChild(node);
+    parent.appendChild(node);
   }
   if (attrs) {
     for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);

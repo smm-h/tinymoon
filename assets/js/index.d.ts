@@ -20,10 +20,16 @@ export function registerIcons(icons: Record<string, string>): void;
 
 // -- kernel.js ----------------------------------------------------------------
 
-/** Read a CSS custom property from :root. */
-export function cssVar(name: string): string;
-/** Create or return a singleton root element with the given id. */
-export function ensureRoot(id: string, attrs?: Record<string, string>): HTMLElement;
+/** Read a CSS custom property. Defaults to :root; pass `scope` to resolve it
+ * against a different element (e.g. a shadow host). */
+export function cssVar(name: string, scope?: Element): string;
+/** Create or return a singleton root element with the given id, inside `host`
+ * (defaults to document.body; pass an element or shadow root to scope it). */
+export function ensureRoot(
+  id: string,
+  attrs?: Record<string, string>,
+  host?: Element | ShadowRoot,
+): HTMLElement;
 /** Position `panel` below `anchor`, flipping above if clipped. */
 export function placeBelow(
   anchor: HTMLElement,

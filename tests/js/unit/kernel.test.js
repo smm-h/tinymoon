@@ -174,6 +174,24 @@ describe("kernel ensureRoot", () => {
     expect(node.getAttribute("role")).toBe("menu");
     node.remove();
   });
+
+  it("creates the root inside a custom host and scopes the lookup to it", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const node = ensureRoot("tm-scoped-root", null, host);
+    // Created inside the host, not on document.body.
+    expect(node.parentElement).toBe(host);
+    // Second call with the same host returns the same node (scoped lookup).
+    expect(ensureRoot("tm-scoped-root", null, host)).toBe(node);
+    // A different host owns an independent root with the same id.
+    const other = document.createElement("div");
+    document.body.appendChild(other);
+    const otherNode = ensureRoot("tm-scoped-root", null, other);
+    expect(otherNode).not.toBe(node);
+    expect(otherNode.parentElement).toBe(other);
+    host.remove();
+    other.remove();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -193,5 +211,15 @@ describe("kernel cssVar", () => {
     document.documentElement.style.setProperty("--tm-test-token", "42px");
     expect(cssVar("--tm-test-token")).toBe("42px");
     document.documentElement.style.removeProperty("--tm-test-token");
+  });
+
+  it("reads a CSS custom property from a custom scope element", () => {
+    const scope = document.createElement("div");
+    scope.style.setProperty("--tm-scoped-token", "7rem");
+    document.body.appendChild(scope);
+    // The property is only defined on the scope element, not on :root.
+    expect(cssVar("--tm-scoped-token", scope)).toBe("7rem");
+    expect(cssVar("--tm-scoped-token")).toBe("");
+    scope.remove();
   });
 });
