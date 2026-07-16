@@ -66,6 +66,14 @@ import {
   createWikiView,
 } from "tinymoon/extras";
 
+// -- state barrel ("tinymoon/state") ------------------------------------------
+
+import {
+  createStore,
+  bind as bindStore,
+  reconcile,
+} from "tinymoon/state";
+
 // Reference every import so the fixture is a genuine consumer. `unknownRef`
 // swallows values without exercising their behavior; the typed calls below do
 // the real checking.
@@ -81,6 +89,7 @@ ref(
   createAccordion, cssVar, ensureRoot, placeBelow, registerCopyable,
   unregisterCopyable, getCopyData, mountShell,
   api, post, createSettings, renderDocMd, createWikiView,
+  createStore, bindStore, reconcile,
 );
 
 // -- exercise a handful of typed calls (core) ---------------------------------
@@ -224,6 +233,42 @@ const compact: boolean = settings.get("compact");
 settings.set("theme", "light");
 settings.applyTheme();
 ref(theme, compact);
+
+// -- exercise a handful of typed calls (state) --------------------------------
+
+const store = createStore({ count: 0, label: "idle" });
+const count: number = store.get("count");
+store.set("count", 1);
+store.update("count", (n: number) => n + 1);
+const off = store.subscribe("count", (value: number, prev: number, key: "count" | "label") => ref(value, prev, key));
+off();
+const offAny = store.subscribe(null, (value, prev, key) => ref(value, prev, key));
+offAny();
+const doubled = store.select((snap) => snap.count * 2);
+const doubledNow: number = doubled.get();
+const offSel = doubled.subscribe((p: number) => ref(p));
+offSel();
+const snap = store.snapshot();
+ref(count, doubledNow, snap.label);
+
+// bind a store key to a widget's .set(v); unbind on teardown.
+const boundVolume = createSlider({ name: "vol", label: "Vol", min: 0, max: 100, value: 0 });
+const unbindVolume = bindStore(createStore({ vol: 10 }), "vol", boundVolume);
+unbindVolume();
+
+// reconcile a keyed list into a container.
+const listHost: HTMLElement = el("div");
+const nodes = reconcile(
+  listHost,
+  [{ id: "a", label: "A" }, { id: "b", label: "B" }],
+  (item) => item.id,
+  {
+    create: (item) => el("div", "row", item.label),
+    update: (node, item) => { node.textContent = item.label; },
+    remove: (node, item) => ref(node, item),
+  },
+);
+ref(nodes);
 
 const docBody: HTMLElement = renderDocMd("### Intro {#intro}\n\nHello.");
 const wiki = createWikiView({

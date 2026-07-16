@@ -395,3 +395,45 @@ describe("api-convention: extras barrel coverage", () => {
     expect(exportNames).toEqual([...EXTRAS_EXPORTS].sort());
   });
 });
+
+// ---------------------------------------------------------------------------
+// State barrel coverage
+// ---------------------------------------------------------------------------
+//
+// The state story (store.js via the state.js barrel) is classified separately
+// from the component convention. createStore, bind, and reconcile are NOT
+// widget components: they follow no createX(opts) -> {el, ...} shape, carry no
+// .el, and manage no widget instance. createStore returns a plain store object
+// (get/set/update/subscribe/select/snapshot), bind returns an unbind function,
+// and reconcile returns an array of nodes. They are the state-management
+// counterpart to the NOT_COMPONENTS utilities in the core barrel — permanent,
+// sanctioned non-component exports that will never be reshaped into components.
+
+const STATE_EXPORTS = [
+  // store.js — reactive store factory, store↔widget binder, keyed reconciler
+  "createStore", "bind", "reconcile",
+];
+
+describe("api-convention: state barrel coverage", () => {
+  it("state barrel exports exactly the expected names", async () => {
+    const state = await import("../../../assets/js/state.js");
+    const exportNames = Object.keys(state).sort();
+    expect(exportNames).toEqual([...STATE_EXPORTS].sort());
+  });
+
+  it("state exports are not widget components (no .el instances)", async () => {
+    const { createStore, bind, reconcile } = await import("../../../assets/js/state.js");
+    const store = createStore({ a: 1 });
+    // A plain store object, not a component instance.
+    expect(store.el).toBeUndefined();
+    expect(typeof store.get).toBe("function");
+    expect(typeof store.set).toBe("function");
+    expect(typeof store.subscribe).toBe("function");
+    // bind returns an unbind function, not an instance.
+    const unbind = bind(store, "a", { set() {} });
+    expect(typeof unbind).toBe("function");
+    unbind();
+    // reconcile is a function; it returns an array, not an instance.
+    expect(typeof reconcile).toBe("function");
+  });
+});

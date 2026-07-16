@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import * as core from "../../../assets/js/index.js";
 import * as extras from "../../../assets/js/extras.js";
+import * as state from "../../../assets/js/state.js";
 
 // Type-declaration parity guard.
 //
@@ -39,5 +40,11 @@ describe("type declaration parity", () => {
     const declared = readDecl("extras.d.ts");
     const missing = Object.keys(extras).filter((n) => !declared.has(n));
     expect(missing, `extras exports missing from extras.d.ts: ${missing.join(", ")}`).toEqual([]);
+  });
+
+  it("every runtime export of the state barrel is declared in state.d.ts", () => {
+    const declared = readDecl("state.d.ts");
+    const missing = Object.keys(state).filter((n) => !declared.has(n));
+    expect(missing, `state exports missing from state.d.ts: ${missing.join(", ")}`).toEqual([]);
   });
 });

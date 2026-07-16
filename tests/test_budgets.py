@@ -34,6 +34,7 @@ REPO = Path(__file__).resolve().parent.parent
 # JS is split into core and extras tiers:
 #   Core:   93,984 bytes (15 modules)  -- ceiling 118,000
 #   Extras:  8,407 bytes (4 modules)   -- ceiling 11,000
+#   State:  10,281 bytes (2 modules)   -- ceiling 13,000
 #
 # Each row is a BudgetRow:
 #   name     -- human-readable tier/sheet name; names the test parameter
@@ -75,6 +76,14 @@ _EXTRAS_JS = frozenset({
     "extras.js", "net.js", "settings.js", "wiki.js",
 })
 
+# State-story modules (Phase 4A): the reactive store + bind + keyed reconciler
+# (store.js) and its barrel (state.js). Exported from the separate "tinymoon/
+# state" barrel, never the core barrel, so they budget in their own tier rather
+# than against the frozen core-js row.
+_STATE_JS = frozenset({
+    "state.js", "store.js",
+})
+
 # Dev-only modules: not shipped in any barrel, not counted in size budgets.
 # Consumers import these directly during development. Classified for coverage
 # so every assets/js/*.js still belongs to exactly one row.
@@ -102,6 +111,9 @@ BUDGETS = [
     # these modules budget here, not against core.
     BudgetRow("controls-js", "js", _CONTROLS_JS, 46_000, True),  # baseline 36,692
     BudgetRow("extras-js", "js", _EXTRAS_JS, 11_000, True),
+    # state-js: Phase 4A state story (store.js + state.js barrel). Measured
+    # baseline 10,281 bytes; ceiling is baseline + 25% rounded clean.
+    BudgetRow("state-js", "js", _STATE_JS, 13_000, True),  # baseline 10,281
     BudgetRow("dev-js", "js", _DEV_JS, None, False),
     # css: raised ONCE for the Phase 3 form-control additions (number stepper,
     # time picker, combobox, multi-select, accordion). Measured new baseline
