@@ -1,0 +1,21 @@
+{
+  // Type-consumer fixture: compiles consumer.ts (no emit) to prove that both
+  // published barrels ship accurate, resolvable types.
+  //
+  // moduleResolution "bundler" is chosen because it honors package.json
+  // "exports" and their "types" conditions -- exactly the wiring under test --
+  // without the ESM strictness (explicit extensions, import assertions) that
+  // node16/nodenext impose on a pure type-check fixture. Self-referencing
+  // resolves "tinymoon" / "tinymoon/extras" through the repo-root package.json,
+  // so this exercises the real export map, not a path alias shortcut.
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "esnext",
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "strict": true,
+    "noEmit": true,
+    "types": []
+  },
+  "include": ["consumer.ts"]
+}
