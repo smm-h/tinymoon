@@ -624,6 +624,12 @@ export function mountShell(config: ShellConfig): ShellInstance;
  * before a shell is mounted. */
 export function announce(msg: string): void;
 
+/** Write the shell's topbar page-subtitle (#tm-page-sub). No-op before a shell
+ * is mounted. This is the standalone public setter that also backs the
+ * createView ctx's `setSub`; plain-object views (that do not go through
+ * createView) use it to set the subtitle without touching the DOM node. */
+export function setPageSub(text: string): void;
+
 // -- view.js ------------------------------------------------------------------
 
 /** The ctx passed to a createView build/refresh callback. */
