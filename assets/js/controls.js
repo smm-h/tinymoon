@@ -5,16 +5,6 @@ import { el } from "./dom.js";
 import { icon } from "./icons.js";
 import { showCtxMenu } from "./ctxmenu.js";
 
-// Internal helper: create an <input> with the given type. Using a variable
-// rather than a string literal prevents the conformance checker's regex from
-// flagging the framework's own hidden inputs (the ban targets consumer code
-// that uses raw native controls instead of these primitives).
-function _mkInput(kind) {
-  const inp = el("input");
-  inp.type = kind;
-  return inp;
-}
-
 // copyButton(getText, tipText) → small copy-to-clipboard icon button with a
 // "Copied" flash (the icon swaps to a check for a moment).
 export function copyButton(getText, tipText) {
@@ -89,7 +79,8 @@ export function createSegmented(opts) {
   const handlers = [];         // [element, event, handler] for cleanup
 
   for (const it of items) {
-    const inp = _mkInput("radio");
+    const inp = el("input");
+    inp.type = "radio";
     inp.name = name;
     inp.value = it.value;
     if (it.disabled) inp.disabled = true;
@@ -255,7 +246,8 @@ export function createCheckbox(opts) {
   if (!opts.label) throw new Error("createCheckbox: label is required");
   const { name, label, checked = false, onChange, disabled = false } = opts;
   const wrapper = el("label", "tm-checkbox");
-  const input = _mkInput("checkbox");
+  const input = el("input");
+  input.type = "checkbox";
   input.name = name;
   input.checked = checked;
   if (disabled) input.disabled = true;
@@ -292,7 +284,8 @@ export function createRadio(opts) {
   if (!opts.value) throw new Error("createRadio: value is required");
   const { name, label, value, checked = false, onChange, disabled = false } = opts;
   const wrapper = el("label", "tm-radio");
-  const input = _mkInput("radio");
+  const input = el("input");
+  input.type = "radio";
   input.name = name;
   input.value = value;
   input.checked = checked;
@@ -327,7 +320,8 @@ export function createFileInput(opts) {
   if (!opts.label) throw new Error("createFileInput: label is required");
   const { name, label, accept, multiple = false, onChange } = opts;
   const wrapper = el("div", "tm-file");
-  const input = _mkInput("file");
+  const input = el("input");
+  input.type = "file";
   input.name = name;
   if (accept) input.accept = accept;
   if (multiple) input.multiple = true;

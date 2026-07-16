@@ -10,15 +10,6 @@ import { el } from "./dom.js";
 import { icon } from "./icons.js";
 import { pushLayer } from "./kernel.js";
 
-// Internal helper: create an <input> with the given type. Using a variable
-// rather than a string literal prevents the conformance checker's regex from
-// flagging the framework's own hidden inputs.
-function _mkInput(kind) {
-  const inp = el("input");
-  inp.type = kind;
-  return inp;
-}
-
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -153,7 +144,8 @@ export function createDatePicker(opts) {
   // Input row: text input + toggle button
   const inputRow = el("div", "tm-datepicker-input-row");
 
-  const textInput = _mkInput("text");
+  const textInput = el("input");
+  textInput.type = "text";
   textInput.id = instanceId + "-input";
   textInput.className = "tm-datepicker-text";
   textInput.placeholder = "Select a date";
@@ -173,7 +165,8 @@ export function createDatePicker(opts) {
   wrapper.appendChild(inputRow);
 
   // Hidden input for form participation
-  const hiddenInput = _mkInput("hidden");
+  const hiddenInput = el("input");
+  hiddenInput.type = "hidden";
   hiddenInput.name = name;
   hiddenInput.value = currentValue || "";
   if (required) hiddenInput.required = true;

@@ -19,13 +19,6 @@ document.addEventListener("pointerdown", (e) => {
 
 let idCounter = 0;
 
-// Internal helper: create a native <select> element. Using a variable
-// prevents the conformance checker's regex from flagging the framework's
-// own hidden form-participating element (the ban targets consumer code
-// that uses raw native controls instead of these primitives).
-const _nativeTag = "select";
-function _mkNativeSelect() { return document.createElement(_nativeTag); }
-
 export function createSelect(opts) {
   if (!opts || !opts.name) throw new Error("name is required");
   if (!opts.label) throw new Error("label is required");
@@ -66,8 +59,11 @@ export function createSelect(opts) {
   menu.setAttribute("role", "listbox");
   menu.id = instanceId + "-listbox";
 
-  // hidden real <select> for form participation
-  const hiddenSelect = _mkNativeSelect();
+  // Hidden real <select> for form participation and accessibility. Written
+  // plainly: the conformance checker exempts native-control creation in
+  // tinymoon's own shipped modules (framework-own allowance, keyed on the
+  // file's location inside the packaged assets, not on any obfuscation).
+  const hiddenSelect = document.createElement("select");
   hiddenSelect.name = opts.name;
   hiddenSelect.setAttribute("aria-hidden", "true");
   hiddenSelect.tabIndex = -1;
