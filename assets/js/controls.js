@@ -323,6 +323,10 @@ export function createFileInput(opts) {
   const input = el("input");
   input.type = "file";
   input.name = name;
+  // The hidden native input is what assistive tech announces, so it must carry
+  // an accessible name. Mirror the visible trigger's label onto it (the styled
+  // <button> is not a <label for>, so the input has no implicit name otherwise).
+  input.setAttribute("aria-label", label);
   if (accept) input.accept = accept;
   if (multiple) input.multiple = true;
   const trigger = el("button", "btn", label);
