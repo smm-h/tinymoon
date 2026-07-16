@@ -29,6 +29,14 @@
   --on-accent: #ffffff;
   --green: #2fbf71;
   --red: #e5484d;
+  /* gold: the warn/caution status color. Mirrors the accent ladder — a solid
+     shade for text and borders, a translucent soft fill, and an alpha step for
+     glows. The badge warn variant and "neutral"/caution stat deltas pull it.
+     Kept legible as text (>=4.5:1) on bg and the surfaces, so it also clears
+     the 3:1 non-text UI floor for borders. */
+  --gold: #d9a91e;
+  --gold-soft: color-mix(in srgb, var(--gold) 14%, transparent);
+  --gold-a35: color-mix(in srgb, var(--gold) 35%, transparent);
   /* theme-dependent surfaces the components pull instead of literals */
   --input-bg: #0a0a0a;
   --hover-border: #3a3a3a;
@@ -143,6 +151,12 @@ html[data-theme="light"] {
   --on-accent: #ffffff;
   --green: #1d9d5c;
   --red: #d93a40;
+  /* Light theme needs a much darker gold: on white/near-white surfaces a bright
+     gold fails legibility, so this drops to a deep amber that clears 4.5:1 as
+     text. The soft fill mirrors accent-soft's lighter 10% mix. --gold-a35
+     inherits automatically (color-mix over the overridden --gold). */
+  --gold: #7a5f00;
+  --gold-soft: color-mix(in srgb, var(--gold) 10%, transparent);
   --input-bg: #ffffff;
   --hover-border: #b7bcc7;
   --scroll-thumb: #c6cad3;

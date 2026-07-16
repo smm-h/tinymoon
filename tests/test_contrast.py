@@ -120,12 +120,22 @@ TEXT_PAIRS = [
     ("text-dim", "surface-2", 4.5),
     ("text-faint", "surface-2", 4.5),
     ("on-accent", "accent", 4.5),
+    # --gold as text: the badge warn label and caution stat deltas render the
+    # gold shade AS text on bg and the surfaces, so it must clear 4.5:1 there.
+    # Light theme uses a much darker gold to hold this on white surfaces.
+    ("gold", "bg", 4.5),
+    ("gold", "surface", 4.5),
+    ("gold", "surface-2", 4.5),
 ]
 
 # Non-text UI component pairs: 3:1 (WCAG AA SC 1.4.11)
 UI_PAIRS = [
     ("border-2", "surface", 3.0),
     ("border-2", "input-bg", 3.0),
+    # --gold as a non-text border/hairline (badge warn border) against the
+    # deepest card surface: the 3:1 UI floor. (It clears 4.5:1 as text above,
+    # so this is comfortably satisfied; the pair pins the border intent.)
+    ("gold", "surface-3", 3.0),
 ]
 
 # Accent differentiation pairs: --accent-hi is a second accent shade rendered
