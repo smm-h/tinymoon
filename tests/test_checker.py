@@ -18,6 +18,7 @@ from tinymoon.checker import (
     NATIVE_CONTROL,
     RAW_COLOR,
     TITLE_ATTR,
+    UNPINNED_VENDOR,
     scan_dir,
     scan_file,
 )
@@ -226,6 +227,99 @@ def test_consumer_el_select_still_fires(tmp_path):
     (tmp_path / "widget.js").write_text('const s = el("select");\n')
     violations = scan_dir(tmp_path)
     assert [(v.line, v.rule) for v in violations] == [(1, NATIVE_CONTROL)]
+
+
+# ---------------------------------------------------------------------------
+# Vendor quarantine (hash-pinned provenance for third-party files).
+# ---------------------------------------------------------------------------
+
+QUARANTINE = FIXTURES / "quarantine"
+
+
+def test_quarantine_pinned_file_is_exempt():
+    """A quarantined file full of charter violations passes when it is pinned
+    by sha256 -- the exemption is earned by proving the bytes are unmodified
+    third-party code. The clean fixtures include such a file."""
+    assert scan_dir(FIXTURES / "clean") == []
+
+
+def test_quarantine_unpinned_file_no_manifest():
+    """(a) A file under third_party/ with no manifest at all is unpinned:
+    every file errors, located at the file itself."""
+    violations = scan_dir(QUARANTINE / "nomanifest")
+    assert [(v.path.replace("\\", "/"), v.line, v.rule) for v in violations] == [
+        ("third_party/vendor.css", 1, UNPINNED_VENDOR)
+    ]
+
+
+def test_quarantine_hash_mismatch():
+    """(b) A pinned file whose bytes no longer match its sha256 (an edited
+    vendored file) is a hard error, located at the file."""
+    violations = scan_dir(QUARANTINE / "mismatch")
+    assert [(v.path.replace("\\", "/"), v.line, v.rule) for v in violations] == [
+        ("third_party/vendor.css", 1, UNPINNED_VENDOR)
+    ]
+
+
+def test_quarantine_missing_pinned_file():
+    """(c) A manifest entry pointing at a file that does not exist (a stale
+    pin) is a hard error, located at the manifest."""
+    violations = scan_dir(QUARANTINE / "missing")
+    assert [(v.path.replace("\\", "/"), v.line, v.rule) for v in violations] == [
+        ("third_party/PROVENANCE.toml", 1, UNPINNED_VENDOR)
+    ]
+
+
+def test_quarantine_same_file_outside_fires_ordinary_rules():
+    """(d) The identical violating vendored file OUTSIDE any third_party/
+    directory gets no exemption -- the ordinary rules fire normally."""
+    violations = scan_dir(QUARANTINE / "outside")
+    assert [(v.path.replace("\\", "/"), v.line, v.rule) for v in violations] == [
+        ("vendor.css", 2, RAW_COLOR),
+        ("vendor.css", 3, RAW_COLOR),
+        ("vendor.css", 4, RAW_COLOR),
+        ("vendor.css", 5, BORDER_RADIUS),
+    ]
+
+
+def test_quarantine_rejects_path_traversal():
+    """A manifest entry with a traversing (``..``) or absolute path is rejected
+    -- the quarantine can never launder a file outside its own directory. The
+    properly-pinned sibling in the same manifest stays exempt."""
+    violations = scan_dir(QUARANTINE / "traversal")
+    assert [(v.path.replace("\\", "/"), v.line, v.rule) for v in violations] == [
+        ("third_party/PROVENANCE.toml", 1, UNPINNED_VENDOR)
+    ]
+
+
+def test_quarantine_nested_dir_is_honored(tmp_path):
+    """Resolution scope: a third_party/ nested anywhere within the scanned
+    tree is honored (with its own PROVENANCE.toml beside it), exactly as a
+    top-level one is. Proven by scanning the PARENT root."""
+    import hashlib
+
+    vendored = tmp_path / "sub" / "third_party" / "vendor.css"
+    vendored.parent.mkdir(parents=True)
+    body = ".x { color: #abcdef; border-radius: 9px; }\n"
+    vendored.write_text(body)
+    digest = hashlib.sha256(body.encode()).hexdigest()
+    (vendored.parent / "PROVENANCE.toml").write_text(
+        '[[file]]\npath = "vendor.css"\n'
+        'origin = "nested vendored asset"\n'
+        f'sha256 = "{digest}"\n'
+    )
+    # A first-party file elsewhere in the tree is still scanned normally.
+    (tmp_path / "app.css").write_text(".btn { color: var(--accent); }\n")
+
+    # Scanning the PARENT root honors the nested quarantine (no violations).
+    assert scan_dir(tmp_path) == []
+
+    # Editing the pinned file breaks the hash -> the nested quarantine errors
+    # even when the scan root is the grandparent.
+    vendored.write_text(body + ".y { color: #123456; }\n")
+    violations = scan_dir(tmp_path)
+    assert [(v.rule) for v in violations] == [UNPINNED_VENDOR]
+    assert violations[0].path.replace("\\", "/") == "sub/third_party/vendor.css"
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,5 @@
+# Stale pin: the manifest references a file that does not exist. Hard error.
+[[file]]
+path = "ghost.css"
+origin = "test fixture simulating a manifest entry for a deleted file"
+sha256 = "08ec7cb9ed94300ab767474876996e79e2f7f58cce4b426ba32048f48baf95cd"

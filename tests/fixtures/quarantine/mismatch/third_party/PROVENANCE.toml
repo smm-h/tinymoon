@@ -1,0 +1,6 @@
+# Hash mismatch: the pinned sha256 does not match vendor.css's actual bytes,
+# as if the vendored file had been edited after pinning. Hard error.
+[[file]]
+path = "vendor.css"
+origin = "test fixture simulating an edited vendored file"
+sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
