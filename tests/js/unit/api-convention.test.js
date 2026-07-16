@@ -434,8 +434,8 @@ const EXTRAS_EXPORTS = [
   "sse", "socket",
   // format.js — media-duration + relative-time helpers
   "fmtTime", "relativeTime", "liveRelativeTime",
-  // settings.js — store factory
-  "createSettings",
+  // settings.js — store factory + theme helpers
+  "createSettings", "cycleTheme", "THEME_BOOT_SNIPPET",
   // wiki.js — rendering + view factory
   "renderDocMd", "createWikiView",
 ];

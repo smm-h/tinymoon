@@ -5,5 +5,5 @@
 export { api, post, ApiError, setAuthHeader } from "./net.js";
 export { sse, socket } from "./realtime.js";
 export { fmtTime, relativeTime, liveRelativeTime } from "./format.js";
-export { createSettings } from "./settings.js";
+export { createSettings, cycleTheme, THEME_BOOT_SNIPPET } from "./settings.js";
 export { renderDocMd, createWikiView } from "./wiki.js";

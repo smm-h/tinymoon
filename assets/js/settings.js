@@ -28,6 +28,20 @@ export function createSettings({ storageKey, defaults } = {}) {
   const keyed = new Map();
   const anyChange = new Set();
 
+  // Tri-state theme resolution: the stored "theme" may be "system", which we
+  // resolve to the concrete light/dark the OS reports (matchMedia). We STORE
+  // "system" but write the resolved value to <html data-theme>, and re-resolve
+  // live on OS change while the stored value is still "system".
+  let mql = null;
+  function systemTheme() {
+    return (typeof matchMedia !== "undefined" && matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+  }
+  function onSystemChange() {
+    if (data.theme !== "system") return; // stored value moved off system
+    document.documentElement.dataset.theme = systemTheme();
+    window.dispatchEvent(new CustomEvent("tm:theme"));
+  }
+
   function emit(key, value, old) {
     const subs = keyed.get(key);
     if (subs) for (const cb of [...subs]) cb(value, old, key);
@@ -84,9 +98,40 @@ export function createSettings({ storageKey, defaults } = {}) {
 
     applyTheme() {
       if (!("theme" in data)) throw new Error("applyTheme: no \"theme\" key in the settings schema");
-      document.documentElement.dataset.theme = data.theme;
+      const stored = data.theme;
+      // Resolve "system" to the concrete OS theme; store "system" untouched.
+      document.documentElement.dataset.theme = stored === "system" ? systemTheme() : stored;
+      // Attach the OS-change watcher once; onSystemChange no-ops unless the
+      // stored value is "system", so it is safe to leave attached forever.
+      if (!mql && typeof matchMedia !== "undefined") {
+        mql = matchMedia("(prefers-color-scheme: dark)");
+        mql.addEventListener("change", onSystemChange);
+      }
       window.dispatchEvent(new CustomEvent("tm:theme"));
     },
   };
   return store;
 }
+
+// Cycle a settings store's theme through dark → light → system → dark and
+// return the new value. set("theme", …) re-applies it (resolving "system").
+const THEME_CYCLE = { dark: "light", light: "system", system: "dark" };
+export function cycleTheme(store) {
+  const next = THEME_CYCLE[store.get("theme")] || "dark";
+  store.set("theme", next);
+  return next;
+}
+
+// THEME_BOOT_SNIPPET — an inline pre-paint script (drop into a <script> in
+// <head>, before stylesheets) that reads the persisted settings blob, resolves
+// a stored "system" theme against the OS, and sets <html data-theme> BEFORE the
+// first paint, avoiding a light/dark flash. It assumes the default storage key
+// "tm-settings"; if your createSettings storageKey differs, replace that one
+// literal. The conformance checker permits inline scripts, and this snippet
+// touches only localStorage/matchMedia/documentElement — nothing the scanners
+// flag (no external URLs, no raw colors, no native controls).
+export const THEME_BOOT_SNIPPET =
+  '(function(){try{var s=JSON.parse(localStorage.getItem("tm-settings")||"{}");' +
+  'var t=s.theme||"system";' +
+  'if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";' +
+  'document.documentElement.dataset.theme=t;}catch(e){}})();';

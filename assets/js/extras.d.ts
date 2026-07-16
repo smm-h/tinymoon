@@ -183,7 +183,12 @@ export interface SettingsStore<T extends Record<string, unknown>> {
     key: null,
     cb: <K extends keyof T>(value: T[K], previousValue: T[K], key: K) => void,
   ): () => void;
-  /** Mirror the `theme` value onto `<html data-theme>` and dispatch `tm:theme`. */
+  /**
+   * Apply the `theme` value to `<html data-theme>` and dispatch `tm:theme`. A
+   * stored `"system"` value is resolved to the concrete OS theme (light/dark)
+   * via `matchMedia`, and re-resolved live whenever the OS preference changes
+   * while the stored value remains `"system"`. Requires a `theme` key.
+   */
   applyTheme(): void;
 }
 
@@ -194,6 +199,24 @@ export interface SettingsStore<T extends Record<string, unknown>> {
 export function createSettings<T extends Record<string, unknown>>(
   opts: SettingsOpts<T>,
 ): SettingsStore<T>;
+
+/**
+ * Cycle a settings store's `theme` through dark → light → system → dark and
+ * return the new value. Persists via `store.set("theme", …)`, which re-applies
+ * the theme (resolving `"system"`).
+ */
+export function cycleTheme(
+  store: { get(key: "theme"): string; set(key: "theme", value: string): void },
+): string;
+
+/**
+ * An inline pre-paint script (drop into a `<script>` in `<head>`, before your
+ * stylesheets) that reads the persisted settings blob, resolves a stored
+ * `"system"` theme against the OS, and sets `<html data-theme>` before the first
+ * paint to avoid a theme flash. Assumes the default storage key `"tm-settings"`;
+ * replace that literal if your `storageKey` differs.
+ */
+export const THEME_BOOT_SNIPPET: string;
 
 // -- wiki.js ------------------------------------------------------------------
 
