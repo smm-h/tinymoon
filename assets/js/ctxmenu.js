@@ -8,6 +8,7 @@
 import { $$, el } from "./dom.js";
 import { icon } from "./icons.js";
 import { pushLayer, ensureRoot, getCopyData } from "./kernel.js";
+import { registerLightDismiss } from "./dismiss.js";
 
 const ctxProviders = {};
 let ctxFooter = null;
@@ -79,6 +80,7 @@ _observer.observe(document.documentElement, {
 export function registerCtxFooter(fn) { ctxFooter = fn; }
 
 let removeLayer = null;
+let removeDismiss = null;
 let _triggerElement = null; // element that opened the menu (for focus restore)
 
 export function showCtxMenu(x, y, items, trigger) {
@@ -106,11 +108,14 @@ export function showCtxMenu(x, y, items, trigger) {
   const first = menu.querySelector("[role='menuitem']");
   if (first) first.focus();
   if (removeLayer) removeLayer();
+  if (removeDismiss) removeDismiss();
+  removeDismiss = registerLightDismiss({ panels: [menu], dismiss: hideCtxMenu });
   removeLayer = pushLayer(() => hideCtxMenu());
 }
 
 export function hideCtxMenu() {
   if (removeLayer) { removeLayer(); removeLayer = null; }
+  if (removeDismiss) { removeDismiss(); removeDismiss = null; }
   const menu = document.getElementById("tm-ctx-root");
   if (menu) {
     menu.classList.remove("open");
@@ -198,10 +203,6 @@ document.addEventListener("keydown", (e) => {
   );
 });
 
-document.addEventListener("pointerdown", (e) => {
-  const menu = document.getElementById("tm-ctx-root");
-  if (menu && !menu.contains(e.target)) hideCtxMenu();
-});
 document.addEventListener("keydown", (e) => {
   const menu = document.getElementById("tm-ctx-root");
   if (!menu || !menu.classList.contains("open")) return;

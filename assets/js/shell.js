@@ -33,6 +33,7 @@ import { icon } from "./icons.js";
 import { ensureTooltip } from "./tooltip.js";
 import { ensureRoot } from "./kernel.js";
 import { swipeToClose } from "./drawer.js";
+import { registerOverlayTrigger, registerLightDismiss } from "./dismiss.js";
 
 // Live handles to the mounted shell's #tm-page-sub and aria-live announcer,
 // backing setPageSub()/announce() (used by the createView ctx). No-op unmounted.
@@ -116,17 +117,25 @@ export function mountShell(config) {
   const topbar = el("header");
   topbar.id = "tm-topbar";
 
-  // Hamburger button: visible only at <=768px (CSS hides it above that).
-  // Toggles .sidebar-open on #tm-app to slide the drawer in/out.
+  // Hamburger (visible only <=768px): toggles .sidebar-open via the invoker
+  // contract; light-dismiss closes it on an outside press. closeNav = one path.
+  let closeNav = null;
   const hamburger = el("button", "tm-hamburger");
   hamburger.type = "button";
   hamburger.setAttribute("aria-label", "Toggle navigation");
   hamburger.innerHTML = icon("menu");
-  hamburger.addEventListener("click", (e) => {
-    // Stop the click from bubbling to #tm-main's close handler below, which
-    // would immediately undo the toggle (the hamburger lives inside #tm-main).
-    e.stopPropagation();
-    app.classList.toggle("sidebar-open");
+  registerOverlayTrigger(hamburger, ({ trigger, onClose }) => {
+    app.classList.add("sidebar-open");
+    const removeDismiss = registerLightDismiss({
+      panels: [sidebar], dismiss: () => closeNav && closeNav(), trigger,
+    });
+    closeNav = () => {
+      removeDismiss();
+      app.classList.remove("sidebar-open");
+      closeNav = null;
+      onClose();
+    };
+    return { el: sidebar, close: () => closeNav && closeNav() };
   });
   topbar.appendChild(hamburger);
 
@@ -179,10 +188,8 @@ export function mountShell(config) {
   app.appendChild(announcer);
   root.appendChild(app);
 
-  // Clicking the main content area (backdrop or content) closes the drawer.
-  main.addEventListener("click", () => { app.classList.remove("sidebar-open"); });
-  // Swipe the mobile nav drawer left (toward its edge) to close it.
-  swipeToClose(sidebar, () => app.classList.remove("sidebar-open"), { edge: "left" });
+  // Swipe the mobile nav drawer toward its edge to close it (via closeNav).
+  swipeToClose(sidebar, () => { if (closeNav) closeNav(); }, { edge: "left" });
 
   // Framework overlay mount points (primitives also create these lazily via
   // kernel.ensureRoot; mounting them here keeps stacking order deterministic).
@@ -229,8 +236,8 @@ export function mountShell(config) {
     const raw = location.hash.replace(/^#\//, "") || defaultRoute;
     if (currentHash === raw) return;
     currentHash = raw;
-    // Close the mobile drawer on every route change
-    app.classList.remove("sidebar-open");
+    // Close the mobile nav drawer on route change.
+    if (closeNav) closeNav();
     // Routes can carry a sub-path (deep link): #/key/<tail>.
     const parts = raw.split("/");
     const key = parts[0];

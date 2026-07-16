@@ -2,11 +2,11 @@
 
 import { el } from "./dom.js";
 import { pushLayer, placeBelow } from "./kernel.js";
+import { registerLightDismiss } from "./dismiss.js";
 
 let popoverEl = null;
-// Document listener ref and layer removal are kept module-level so
-// closePopover() always cleans up, no matter which path closed the popover.
-let onDocDown = null;
+// Layer/dismiss removal kept module-level so closePopover() always cleans up.
+let removeDismiss = null;
 let removeLayer = null;
 
 export function closePopover() {
@@ -15,7 +15,7 @@ export function closePopover() {
     popoverEl.remove();
     popoverEl = null;
   }
-  if (onDocDown) { document.removeEventListener("pointerdown", onDocDown, true); onDocDown = null; }
+  if (removeDismiss) { removeDismiss(); removeDismiss = null; }
   if (removeLayer) { removeLayer(); removeLayer = null; }
 }
 
@@ -32,11 +32,7 @@ export function openPopover(anchor, build) {
   // Promote to top layer so the popover renders above the grain overlay.
   if (popoverEl.showPopover) try { popoverEl.showPopover(); } catch (_) { /* already shown */ }
   placeBelow(anchor, popoverEl, { gap: 6 });
-  onDocDown = (e) => {
-    if (popoverEl && !popoverEl.contains(e.target) && e.target !== anchor && !anchor.contains(e.target)) {
-      closePopover();
-    }
-  };
-  document.addEventListener("pointerdown", onDocDown, true);
+  // The anchor is the trigger (gesture-claim → no close-then-reopen).
+  removeDismiss = registerLightDismiss({ panels: [popoverEl], dismiss: closePopover, trigger: anchor });
   removeLayer = pushLayer(() => closePopover());
 }

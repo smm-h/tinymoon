@@ -8,14 +8,11 @@
 import { $$, el } from "./dom.js";
 import { icon } from "./icons.js";
 import { cssVar, pushLayer } from "./kernel.js";
+import { registerLightDismiss } from "./dismiss.js";
 
-// At most one select is open at a time; this single module-level document
-// listener closes it on an outside pointerdown. Instances never register
-// their own document listeners, so nothing accumulates.
+// At most one select is open at a time (opening one closes another). Outside-
+// pointer dismissal rides the kernel's central light-dismiss registry.
 let openInstance = null;
-document.addEventListener("pointerdown", (e) => {
-  if (openInstance && !openInstance._root.contains(e.target)) openInstance._close();
-});
 
 let idCounter = 0;
 
@@ -32,6 +29,7 @@ export function createSelect(opts) {
   let typeahead = "";
   let typeaheadT = 0;
   let removeLayer = null;
+  let removeDismiss = null;
   let destroyed = false;
 
   // ---- build DOM ----
@@ -167,10 +165,12 @@ export function createSelect(opts) {
     const selectedIdx = items.findIndex((it) => it.value === currentValue);
     setHover(Math.max(0, selectedIdx));
 
+    removeDismiss = registerLightDismiss({ panels: [root], dismiss: close });
     removeLayer = pushLayer(() => { close(); btn.focus(); });
   }
 
   function close() {
+    if (removeDismiss) { removeDismiss(); removeDismiss = null; }
     if (removeLayer) { removeLayer(); removeLayer = null; }
     root.classList.remove("open");
     btn.setAttribute("aria-expanded", "false");
