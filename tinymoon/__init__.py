@@ -7,7 +7,7 @@ fonts) inside the wheel and exposes their location via assets_path().
 from importlib import resources
 from pathlib import Path
 
-__version__ = "0.6.1"
+__version__ = "0.7.0"
 
 # THEME_BOOT_SNIPPET — the SAME inline pre-paint script exported from the JS
 # settings module (assets/js/settings.js). A server-rendered page that serves
