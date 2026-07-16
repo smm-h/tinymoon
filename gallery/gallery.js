@@ -29,6 +29,10 @@ import {
   createWikiView,
 } from "../assets/js/extras.js";
 
+import {
+  createStore, bind, reconcile,
+} from "../assets/js/state.js";
+
 // ---------- settings ----------
 
 // Created and applied before the shell mounts, so the first painted frame
@@ -720,6 +724,34 @@ The **Forms** route composes \`createInput\`, \`createTextarea\`, \`createField\
 `,
   },
   {
+    id: "state",
+    title: "State: store, bind, reconcile",
+    md: `
+tinymoon's state story is deliberately small — level **L2**: a store, a binder, and a keyed reconciler. There is **no declarative render layer** by design. You build the DOM once (with \`el()\` and the primitives) and mutate it in place; these three helpers, exported from \`tinymoon/state\`, keep that mutation centralized and correct. Watch it live on the **State** route.
+
+### createStore {#state-store}
+
+\`createStore(initial)\` returns \`{get, set, update, subscribe, select, snapshot}\`. It is a schemaless key/value store:
+
+- **set(key, value)** skips its emit entirely when \`Object.is(old, value)\` — a no-op write notifies nobody. \`update(key, fn)\` is \`set(key, fn(get(key)))\`.
+- **subscribe(key, cb) → unsubscribe** fires \`cb(value, previousValue, key)\`. \`subscribe(null, cb)\` subscribes to *any* change. (\`createSettings\` stores expose the identical \`subscribe\` contract, additive to the \`tm:setting\` event.)
+- **select(fn) → {get, subscribe}** is a memoized projection: it recomputes \`fn(snapshot)\` on change but notifies only when the projection's identity changes (\`Object.is\`), so an unrelated write stays silent.
+- In-place mutation of a stored object does **not** emit — the store only sees identity changes through \`set\`/\`update\`. Pass a new value (or a fresh copy).
+
+### bind {#state-bind}
+
+\`bind(store, key, widget) → unbind\` wires a store key to a widget instance's \`.set(v)\` (the house update convention): it syncs the current value once, then forwards every change. It returns an \`unbind\` function — call it in your view's teardown, exactly as you call \`.destroy()\` on the widget.
+
+### reconcile {#state-reconcile}
+
+\`reconcile(container, items, keyFn, {create, update, remove})\` reconciles a collection into keyed child nodes. New keys call \`create(item)\`; kept keys reuse their node — **identity preserved** — and call \`update(node, item)\`; disappeared keys call \`remove(node, item)\` (a pre-detach hook) and are then removed. Kept nodes are reordered in place with \`insertBefore\`, never re-created. There is no virtual DOM and no attribute diffing: \`create\`/\`update\` own a node's contents, the reconciler owns only which nodes exist and in what order.
+
+### Why L2 and not a render layer {#state-l2}
+
+A declarative render layer would mean a diffing runtime, a component model, and a build step — all of which the charter forbids. L2 gives you the two things that actually hurt to hand-roll (targeted subscriptions and correct keyed list reordering) while keeping the mental model "build once, mutate in place." Everything stays vanilla ES modules with zero dependencies.
+`,
+  },
+  {
     id: "theming",
     title: "Tokens and theming",
     md: `
@@ -1195,6 +1227,123 @@ const EmbedView = {
   refresh() {},
 };
 
+// ---------- state view (the house state pattern) ----------
+
+// The L2 state story, live: a single createStore holds the demo state; a
+// synthetic ticker mutates it; a bound widget and a keyed reconciled list
+// update in place. This is exactly the pattern a consumer app writes — build
+// the DOM once, then push every change through the store. No declarative
+// re-render layer exists by design.
+const stateStore = createStore({
+  count: 0,
+  level: 20,
+  label: "tick 0",
+  items: [
+    { id: "alpha", label: "Alpha", value: 42 },
+    { id: "beta", label: "Beta", value: 17 },
+    { id: "gamma", label: "Gamma", value: 63 },
+    { id: "delta", label: "Delta", value: 28 },
+  ],
+});
+
+const StateView = {
+  root: null,
+  built: false,
+  timer: null,
+  seq: 0, // monotonic create-stamp: proves reconcile reuses nodes on reorder
+
+  build() {
+    if (this.built) return;
+    this.built = true;
+
+    const p = panel("Live state — store · bind · reconcile", "faders");
+    const note = el("p", null,
+      "A synthetic ticker mutates a createStore four times a second. A bound slider and text field track store keys via bind(); a keyed leaderboard reconciles in place, reusing and reordering its existing DOM nodes. This is the house pattern: build once, mutate through the store — there is no declarative render layer by design.");
+    note.style.marginTop = "0";
+    note.style.color = "var(--text-dim)";
+    note.style.fontSize = "13px";
+    p.appendChild(note);
+
+    // bind() a slider to the numeric "level" key: the ticker moves it live.
+    const level = createSlider({ name: "state-level", label: "Level", min: 0, max: 100, value: stateStore.get("level") });
+    this.unbindLevel = bind(stateStore, "level", level);
+    const levelField = createField({ label: "Level (bound to store.level)", control: level, hint: "Driven entirely by the store via bind() — no direct widget calls." });
+    p.appendChild(levelField.el);
+
+    // bind() a text field to the string "label" key.
+    const label = createInput({ name: "state-label", label: "Label (bound to store.label)", value: stateStore.get("label") });
+    this.unbindLabel = bind(stateStore, "label", label);
+    p.appendChild(label.el);
+
+    // select(): a memoized projection (the current leader), updated via
+    // subscribe only when the leader actually changes.
+    const readout = el("div", "state-readout mono");
+    readout.dataset.testid = "state-readout";
+    this.leader = stateStore.select((snap) => [...snap.items].sort((a, b) => b.value - a.value)[0].id);
+    const paintReadout = () => {
+      readout.textContent = "count " + stateStore.get("count") + " · leader " + this.leader.get();
+    };
+    this.offLeader = this.leader.subscribe(paintReadout);
+    this.offCount = stateStore.subscribe("count", paintReadout);
+    paintReadout();
+    p.appendChild(readout);
+
+    // reconcile(): a keyed leaderboard. Each row is stamped with its key and a
+    // create-sequence at CREATE time; on reorder the reconciler reuses the
+    // node, so the stamp survives — the proof that node identity is preserved.
+    p.appendChild(el("div", "set-title", "Reconciled leaderboard (keyed, reorders live)"));
+    this.list = el("div", "state-list");
+    this.list.dataset.testid = "state-list";
+    p.appendChild(this.list);
+    this.offItems = stateStore.subscribe("items", () => this.renderList());
+    this.renderList();
+
+    this.root.appendChild(p);
+    this.start();
+  },
+
+  renderList() {
+    reconcile(this.list, stateStore.get("items"), (it) => it.id, {
+      create: (it) => {
+        const row = el("div", "state-row");
+        row.dataset.key = it.id;
+        row.dataset.createSeq = String(++this.seq);
+        row.appendChild(el("span", "state-name", it.label));
+        row.appendChild(el("span", "state-val mono", String(it.value)));
+        return row;
+      },
+      update: (row, it) => {
+        row.querySelector(".state-val").textContent = String(it.value);
+      },
+    });
+  },
+
+  start() {
+    this.stop();
+    this.timer = setInterval(() => {
+      stateStore.update("count", (n) => n + 1);
+      const t = stateStore.get("count");
+      stateStore.set("label", "tick " + t);
+      stateStore.set("level", Math.round(50 + 45 * Math.sin(t / 3)));
+      // New array with shuffled values (identity change → the store emits),
+      // sorted descending so the leaderboard reorders over time.
+      const items = stateStore.get("items")
+        .map((it) => ({ ...it, value: (it.value + (it.id.length * 7 + t * 13) % 37) % 100 }))
+        .sort((a, b) => b.value - a.value);
+      stateStore.set("items", items);
+    }, 250);
+  },
+
+  // Graceful stop for the demo ticker (also releases the store bindings). Not
+  // called by the shell today, but demonstrates the teardown contract that a
+  // real view would run in its own lifecycle.
+  stop() {
+    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+  },
+
+  refresh() {},
+};
+
 // ---------- mount ----------
 
 const themeBtn = el("button", "icon-btn");
@@ -1243,6 +1392,10 @@ shell = mountShell({
     custom: {
       title: "Custom component", icon: "wave", view: () => CustomView,
       tip: "Custom component -- a consumer-defined view following the contract, indistinguishable from a built-in.",
+    },
+    state: {
+      title: "State", icon: "faders", view: () => StateView,
+      tip: "State -- the L2 state story live: a store, bound widgets, and a keyed reconciled list, all mutating in place. No declarative render layer.",
     },
     embed: {
       title: "Embed", icon: "compare", view: () => EmbedView,
