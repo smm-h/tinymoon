@@ -59,8 +59,45 @@ function isInsideFrameworkWrapper(node) {
 const BANNED_TAGS = new Set(["SELECT", "DIALOG"]);
 const BANNED_INPUT_TYPES = new Set(["checkbox", "radio", "file"]);
 
+// tm-embed allowance (runtime mirror of the checker's boundary waiver).
+//
+// What the auditor can ACTUALLY observe across an embed boundary:
+//   - Shadow roots (open OR closed): a MutationObserver does NOT cross shadow
+//     boundaries, and querySelectorAll("*") does not descend into them. So all
+//     shadow-hosted foreign DOM/CSS is invisible to the auditor already --
+//     closed vs open makes no difference. No node-level work is needed for it.
+//   - Sandboxed iframes: the <iframe> ELEMENT is in the light DOM and is seen
+//     by checkNode; its inner document is a separate browsing context that the
+//     parent's observer/queries never see. So iframe-internal DOM is invisible
+//     too.
+//   - Network: an OFF-ORIGIN iframe src DOES surface in the parent's Resource
+//     Timing (performance "resource" entries, initiatorType "iframe"); that is
+//     the ONE thing needing an explicit exemption below.
+//
+// checkNode still early-exits for any light-DOM node under a data-tm-embed
+// marker (the iframe element, host, label strip) so a sanctioned boundary is
+// never flagged for its own framing.
+
+// Resolved src URLs of iframes sitting inside a sanctioned tm-embed boundary.
+function sanctionedEmbedSrcs() {
+  const set = new Set();
+  const frames = document.querySelectorAll("[data-tm-embed] iframe[src]");
+  for (const f of frames) {
+    try {
+      set.add(new URL(f.getAttribute("src"), location.href).href);
+    } catch {
+      // unresolved src, skip
+    }
+  }
+  return set;
+}
+
 function checkNode(node) {
   if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+  // Inside a tm-embed boundary: off the identity surface (sandboxed iframe or
+  // shadow host). Its framing is sanctioned; do not audit it.
+  if (node.closest && node.closest("[data-tm-embed]")) return;
 
   // border-radius check
   const style = getComputedStyle(node);
@@ -110,6 +147,7 @@ const observer = new MutationObserver((mutations) => {
 // ---------------------------------------------------------------------------
 
 function checkResourceEntries() {
+  const sanctioned = sanctionedEmbedSrcs();
   const entries = performance.getEntriesByType("resource");
   for (const entry of entries) {
     // Only flag http/https entries that are not same-origin.
@@ -117,6 +155,9 @@ function checkResourceEntries() {
     try {
       const url = new URL(entry.name);
       if (url.origin !== location.origin) {
+        // A foreign iframe src attributable to a sanctioned embed is allowed:
+        // it is provably off the identity surface.
+        if (sanctioned.has(url.href)) continue;
         report("external network load: " + entry.name);
       }
     } catch {
@@ -142,6 +183,7 @@ function activate() {
   // for a dev aid).
   const seen = new Set();
   function pollResources() {
+    const sanctioned = sanctionedEmbedSrcs();
     const entries = performance.getEntriesByType("resource");
     for (const entry of entries) {
       if (seen.has(entry.name)) continue;
@@ -150,6 +192,8 @@ function activate() {
       try {
         const url = new URL(entry.name);
         if (url.origin !== location.origin) {
+          // Exempt foreign iframe srcs attributable to a sanctioned embed.
+          if (sanctioned.has(url.href)) continue;
           report("external network load: " + entry.name);
         }
       } catch {
