@@ -1,1 +1,2 @@
 {"id":"18c2915b6738931650484a3053034aedb096f405c1e0e6b5","commits":["a7fb549126e175f3db66d4661fc37d92aa7a2f55"],"user_facing":false}
+{"id":"957e7c8adb15e907e315db90c1d8f601706176041af60156","commits":["56a8d9cdcd97ba2fd790204ff2522d39d73c0704"],"user_facing":true,"description":"**Light theme.** The accent highlight color is no longer illegible against the accent -- link and active-state highlights now stay clearly distinguishable in the light theme.","type":"fix"}
