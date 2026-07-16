@@ -16,3 +16,16 @@ def test_assets_path_contents():
     assert (path / "js" / "index.js").is_file()
     assert (path / "tokens.json").is_file()
     assert list((path / "fonts").glob("*.woff2"))
+
+
+def test_conformance_artifacts_shipped():
+    """The portable conformance artifacts (rule data, corpus, expectations)
+    ship inside the assets tree so a reimplementation in any language can
+    conformance-test itself against them."""
+    conformance = assets_path() / "conformance"
+    assert (conformance / "rules.json").is_file()
+    assert (conformance / "expectations.json").is_file()
+    corpus = conformance / "corpus"
+    assert (corpus / "violations" / "title-attr.html").is_file()
+    assert (corpus / "clean" / "tinymoon-allowlist.txt").is_file()
+    assert (corpus / "clean" / "third_party" / "PROVENANCE.toml").is_file()
