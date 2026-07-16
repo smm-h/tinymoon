@@ -1042,15 +1042,19 @@ dialog.tm-modal::backdrop {
   border: 1px solid var(--border-2);
   background: var(--surface-2);
   box-shadow: var(--shadow-pop);
+  /* Placed by JS (placeBelow) in viewport coordinates, correct for the
+     top-layer promotion the Popover API performs. */
   inset: auto;
-  position: absolute;
-  top: 100%;
-  inset-inline-start: 0;
+  position: fixed;
   z-index: var(--z-popover);
-  display: flex;
   gap: var(--space-6);
   animation: menu-in var(--dur-quick) ease;
 }
+/* Flex layout only while open, so the closed-popover UA rule
+   ([popover]:not(:popover-open){display:none}) still hides it -- a bare
+   `display:flex` on the base rule would out-specify the UA rule and keep it
+   visible. The fallback path (no Popover API) toggles display via inline style. */
+.tm-timepicker-popover:popover-open { display: flex; }
 .tm-timepicker-col {
   max-height: 200px;
   overflow-y: auto;

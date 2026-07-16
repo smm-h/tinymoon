@@ -14,7 +14,7 @@
 
 import { el } from "./dom.js";
 import { icon } from "./icons.js";
-import { pushLayer } from "./kernel.js";
+import { pushLayer, placeBelow } from "./kernel.js";
 
 // Canonicalize {h, m} to "HH:MM".
 function toHHMM(h, m) {
@@ -239,6 +239,9 @@ export function createTimePicker(opts) {
     renderColumns();
     try {
       popover.showPopover();
+      // A top-layer popover is positioned against the viewport, so place it
+      // explicitly below the field instead of relying on flow-relative offsets.
+      placeBelow(inputRow, popover, { gap: 4 });
     } catch (_) {
       popover.dataset.open = "true";
       popover.style.display = "flex";
