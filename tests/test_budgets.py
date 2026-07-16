@@ -3,14 +3,26 @@
 "No overhead -- as a number, not a vibe": the shipped CSS and JS have hard
 byte ceilings so the framework can never quietly bloat, and the runtime
 must depend on nothing but itself.
+
+Ceilings and tier memberships live in ONE table-driven registry (BUDGETS)
+below. Adding a new JS tier or CSS sheet with its own ceiling requires only
+appending a registry row -- the size test, the coverage tests, and every
+error message derive from the registry automatically.
 """
 
 import json
 import re
+from collections import namedtuple
 from pathlib import Path
+
+import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 
+# ---------------------------------------------------------------------------
+# The budget registry
+# ---------------------------------------------------------------------------
+#
 # Hard byte ceilings for shipped assets. Ceilings are roughly baseline + 25%
 # headroom. Raising a ceiling is a deliberate decision that must happen in
 # this file, in review -- never as a side effect.
@@ -22,89 +34,125 @@ REPO = Path(__file__).resolve().parent.parent
 # JS is split into core and extras tiers:
 #   Core:   93,984 bytes (15 modules)  -- ceiling 118,000
 #   Extras:  8,407 bytes (4 modules)   -- ceiling 11,000
-CSS_BUDGET_BYTES = 57_000
-CORE_JS_BUDGET_BYTES = 118_000
-EXTRAS_JS_BUDGET_BYTES = 11_000
-FONT_BUDGET_BYTES = 122_000
+#
+# Each row is a BudgetRow:
+#   name     -- human-readable tier/sheet name; names the test parameter
+#   kind     -- "js" | "css" | "font"; picks the assets/<subdir> and extension
+#   members  -- either an explicit set of basenames, or a glob string
+#               (relative to assets/) resolved at test time
+#   ceiling  -- byte ceiling for the size budget, or None when uncounted
+#   counted  -- whether the row participates in the size budget. A row may be
+#               classified (appears in coverage) without being size-counted;
+#               the dev tier is uncounted-but-classified.
+BudgetRow = namedtuple("BudgetRow", "name kind members ceiling counted")
+
+_SUBDIR = {"js": "js", "css": "css", "font": "fonts"}
+_EXT = {"js": "*.js", "css": "*.css", "font": "*.woff2"}
 
 # Core modules: dom, icons, kernel, controls, select, datepicker, modal,
 # popover, tooltip, hovercard, ctxmenu, toast, markdown, shell, index barrel.
-CORE_JS_MODULES = {
+_CORE_JS = frozenset({
     "controls.js", "ctxmenu.js", "datepicker.js", "dom.js", "hovercard.js",
     "icons.js", "index.js", "kernel.js", "markdown.js", "modal.js",
     "popover.js", "select.js", "shell.js", "toast.js", "tooltip.js",
-}
+})
 
 # Extras modules: wiki, net, settings, extras barrel.
-EXTRAS_JS_MODULES = {
+_EXTRAS_JS = frozenset({
     "extras.js", "net.js", "settings.js", "wiki.js",
-}
+})
 
 # Dev-only modules: not shipped in any barrel, not counted in size budgets.
-# Consumers import these directly during development.
-DEV_JS_MODULES = {
+# Consumers import these directly during development. Classified for coverage
+# so every assets/js/*.js still belongs to exactly one row.
+_DEV_JS = frozenset({
     "auditor.js",
-}
+})
+
+# CSS sheets: base, primitives, shell, tokens -- one row for now. Splitting a
+# sheet out with its own ceiling later means adding another "css" row.
+_CSS_SHEETS = frozenset({
+    "base.css", "primitives.css", "shell.css", "tokens.css",
+})
+
+BUDGETS = [
+    BudgetRow("core-js", "js", _CORE_JS, 118_000, True),
+    BudgetRow("extras-js", "js", _EXTRAS_JS, 11_000, True),
+    BudgetRow("dev-js", "js", _DEV_JS, None, False),
+    BudgetRow("css", "css", _CSS_SHEETS, 57_000, True),
+    BudgetRow("fonts", "font", "fonts/*.woff2", 122_000, True),
+]
 
 
-def _total_bytes(pattern):
-    files = sorted((REPO / "assets").glob(pattern))
-    assert files, f"no files matched assets/{pattern}"
-    return sum(f.stat().st_size for f in files), files
-
-
-def _tier_bytes(names):
-    """Sum byte sizes for a set of JS module filenames."""
-    js_dir = REPO / "assets" / "js"
-    files = sorted(js_dir / n for n in names)
+def _resolve(row):
+    """Return the sorted list of files a registry row covers."""
+    if isinstance(row.members, str):
+        files = sorted((REPO / "assets").glob(row.members))
+        assert files, f"no files matched assets/{row.members} (row {row.name})"
+        return files
+    subdir = _SUBDIR[row.kind]
+    files = sorted((REPO / "assets" / subdir) / n for n in row.members)
     for f in files:
-        assert f.exists(), f"{f.name} not found in assets/js/"
-    return sum(f.stat().st_size for f in files), files
+        assert f.exists(), f"{f.name} not found in assets/{subdir}/ (row {row.name})"
+    return files
 
 
-def test_css_size_budget():
-    total, files = _total_bytes("css/*.css")
-    assert total <= CSS_BUDGET_BYTES, (
-        f"shipped CSS is {total} bytes across {len(files)} files, over the "
-        f"{CSS_BUDGET_BYTES}-byte budget -- trim before shipping"
+def _row_basenames(row):
+    return {f.name for f in _resolve(row)}
+
+
+# ---------------------------------------------------------------------------
+# Size budgets: one parametrized test per counted registry row
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "row", [r for r in BUDGETS if r.counted], ids=lambda r: r.name
+)
+def test_size_budget(row):
+    files = _resolve(row)
+    total = sum(f.stat().st_size for f in files)
+    assert total <= row.ceiling, (
+        f"{row.name} is {total} bytes across {len(files)} files, over the "
+        f"{row.ceiling}-byte budget -- trim before shipping (raising the "
+        f"ceiling is a deliberate reviewed decision in this file)"
     )
 
 
-def test_core_js_size_budget():
-    total, files = _tier_bytes(CORE_JS_MODULES)
-    assert total <= CORE_JS_BUDGET_BYTES, (
-        f"core JS is {total} bytes across {len(files)} files, over the "
-        f"{CORE_JS_BUDGET_BYTES}-byte budget -- trim before shipping"
+# ---------------------------------------------------------------------------
+# Coverage: every shipped file belongs to exactly one registry row of its kind
+# ---------------------------------------------------------------------------
+
+
+def _assert_exact_partition(kind):
+    disk = {f.name for f in (REPO / "assets" / _SUBDIR[kind]).glob(_EXT[kind])}
+    assigned = {}
+    for row in BUDGETS:
+        if row.kind != kind:
+            continue
+        for name in _row_basenames(row):
+            assigned.setdefault(name, []).append(row.name)
+    overlaps = {n: rows for n, rows in assigned.items() if len(rows) > 1}
+    assert not overlaps, f"{kind} files assigned to multiple rows: {overlaps}"
+    classified = set(assigned)
+    unclassified = disk - classified
+    assert not unclassified, (
+        f"{kind} files not assigned to any registry row: {sorted(unclassified)}"
     )
-
-
-def test_extras_js_size_budget():
-    total, files = _tier_bytes(EXTRAS_JS_MODULES)
-    assert total <= EXTRAS_JS_BUDGET_BYTES, (
-        f"extras JS is {total} bytes across {len(files)} files, over the "
-        f"{EXTRAS_JS_BUDGET_BYTES}-byte budget -- trim before shipping"
+    phantom = classified - disk
+    assert not phantom, (
+        f"registry rows list nonexistent {kind} files: {sorted(phantom)}"
     )
 
 
 def test_js_tier_coverage():
-    """Every .js file in assets/js/ must belong to exactly one tier."""
-    js_dir = REPO / "assets" / "js"
-    all_js = {f.name for f in js_dir.glob("*.js")}
-    classified = CORE_JS_MODULES | EXTRAS_JS_MODULES | DEV_JS_MODULES
-    unclassified = all_js - classified
-    assert not unclassified, (
-        f"JS modules not assigned to a tier: {sorted(unclassified)}"
-    )
-    overlap = CORE_JS_MODULES & EXTRAS_JS_MODULES
-    assert not overlap, f"modules in both tiers: {sorted(overlap)}"
+    """Every .js file in assets/js/ belongs to exactly one JS row (incl. dev)."""
+    _assert_exact_partition("js")
 
 
-def test_font_size_budget():
-    total, files = _total_bytes("fonts/*.woff2")
-    assert total <= FONT_BUDGET_BYTES, (
-        f"shipped fonts are {total} bytes across {len(files)} files, over the "
-        f"{FONT_BUDGET_BYTES}-byte budget -- add a new font only with review"
-    )
+def test_css_sheet_coverage():
+    """Every .css file in assets/css/ belongs to exactly one CSS row."""
+    _assert_exact_partition("css")
 
 
 # ---------------------------------------------------------------------------
