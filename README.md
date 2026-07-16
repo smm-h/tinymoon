@@ -91,7 +91,9 @@ With npm, use bare specifiers by adding an import map:
 
 **Shell and DOM:**
 
-- `mountShell(opts)` -- mount the app shell with sidebar, topbar, router, and footer slot
+- `mountShell(opts)` -- mount the app shell with sidebar, topbar, router, and footer slot (routes accept `eager: true` to build at mount instead of first visit)
+- `createView(opts)` -- build a contract-conforming route view with managed `built`; `build`/`refresh` receive a ctx `{root, setSub(text)}`
+- `announce(msg)` -- push a message into the shell's aria-live route announcer (also on the shell instance as `shell.announce`)
 - `el(tag, cls?, text?)` -- element factory
 - `$(sel, root?)` -- querySelector shorthand
 - `$$(sel, root?)` -- querySelectorAll (returns array)
@@ -115,6 +117,9 @@ With npm, use bare specifiers by adding an import map:
 - `createDatePicker(opts)` -- calendar date picker
 - `createTimePicker(opts)` -- HH:MM time picker with locale display and an hours/minutes popover (form-participating)
 - `createAccordion(opts)` -- stacked disclosure panels (single- or multi-open)
+- `createTabPanels(opts)` -- tab bar composed with lazy, state-preserving panels (completes the APG tabs pattern)
+- `createGrid(opts)` -- CSS-first preset rectangular layout (`1x1`/`2x1`/`1x2`/`2x2`); a content primitive, not a shell mode
+- `iconButton(opts)` -- stateful topbar icon button instance (`setActive`/`setIcon`); pass `.el` to `topbarActions`
 - `copyButton(getText, tip?)` -- one-click clipboard copy button
 - `kebabButton(itemsFn, tip?)` -- three-dot menu button
 
@@ -125,6 +130,7 @@ With npm, use bare specifiers by adding an import map:
 - `toast(msg, level?, opts?)` -- toast notification ("ok", "err", or plain)
 - `setToastErrorHook(fn)` -- mirror error toasts into a custom hook
 - `openModal(opts)` -- modal dialog (returns close function)
+- `openDrawer(opts)` -- edge-anchored overlay drawer, light-dismiss or `modal: true` (returns `{el, close}`)
 - `openPopover(anchor, builder)` / `closePopover()` -- positioned popover
 - `registerCtx(key, provider)` / `registerCtxFooter(fn)` -- context menu regions
 - `showCtxMenu(x, y, items, anchor?)` / `hideCtxMenu()` -- programmatic context menu
@@ -196,7 +202,7 @@ Design tokens let you re-theme and re-accent; they do not let you opt out of the
 
 No overhead -- as a number, not a vibe. Shipped CSS, JS, and fonts have hard byte ceilings enforced by CI; nothing bloats quietly.
 
-- **Budgets are per-tier.** Every shipped file belongs to exactly one budgeted tier, each with its own hard ceiling. New capability tiers land as their own tiers, each carrying its own budget -- never charged against core. The full tier set: **JS** -- `core` (the original frozen module set), `controls-js` (new-generation controls: time picker, combobox, multi-select, accordion), `state-js` (store + reconciler), `widgets-js` (data-display widgets), and `dev` (dev-only modules, classified but uncounted); **CSS** -- `css` (the four base sheets) and `widgets-css` (the optional data-display sheet); plus **`fonts`** (the four vendored woff2 files). New-generation modules budget in their own tier even when they are still exported from the core barrel.
+- **Budgets are per-tier.** Every shipped file belongs to exactly one budgeted tier, each with its own hard ceiling. New capability tiers land as their own tiers, each carrying its own budget -- never charged against core. The full tier set: **JS** -- `core` (the original frozen module set), `controls-js` (new-generation controls: time picker, combobox, multi-select, accordion), `state-js` (store + reconciler), `widgets-js` (data-display widgets), `chrome-js` (shell-and-chrome structural modules: the view factory, drawer, tab panels, icon button, and preset grid), and `dev` (dev-only modules, classified but uncounted); **CSS** -- `css` (the four base sheets) and `widgets-css` (the optional data-display sheet); plus **`fonts`** (the four vendored woff2 files). New-generation modules budget in their own tier even when they are still exported from the core barrel.
 - **The core tier's existing APIs are frozen against breaking change.** What core exports today keeps its shape and behavior.
 - **Additive extensions are permitted.** New primitives and options can join a tier as long as they stay under its ceiling.
 - **The core ceiling is never raised.** Growth happens in new tiers, not by loosening core. Raising any ceiling is a deliberate reviewed decision, never a side effect.
