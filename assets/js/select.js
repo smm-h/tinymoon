@@ -221,8 +221,7 @@ export function createSelect(opts) {
 
   const instance = {
     el: root,
-    // Internal references for the module-level outside-click handler
-    _root: root,
+    // _close: lets the "one select open at a time" logic close the prior one.
     _close: close,
 
     get value() {
