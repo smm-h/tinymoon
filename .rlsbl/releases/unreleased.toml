@@ -1,9 +1,11 @@
 # Version bump type: patch, minor, major, hotfix, or prerelease
-bump = ""
+bump = "minor"
 # Short description of this release (required)
-description = ""
+description = "Light-dismiss engine and invoker contract: centralized outside-press dismissal with gesture-claim (registerLightDismiss, registerOverlayTrigger), fixing drawer dismissal reliability and toggle close-reopen races across all overlays."
 # Optional context explaining why these changes were made
-context = ""
+context = """
+v0.5.0's registry publish was gated on a CI failure that exposed a real race (the drawer's deferred outside-dismiss listener registration could be starved on loaded machines, reproduced deterministically under CPU throttle). Rather than patching the timer, this release ships the already-designed structural replacement: light-dismiss centralized in one synchronous capture-phase listener beside the existing Escape stack, with per-gesture claim so a trigger press closes without re-opening; all five bespoke overlay implementations migrated onto it. Also hardens the e2e suite against a second CI-only flake class (axe scans sampling mid entrance-animation).
+"""
 # Pre-release identifier: alpha, beta, rc, or stable
 # preid = ""
 # Set to true to generate a blog post for this release
