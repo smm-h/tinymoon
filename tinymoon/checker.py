@@ -7,8 +7,8 @@ page) and RENDERED STYLING (how those bytes look), never over NAVIGATIONS. A
 navigation is a plain hyperlink the user may follow (<a href>, <area href>);
 it leaves or opens elsewhere and fetches nothing into the current page, so it
 was never a purity violation. Provenance -- whether bytes are first- or
-third-party -- is not modeled here; a later boundary construct will mark
-third-party provenance explicitly. Until then, every load the checker sees is
+third-party -- is modeled by exactly ONE construct: the tm-embed BOUNDARY
+CONTRACT (below). Outside a marked boundary, every load the checker sees is
 treated as identity-surface bytes and must be vendored into the repo.
 
 Scans .html, .css, and .js files. Five rules, each a hard error -- there is
@@ -51,6 +51,43 @@ no warning mode and no bypass:
   colors (red, papayawhip, ...) are NOT checked -- matching them produces
   too many false positives on ordinary words.
 
+The tm-embed BOUNDARY CONTRACT (provenance in HTML source):
+  A `createEmbed` container carries the static marker attribute
+  ``data-tm-embed`` (and the class ``tm-embed``). It renders a FOREIGN
+  network surface (a sandboxed <iframe>: maps, dashboards, OAuth pages) or
+  foreign DOM/CSS (a shadow root hosting vendored library UI). That content
+  is provably OFF the identity surface: the sandbox/shadow isolation means it
+  neither paints the framework's identity nor inherits its tokens.
+
+  Inside the HTML subtree ROOTED at a ``data-tm-embed`` element (the marked
+  element itself plus every descendant), the checker WAIVES external-url (the
+  iframe src) and the four styling rules (border-radius, raw-color,
+  title-attr, native-control). The waiver is scoped to that subtree in HTML
+  source ONLY. It does NOT extend to .js or .css files -- provenance inside
+  scripts and stylesheets is a separate, later mechanism; today a raw color
+  or external URL in a .js/.css file is always a violation, even in code that
+  builds embed content.
+
+  ABUSE IS SELF-DEFEATING. Wrapping FIRST-PARTY UI in a ``data-tm-embed``
+  makes the checker pass, but the wrapped UI stops working: a sandboxed
+  iframe severs its scripts, storage, and same-origin access; a shadow root
+  severs style inheritance so the identity tokens never reach it. The boundary
+  is a promise that the content is foreign and isolated -- claiming it for
+  first-party UI only breaks that UI. The checker does not police this because
+  the isolation mechanics already punish the abuser; the abuse fixture
+  documents it (tests/fixtures/clean/embed-abuse.html).
+
+The FRAMEWORK-OWN allowance (native-control in tinymoon's own modules):
+  tinymoon's own shipped modules legitimately create the hidden native
+  <select> that backs createSelect (form participation). The checker
+  suppresses its JS native-control patterns for files whose resolved path
+  lies WITHIN tinymoon's own packaged assets directory -- the same location
+  assets_path() returns (REPO/assets when self-scanning the source repo, the
+  installed ``tinymoon/assets`` when scanning a wheel). The allowance is keyed
+  on LOCATION, never on filename: a consumer file named ``select.js`` never
+  qualifies. This is why select.js can write ``document.createElement("select")``
+  plainly instead of obfuscating it past the scanner.
+
 Known bypasses remaining for future work:
 - HTML-in-JS-strings: innerHTML/insertAdjacentHTML string content is not
   parsed as HTML, so embedded URLs, native controls, title attributes,
@@ -68,6 +105,7 @@ import re
 import urllib.parse
 from bisect import bisect_right
 from dataclasses import dataclass
+from functools import lru_cache
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -84,6 +122,44 @@ SOURCE_EXTS = {".html", ".css", ".js"}
 ALLOWLIST_FILENAME = "tinymoon-allowlist.txt"
 
 _BANNED_INPUT_TYPES = ("checkbox", "radio", "file")
+
+# The static marker attribute that roots a tm-embed isolation boundary in HTML
+# source. See the BOUNDARY CONTRACT section of the module docstring.
+TM_EMBED_MARKER = "data-tm-embed"
+
+# HTML void elements never have an end tag and root no subtree, so they are
+# not tracked on the element stack that scopes the boundary waiver.
+_VOID_TAGS = frozenset({
+    "area", "base", "br", "col", "embed", "hr", "img", "input",
+    "link", "meta", "param", "source", "track", "wbr",
+})
+
+
+@lru_cache(maxsize=1)
+def _framework_assets_root():
+    """Resolve tinymoon's OWN packaged assets directory (the same location
+    assets_path() returns), or None if it cannot be located. Cached: the
+    package location does not change within a process."""
+    try:
+        from . import assets_path
+
+        return assets_path().resolve()
+    except Exception:
+        return None
+
+
+def _is_framework_own(path):
+    """True if ``path`` resolves to a file inside tinymoon's own packaged
+    assets directory. Keyed on LOCATION, not filename -- a consumer file never
+    qualifies, whatever it is named."""
+    root = _framework_assets_root()
+    if root is None:
+        return False
+    try:
+        Path(path).resolve().relative_to(root)
+        return True
+    except (ValueError, OSError):
+        return False
 
 
 @dataclass(frozen=True, order=True)
@@ -425,8 +501,14 @@ _JS_BR_SETPROP_RE = re.compile(
 )
 
 
-def scan_js(text, path, allowlist, line_offset=0):
-    """Scan JS source; returns a list of Violations."""
+def scan_js(text, path, allowlist, line_offset=0, framework_own=False):
+    """Scan JS source; returns a list of Violations.
+
+    ``framework_own`` is True when the file lives inside tinymoon's own
+    packaged assets (see _is_framework_own). For those files the native-control
+    patterns are suppressed: the framework legitimately creates the hidden
+    native <select> that backs createSelect. All other rules still apply.
+    """
     out = []
     src = _strip_js_comments(text)
     line_starts = [0]
@@ -446,40 +528,44 @@ def scan_js(text, path, allowlist, line_offset=0):
     for m in _JS_CALL_TEMPLATE_URL_RE.finditer(src):
         _check_external_url(m.group(1), line_of(m.start()), path, allowlist, out)
 
-    for pat, what in (
-        (_JS_EL_NATIVE_RE, lambda m: m.group(2)),
-        (_JS_CREATE_NATIVE_RE, lambda m: m.group(2)),
-    ):
-        for m in pat.finditer(src):
+    # Native-control creation is suppressed for tinymoon's own shipped modules
+    # (framework_own): they legitimately create the hidden native <select> that
+    # backs createSelect. Consumer files always fire.
+    if not framework_own:
+        for pat, what in (
+            (_JS_EL_NATIVE_RE, lambda m: m.group(2)),
+            (_JS_CREATE_NATIVE_RE, lambda m: m.group(2)),
+        ):
+            for m in pat.finditer(src):
+                out.append(
+                    Violation(
+                        path,
+                        line_of(m.start()),
+                        NATIVE_CONTROL,
+                        f"JS creates a native <{what(m)}>"
+                        " -- use the framework's own primitives",
+                    )
+                )
+        for m in _JS_TYPE_ASSIGN_RE.finditer(src):
             out.append(
                 Violation(
                     path,
                     line_of(m.start()),
                     NATIVE_CONTROL,
-                    f"JS creates a native <{what(m)}>"
+                    f'JS sets input type "{m.group(2)}"'
                     " -- use the framework's own primitives",
                 )
             )
-    for m in _JS_TYPE_ASSIGN_RE.finditer(src):
-        out.append(
-            Violation(
-                path,
-                line_of(m.start()),
-                NATIVE_CONTROL,
-                f'JS sets input type "{m.group(2)}"'
-                " -- use the framework's own primitives",
+        for m in _JS_TYPE_SETATTR_RE.finditer(src):
+            out.append(
+                Violation(
+                    path,
+                    line_of(m.start()),
+                    NATIVE_CONTROL,
+                    f'JS sets input type "{m.group(3)}"'
+                    " -- use the framework's own primitives",
+                )
             )
-        )
-    for m in _JS_TYPE_SETATTR_RE.finditer(src):
-        out.append(
-            Violation(
-                path,
-                line_of(m.start()),
-                NATIVE_CONTROL,
-                f'JS sets input type "{m.group(3)}"'
-                " -- use the framework's own primitives",
-            )
-        )
 
     for m in _JS_TITLE_ASSIGN_RE.finditer(src):
         receiver = m.group(1)
@@ -570,21 +656,37 @@ class _HTMLScanner(HTMLParser):
     """Streams a document, applying attribute/tag rules and delegating
     <style>/<script> content to the CSS/JS scanners."""
 
-    def __init__(self, path, allowlist, out):
+    def __init__(self, path, allowlist, out, framework_own=False):
         super().__init__(convert_charrefs=True)
         self._path = path
         self._allowlist = allowlist
         self._out = out
+        self._framework_own = framework_own
         self._container = None  # "style" | "script" | "importmap" | None
+        # Element stack of (tagname, is_embed_boundary) for non-void tags, and
+        # the count of currently-open tm-embed boundaries. When _embed_depth is
+        # positive the parser is inside a marked subtree and all violations are
+        # waived (the content is off the identity surface).
+        self._tag_stack = []
+        self._embed_depth = 0
 
     # -- tags ---------------------------------------------------------------
 
     def handle_starttag(self, tag, attrs):
-        self._check_tag(tag, attrs)
-        tag = tag.lower()
-        if tag == "style":
+        has_embed = any(name.lower() == TM_EMBED_MARKER for name, _ in attrs)
+        # The marked element itself is waived, as is anything already inside a
+        # boundary. Compute suppression BEFORE pushing so the marker's own
+        # attributes (e.g. the iframe src it sits on) are waived too.
+        suppressed = self._embed_depth > 0 or has_embed
+        self._check_tag(tag, attrs, suppressed)
+        tagl = tag.lower()
+        if tagl not in _VOID_TAGS:
+            if has_embed:
+                self._embed_depth += 1
+            self._tag_stack.append((tagl, has_embed))
+        if tagl == "style":
             self._container = "style"
-        elif tag == "script":
+        elif tagl == "script":
             d = {k.lower(): (v or "") for k, v in attrs}
             if "src" in d:
                 return
@@ -595,22 +697,40 @@ class _HTMLScanner(HTMLParser):
                 self._container = "script"
 
     def handle_startendtag(self, tag, attrs):
-        self._check_tag(tag, attrs)
+        # A self-closing element roots no subtree; only its own attributes are
+        # waived when it carries (or sits inside) a boundary marker.
+        has_embed = any(name.lower() == TM_EMBED_MARKER for name, _ in attrs)
+        suppressed = self._embed_depth > 0 or has_embed
+        self._check_tag(tag, attrs, suppressed)
 
     def handle_endtag(self, tag):
-        if tag.lower() in ("style", "script"):
+        tagl = tag.lower()
+        if tagl in ("style", "script"):
             self._container = None  # clears style, script, and importmap
+        # Pop the element stack back to the matching open tag, closing every
+        # embed boundary that unwinds with it.
+        for i in range(len(self._tag_stack) - 1, -1, -1):
+            name, _is_embed = self._tag_stack[i]
+            if name == tagl:
+                for _, was_embed in self._tag_stack[i:]:
+                    if was_embed:
+                        self._embed_depth -= 1
+                del self._tag_stack[i:]
+                break
 
-    def _check_tag(self, tag, attrs):
+    def _check_tag(self, tag, attrs, suppressed):
         line = self.getpos()[0]
         tag = tag.lower()
+        # Collect this element's violations into a local buffer. If the element
+        # is inside a tm-embed boundary, the buffer is discarded (waived).
+        local = []
         attr_map = {}
         for name, value in attrs:
             lname = name.lower()
             value = value or ""
             attr_map.setdefault(lname, value)
             if lname == "title":
-                self._out.append(
+                local.append(
                     Violation(
                         self._path,
                         line,
@@ -629,23 +749,23 @@ class _HTMLScanner(HTMLParser):
                 # page and stays a load.
                 if tag not in ("a", "area"):
                     _check_external_url(
-                        value, line, self._path, self._allowlist, self._out
+                        value, line, self._path, self._allowlist, local
                     )
             elif lname in ("src", "action", "poster", "formaction"):
                 # src is a load; action/formaction ship user data off-origin
                 # on submit -- treated as a load-class concern.
                 _check_external_url(
-                    value, line, self._path, self._allowlist, self._out
+                    value, line, self._path, self._allowlist, local
                 )
             elif lname == "data" and tag == "object":
                 _check_external_url(
-                    value, line, self._path, self._allowlist, self._out
+                    value, line, self._path, self._allowlist, local
                 )
             elif lname == "ping":
                 # ping= is space-separated list of URLs
                 for url in value.split():
                     _check_external_url(
-                        url, line, self._path, self._allowlist, self._out
+                        url, line, self._path, self._allowlist, local
                     )
             elif lname == "srcset":
                 for candidate in value.split(","):
@@ -654,12 +774,12 @@ class _HTMLScanner(HTMLParser):
                         continue
                     url = candidate.split()[0]
                     _check_external_url(
-                        url, line, self._path, self._allowlist, self._out
+                        url, line, self._path, self._allowlist, local
                     )
             elif lname == "style":
-                self._scan_inline_style(value, line)
+                self._scan_inline_style(value, line, local)
         if tag == "select":
-            self._out.append(
+            local.append(
                 Violation(
                     self._path,
                     line,
@@ -668,7 +788,7 @@ class _HTMLScanner(HTMLParser):
                 )
             )
         elif tag == "input" and attr_map.get("type", "").lower() in _BANNED_INPUT_TYPES:
-            self._out.append(
+            local.append(
                 Violation(
                     self._path,
                     line,
@@ -677,19 +797,26 @@ class _HTMLScanner(HTMLParser):
                     " -- use the framework's own primitives",
                 )
             )
+        if not suppressed:
+            self._out.extend(local)
 
-    def _scan_inline_style(self, style_text, line):
+    def _scan_inline_style(self, style_text, line, out):
         for decl in style_text.split(";"):
             if ":" not in decl:
                 continue
             prop, value = decl.split(":", 1)
             _check_declaration(
-                prop, value, line, self._path, False, self._allowlist, self._out
+                prop, value, line, self._path, False, self._allowlist, out
             )
 
     # -- content ------------------------------------------------------------
 
     def handle_data(self, data):
+        # Content inside a tm-embed boundary is off the identity surface --
+        # foreign iframe/shadow bytes -- so inline <style>/<script>/importmap
+        # blocks there are waived too.
+        if self._embed_depth > 0:
+            return
         if self._container == "style":
             offset = self.getpos()[0] - 1
             self._out.extend(
@@ -700,7 +827,10 @@ class _HTMLScanner(HTMLParser):
         elif self._container == "script":
             offset = self.getpos()[0] - 1
             self._out.extend(
-                scan_js(data, self._path, self._allowlist, line_offset=offset)
+                scan_js(
+                    data, self._path, self._allowlist, line_offset=offset,
+                    framework_own=self._framework_own,
+                )
             )
         # Plain prose: URLs in documentation text are not loads. Ignored.
 
@@ -735,10 +865,14 @@ class _HTMLScanner(HTMLParser):
         pass  # URLs in comments are documentation, not loads.
 
 
-def scan_html(text, path, allowlist):
-    """Scan an HTML document; returns a list of Violations."""
+def scan_html(text, path, allowlist, framework_own=False):
+    """Scan an HTML document; returns a list of Violations.
+
+    ``framework_own`` is threaded to inline <script> scanning so a framework
+    HTML file's scripts get the same native-control allowance as .js modules.
+    """
     out = []
-    parser = _HTMLScanner(path, allowlist, out)
+    parser = _HTMLScanner(path, allowlist, out, framework_own=framework_own)
     parser.feed(text)
     parser.close()
     return out
@@ -790,13 +924,14 @@ def scan_file(path, root, allowlist):
                 " -- it is not valid UTF-8; fix the encoding before scanning",
             )
         ]
+    framework_own = _is_framework_own(path)
     ext = path.suffix.lower()
     if ext == ".html":
-        return scan_html(text, rel, allowlist)
+        return scan_html(text, rel, allowlist, framework_own=framework_own)
     if ext == ".css":
         return scan_css(text, rel, allowlist)
     if ext == ".js":
-        return scan_js(text, rel, allowlist)
+        return scan_js(text, rel, allowlist, framework_own=framework_own)
     return []
 
 

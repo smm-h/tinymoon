@@ -19,6 +19,7 @@ from tinymoon.checker import (
     RAW_COLOR,
     TITLE_ATTR,
     scan_dir,
+    scan_file,
 )
 from tinymoon.cli import app
 
@@ -132,6 +133,12 @@ EXPECTED_VIOLATIONS = {
         (4, RAW_COLOR),  # hwb()
         (5, RAW_COLOR),  # color()
     ],
+    # -- tm-embed boundary waiver --
+    "embed-boundary.html": [
+        # line 5 iframe src + title= are INSIDE the data-tm-embed marker and
+        # are waived (foreign, off the identity surface).
+        (7, EXTERNAL_URL),  # the identical iframe OUTSIDE the marker still fires
+    ],
 }
 
 
@@ -184,6 +191,41 @@ def test_gallery_self_conformance():
     assert violations == [], "\n".join(
         f"{v.path}:{v.line}: [{v.rule}] {v.message}" for v in violations
     )
+
+
+# ---------------------------------------------------------------------------
+# Framework-own native-control allowance (keyed on LOCATION, not filename).
+# ---------------------------------------------------------------------------
+
+
+def test_framework_own_select_native_control_exempt():
+    """tinymoon's own select.js creates the hidden native <select> plainly;
+    the framework-own allowance suppresses the native-control rule for it."""
+    root = REPO / "assets"
+    violations = scan_file(root / "js" / "select.js", root, frozenset())
+    assert not any(v.rule == NATIVE_CONTROL for v in violations), (
+        "select.js must pass self-conformance without obfuscation: "
+        + "; ".join(
+            f"{v.line}: {v.message}" for v in violations if v.rule == NATIVE_CONTROL
+        )
+    )
+
+
+def test_consumer_file_named_select_js_still_fires(tmp_path):
+    """The allowance is keyed on LOCATION, never filename: a CONSUMER file
+    literally named select.js still fires native-control."""
+    (tmp_path / "select.js").write_text(
+        'const s = document.createElement("select");\n'
+    )
+    violations = scan_dir(tmp_path)
+    assert [(v.line, v.rule) for v in violations] == [(1, NATIVE_CONTROL)]
+
+
+def test_consumer_el_select_still_fires(tmp_path):
+    """Plain el("select") in a consumer file (any name) still fires."""
+    (tmp_path / "widget.js").write_text('const s = el("select");\n')
+    violations = scan_dir(tmp_path)
+    assert [(v.line, v.rule) for v in violations] == [(1, NATIVE_CONTROL)]
 
 
 # ---------------------------------------------------------------------------

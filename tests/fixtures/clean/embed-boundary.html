@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<body>
+<!-- Foreign network surface behind the boundary marker: the iframe src is an
+     external load, but data-tm-embed declares the subtree off the identity
+     surface (rendered in a sandbox), so external-url is waived here. -->
+<div data-tm-embed class="tm-embed">
+<div class="tm-embed-label">Live map (foreign origin)</div>
+<iframe src="https://maps.example.com/embed?q=here" sandbox="allow-scripts"></iframe>
+</div>
+</body>
+</html>
