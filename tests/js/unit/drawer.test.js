@@ -33,16 +33,15 @@ describe("openDrawer (non-modal)", () => {
   });
 
   it("closes on an outside pointerdown but not on an inside one", () => {
-    vi.useFakeTimers();
+    // Light-dismiss is registered synchronously via the kernel registry (no
+    // setTimeout deferral — that was the CI-flaky timer race this replaces).
     const d = openDrawer({ title: "T", body: "b" });
-    vi.runAllTimers(); // register the deferred outside listener
     // Inside pointerdown: stays open.
     d.el.dispatchEvent(new Event("pointerdown", { bubbles: true }));
     expect(d.el.isConnected).toBe(true);
     // Outside pointerdown: closes.
     document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }));
     expect(d.el.isConnected).toBe(false);
-    vi.useRealTimers();
   });
 
   it("restores focus to the previously focused element on close", () => {

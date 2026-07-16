@@ -13,11 +13,16 @@
 import { el } from "./dom.js";
 import { icon } from "./icons.js";
 import { pushLayer, ensureRoot } from "./kernel.js";
+import { registerLightDismiss } from "./dismiss.js";
 
 let idCounter = 0;
 
-// openDrawer({title, body, side?, modal?, onClose?}) → {el, close()}.
-export function openDrawer({ title, body, side = "right", modal = false, onClose }) {
+// openDrawer({title, body, side?, modal?, trigger?, onClose?}) → {el, close()}.
+// `trigger` (non-modal only): the toggle element that opened the drawer, passed
+// through to the light-dismiss registry so pressing it again closes the drawer
+// and claims the gesture (no close-then-reopen). Set automatically when opened
+// via registerOverlayTrigger.
+export function openDrawer({ title, body, side = "right", modal = false, trigger, onClose }) {
   const titleId = "tm-drawer-title-" + (++idCounter);
   const previousFocus = document.activeElement;
 
@@ -60,12 +65,13 @@ export function openDrawer({ title, body, side = "right", modal = false, onClose
   requestAnimationFrame(() => panel.classList.add("open"));
 
   let removeLayer = null;
+  let removeDismiss = null;
   let closed = false;
   const close = () => {
     if (closed) return;
     closed = true;
     if (removeLayer) { removeLayer(); removeLayer = null; }
-    if (!modal) document.removeEventListener("pointerdown", onOutside, true);
+    if (removeDismiss) { removeDismiss(); removeDismiss = null; }
     if (modal) {
       panel.removeEventListener("cancel", onCancel);
       panel.removeEventListener("pointerdown", onModalDown);
@@ -76,11 +82,11 @@ export function openDrawer({ title, body, side = "right", modal = false, onClose
     if (onClose) onClose();
   };
 
-  // Non-modal: an outside pointerdown light-dismisses. Registered in the capture
-  // phase and on a later tick so the click that opened the drawer is not caught.
-  const onOutside = (e) => { if (!panel.contains(e.target)) close(); };
+  // Non-modal: an outside pointerdown light-dismisses via the kernel's central
+  // registry (one persistent capture-phase listener, registered synchronously —
+  // no per-drawer listener, no setTimeout deferral, no CI-flaky timer race).
   if (!modal) {
-    setTimeout(() => document.addEventListener("pointerdown", onOutside, true), 0);
+    removeDismiss = registerLightDismiss({ panels: [panel], dismiss: close, trigger });
   }
 
   // Modal: the native cancel (Escape) and a backdrop pointerdown both close.

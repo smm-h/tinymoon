@@ -56,6 +56,24 @@ test.describe("openDrawer", () => {
     await expect(drawer).toHaveCount(0);
   });
 
+  test("the drawer trigger toggles: pressing it while open closes and stays closed", async ({ page }) => {
+    // The right-anchored toggle drawer keeps its trigger clear of the panel, so
+    // the trigger stays clickable while open (unlike the left demo drawer).
+    const trigger = page.locator('[data-testid="open-toggle-drawer"]');
+    // Open via the registerOverlayTrigger toggle.
+    await trigger.click();
+    await expect(page.locator(".tm-drawer[role='dialog']")).toBeVisible();
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
+    // Press the trigger again: the gesture-claim dismisses on pointerdown and
+    // suppresses the trailing click, so it closes and does NOT reopen.
+    await trigger.click();
+    await expect(page.locator(".tm-drawer[role='dialog']")).toHaveCount(0);
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    // Confirm it stays closed (no close-then-reopen flicker).
+    await page.waitForTimeout(150);
+    await expect(page.locator(".tm-drawer[role='dialog']")).toHaveCount(0);
+  });
+
   test("modal drawer is a dialog and Escape closes it", async ({ page }) => {
     await page.locator('[data-testid="open-modal-drawer"]').click();
     const dialog = page.locator("dialog.tm-drawer");
