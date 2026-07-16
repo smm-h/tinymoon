@@ -35,6 +35,10 @@ import {
   createStore, bind, reconcile,
 } from "../assets/js/state.js";
 
+import {
+  badge, createStat, renderStats, createTable, createVirtualList,
+} from "../assets/js/widgets.js";
+
 // ---------- settings ----------
 
 // Created and applied before the shell mounts, so the first painted frame
@@ -850,6 +854,34 @@ This is a **recipe, not a widget**. tinymoon ships no chat/transcript component 
 ### Why a recipe and not a component {#recipe-why}
 
 A shipped transcript widget would bake in decisions — message shape, grouping, virtualization, retention — that belong to the app. The recipe keeps those in your hands while proving the primitives carry the weight. If you find yourself copying this recipe verbatim across apps, that is a signal to extract *your* component, styled and shaped for *your* domain — not a gap in the framework.
+`,
+  },
+  {
+    id: "data-display",
+    title: "Data-display widgets",
+    md: `
+The \`tinymoon/widgets\` barrel is the **data-display** story — the widgets that render *data*, as opposed to controls that collect *input*. It is optional: link \`widgets.css\` and import the barrel (or a single widget's subpath, e.g. \`tinymoon/table\`) only when your app shows tables, stats, and status chips. See it live on the **Data** route.
+
+### Badges {#data-badges}
+
+\`badge(text, variant?)\` is a **one-shot element factory** — like \`copyButton\`, it returns a bare \`<span>\`, not a stateful instance, because a status chip has nothing to update or tear down. Variants are \`ok\` | \`warn\` | \`err\` | \`muted\` | \`neutral\`; an unknown variant is a hard error. The status hue drives the **border and a soft fill** (a non-text 3:1 signal), while the label stays at the high-contrast \`--text\` token so 10px uppercase text clears 4.5:1 in **both** themes — saturated status hues (especially light-theme green) cannot hold 4.5:1 as small text. \`warn\` pulls the new \`--gold\` token.
+
+### Stats {#data-stats}
+
+\`createStat({label, value, unit?, trend?})\` is a stateful tile (\`{el, set, setTrend, destroy}\`); \`renderStats(items)\` wraps several into a \`.report-stats\` row. **Trend direction is always explicit** — \`good\` | \`bad\` | \`neutral\`, never inferred. The widget cannot know whether a metric is higher-is-better (throughput, uptime) or lower-is-better (error rate, latency, cost): the same rising number is *good* for one and *bad* for another. Forcing the caller to state the direction keeps the coloring honest. The delta renders as a colored triangle/edge (non-text), never as colored value text.
+
+### Data table {#data-table}
+
+\`createTable({columns, rows?, maxRows?, onSort?, caption?})\` → \`{el, setRows, destroy}\`. Two decisions the API pins:
+
+- **Declarative rendering** — \`setRows(rows)\` re-renders the body wholesale. Per-row diffing is what the state barrel's \`reconcile()\` is for; a table redraws cheaply from an array.
+- **Caller-side sorting** — clicking a sortable header (or Enter/Space on it) cycles its \`aria-sort\` none → ascending → descending and calls \`onSort(key, direction)\`. The table **never sorts the rows itself and never mutates the array** you hand it — it only reports the request; you re-sort your data and call \`setRows()\`. This keeps sort semantics (locale, numeric vs. string, stability) in your hands.
+
+A column's \`format(value, row)\` may return a **string or a live DOM Node**, so a cell can hold a badge or a button. \`maxRows\` caps the rendered body; extra rows collapse into an "N more rows not shown" footer note (the data is unshown, never dropped or sorted). Cells form a **roving-tabindex grid** (\`role="grid"\`): arrow keys move the focused cell, Home/End jump to the row's ends, and a sticky header keeps column labels visible while scrolling.
+
+### Virtual list {#data-virtuallist}
+
+\`createVirtualList({rowHeight, items?, renderRow, getKey?, overscan?})\` → \`{el, setItems, scrollToIndex, destroy}\` renders only the rows intersecting the viewport (plus overscan), so a 10,000-item list keeps a near-constant DOM node count. **Fixed row height only** — variable/measured heights are out of scope by decision; the constant height is what makes the windowing O(1). It is a **standalone list, not a table mode**: virtual rows are absolutely-positioned \`<div>\`s (a \`<tbody>\` cannot position \`<tr>\`s), so a virtual *table* is a different problem. Give \`.tm-vlist\` a height in CSS — \`contain: strict\` needs a viewport to window against. A stable \`getKey\` lets rows be reused as they scroll back into view.
 `,
   },
   {
@@ -1698,6 +1730,108 @@ const TranscriptView = {
   refresh() {},
 };
 
+// ---------- data view (data-display widgets: badge, stats, table, virtual list) ----------
+
+const DataView = {
+  root: null,
+  built: false,
+
+  build() {
+    if (this.built) return;
+    this.built = true;
+
+    // badges — every variant.
+    const bp = panel("Badges", "faders");
+    bp.appendChild(el("p", "hash",
+      "Five variants (ok, warn, err, muted, neutral). The status hue drives the border + a soft fill (a non-text 3:1 signal); the label stays high-contrast so it clears 4.5:1 in both themes. warn pulls the new --gold."));
+    const brow = el("div", "demo-row");
+    brow.dataset.testid = "data-badges";
+    for (const v of ["ok", "warn", "err", "muted", "neutral"]) brow.appendChild(badge(v, v));
+    bp.appendChild(brow);
+    this.root.appendChild(bp);
+
+    // stats — explicit trends.
+    const sp = panel("Stats", "compare");
+    const statsRow = renderStats([
+      { label: "throughput", value: "1.2k", unit: "req/s", trend: "good" },
+      { label: "error rate", value: "0.4", unit: "%", trend: "bad" },
+      { label: "p99 latency", value: "180", unit: "ms", trend: "neutral" },
+      { label: "build", value: "0.4.0" },
+    ]);
+    statsRow.el.dataset.testid = "data-stats";
+    sp.appendChild(statsRow.el);
+    sp.appendChild(el("p", "hash",
+      "Trend direction is ALWAYS explicit. A rising error rate is bad; a rising throughput is good; the same number means either — so the widget never infers direction. The delta shows as a colored triangle/edge (non-text), never as colored value text."));
+    this.root.appendChild(sp);
+
+    // data table — sortable (caller-side), node formatter, maxRows.
+    const tp = panel("Data table", "library");
+    tp.appendChild(el("p", "hash",
+      "Sortable headers cycle none -> ascending -> descending and report the request via onSort; the widget never sorts or mutates the rows — THIS view re-sorts its own data. The Status column's formatter returns a live badge element. maxRows caps the body; the rest collapse into a footer note."));
+    const files = [
+      { name: "tokens.css", kind: "stylesheet", size: 4980, status: "ok" },
+      { name: "shell.js", kind: "module", size: 12030, status: "ok" },
+      { name: "space-grotesk-latin.woff2", kind: "font", size: 51840, status: "warn" },
+      { name: "widgets.css", kind: "stylesheet", size: 9527, status: "ok" },
+      { name: "table.js", kind: "module", size: 8816, status: "ok" },
+      { name: "auditor.js", kind: "module", size: 30000, status: "err" },
+      { name: "primitives.css", kind: "stylesheet", size: 38000, status: "ok" },
+    ];
+    const table = createTable({
+      caption: "Shipped assets",
+      maxRows: 5,
+      columns: [
+        { key: "name", label: "Name", sortable: true },
+        { key: "kind", label: "Kind", sortable: true },
+        { key: "size", label: "Size", align: "end", sortable: true, format: (v) => (v / 1000).toFixed(1) + " kB" },
+        { key: "status", label: "Status", format: (v) => badge(v, v) },
+      ],
+      rows: files.slice(),
+      onSort: (key, dir) => {
+        // Caller-side sort: the widget only reported the request.
+        let next;
+        if (dir === "none") {
+          next = files.slice();
+        } else {
+          next = files.slice().sort((a, b) => {
+            const av = a[key];
+            const bv = b[key];
+            const cmp = typeof av === "number" ? av - bv : String(av).localeCompare(String(bv));
+            return dir === "ascending" ? cmp : -cmp;
+          });
+        }
+        table.setRows(next);
+      },
+    });
+    table.el.dataset.testid = "data-table";
+    tp.appendChild(table.el);
+    this.root.appendChild(tp);
+
+    // virtual list — 10,000 rows, bounded DOM.
+    const vp = panel("Virtual list (10,000 rows)", "menu");
+    vp.appendChild(el("p", "hash",
+      "10,000 rows, but only the visible window (plus overscan) exists in the DOM. Fixed row height by design — variable heights are out of scope."));
+    const listItems = Array.from({ length: 10000 }, (_, i) => ({ id: i, label: "row " + i }));
+    const vlist = createVirtualList({
+      rowHeight: 28,
+      items: listItems,
+      getKey: (it) => it.id,
+      renderRow: (it) => {
+        const row = el("div");
+        row.appendChild(el("span", "hash", "#" + it.id));
+        row.appendChild(el("span", null, it.label));
+        return row;
+      },
+    });
+    vlist.el.dataset.testid = "data-vlist";
+    vlist.el.style.height = "320px";
+    vp.appendChild(vlist.el);
+    this.root.appendChild(vp);
+  },
+
+  refresh() {},
+};
+
 // ---------- mount ----------
 
 const themeBtn = el("button", "icon-btn");
@@ -1750,6 +1884,10 @@ shell = mountShell({
     state: {
       title: "State", icon: "faders", view: () => StateView,
       tip: "State -- the L2 state story live: a store, bound widgets, and a keyed reconciled list, all mutating in place. No declarative render layer.",
+    },
+    data: {
+      title: "Data", icon: "compare", view: () => DataView,
+      tip: "Data -- the data-display widgets live: status badges (all variants), stat tiles with explicit trends, a keyboard-navigable sortable data table (caller-side sort, node-formatted cells, maxRows), and a 10,000-row virtual list with a bounded DOM.",
     },
     realtime: {
       title: "Realtime", icon: "compare", view: () => RealtimeView,
