@@ -1,9 +1,16 @@
 # Version bump type: patch, minor, major, hotfix, or prerelease
-bump = ""
+bump = "patch"
 # Short description of this release (required)
-description = ""
+description = "Date/time picker popovers join the centralized light-dismiss engine: toggle buttons close cleanly without reopen races, and pickers nested in other overlays dismiss correctly."
 # Optional context explaining why these changes were made
-context = ""
+context = """
+Two prior releases (0.5.0, 0.6.0) were tagged but blocked from registries by \
+load-dependent e2e races, both root-caused (a starved deferred listener \
+registration; a focus no-op on hidden eager routes) and fixed. This release \
+completes the overlay-family migration onto the dismissal engine, hardens the \
+e2e suite against the race classes, and adds a stress preflight gate. It is the \
+first registry-published release of the augmentation line.
+"""
 # Pre-release identifier: alpha, beta, rc, or stable
 # preid = ""
 # Set to true to generate a blog post for this release
