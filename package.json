@@ -5,9 +5,16 @@
   "license": "MIT",
   "type": "module",
   "main": "./assets/js/index.js",
+  "types": "./assets/js/index.d.ts",
   "exports": {
-    ".": "./assets/js/index.js",
-    "./extras": "./assets/js/extras.js",
+    ".": {
+      "types": "./assets/js/index.d.ts",
+      "default": "./assets/js/index.js"
+    },
+    "./extras": {
+      "types": "./assets/js/extras.d.ts",
+      "default": "./assets/js/extras.js"
+    },
     "./assets/*": "./assets/*"
   },
   "files": [
