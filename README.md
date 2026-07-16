@@ -105,11 +105,16 @@ With npm, use bare specifiers by adding an import map:
 - `createCheckbox(opts)` -- hidden-native checkbox facade (form-participating)
 - `createRadio(opts)` -- hidden-native radio facade (form-participating)
 - `createFileInput(opts)` -- hidden-native file input facade (form-participating)
+- `createNumber(opts)` -- number stepper wrapping a native `input[type=number]` with custom +/- buttons (form-participating)
 - `createSegmented(opts)` -- segmented control with hidden radios (form-participating)
 - `createSlider(opts)` -- styled-native range slider (form-participating; onInput = live, onChange = commit)
 - `createTabs(opts)` -- tab bar (not form-participating)
 - `createSelect(opts)` -- custom dropdown select
+- `createCombobox(opts)` -- typeahead combobox with debounced async `onFilter` and stale-response discard (form-participating)
+- `createMultiSelect(opts)` -- multi-value typeahead with removable chips over a hidden `<select multiple>` (form-participating)
 - `createDatePicker(opts)` -- calendar date picker
+- `createTimePicker(opts)` -- HH:MM time picker with locale display and an hours/minutes popover (form-participating)
+- `createAccordion(opts)` -- stacked disclosure panels (single- or multi-open)
 - `copyButton(getText, tip?)` -- one-click clipboard copy button
 - `kebabButton(itemsFn, tip?)` -- three-dot menu button
 
@@ -128,7 +133,7 @@ With npm, use bare specifiers by adding an import map:
 
 **Data and utilities:**
 
-- `ICONS` -- built-in icon set (26 icons)
+- `ICONS` -- built-in icon set (29 icons)
 - `icon(name)` -- render an icon as an SVG string
 - `registerIcons(map)` -- merge consumer icons (collisions are hard errors)
 - `renderMiniMd(text)` -- inline markdown to DOM fragment (bold, code, links)
@@ -165,7 +170,7 @@ Design tokens let you re-theme and re-accent; they do not let you opt out of the
 
 No overhead -- as a number, not a vibe. Shipped CSS, JS, and fonts have hard byte ceilings enforced by CI; nothing bloats quietly.
 
-- **Budgets are per-tier.** The JS is split into a core tier and an extras tier, each with its own ceiling. New capability tiers (widgets, state) will land as their own tiers, each carrying its own budget -- never charged against core.
+- **Budgets are per-tier.** The JS is split into a core tier and an extras tier, each with its own ceiling. New capability tiers land as their own tiers, each carrying its own budget -- never charged against core. The core tier is the original frozen module set; new-generation control modules (time picker, combobox, multi-select, accordion) budget in a separate `controls-js` tier even though they are still exported from the core barrel.
 - **The core tier's existing APIs are frozen against breaking change.** What core exports today keeps its shape and behavior.
 - **Additive extensions are permitted.** New primitives and options can join a tier as long as they stay under its ceiling.
 - **The core ceiling is never raised.** Growth happens in new tiers, not by loosening core. Raising any ceiling is a deliberate reviewed decision, never a side effect.
