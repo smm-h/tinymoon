@@ -97,8 +97,18 @@ document.addEventListener("pointerdown", () => {
   hideTip();
 }, true);
 
-document.addEventListener("scroll", () => {
-  hideTip();
+document.addEventListener("scroll", (e) => {
+  if (!tipTarget) return;
+  // A scroll only invalidates the tooltip's fixed position when it moves the
+  // anchor. That is true when the scrolled node contains the anchor — including
+  // document/documentElement for a whole-page scroll (Node.contains covers all
+  // three). A scroll in an unrelated container (e.g. a background live feed
+  // autoscrolling to its tail) leaves the anchor put, so a hovered tooltip must
+  // survive it — hiding on ANY scroll anywhere was the bug.
+  const scrolled = e.target;
+  if (scrolled && typeof scrolled.contains === "function" && scrolled.contains(tipTarget)) {
+    hideTip();
+  }
 }, true);
 
 window.addEventListener("blur", () => hideTip());

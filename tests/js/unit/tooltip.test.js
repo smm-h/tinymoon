@@ -112,4 +112,56 @@ describe("tooltip", () => {
     // The JS does not set pointer-events at all -- CSS controls it.
     expect(tip.style.pointerEvents).toBe("");
   });
+
+  it("survives a scroll in an unrelated container (anchor did not move)", () => {
+    const anchor = document.createElement("button");
+    anchor.dataset.tooltip = "Stays put";
+    document.body.appendChild(anchor);
+    anchor.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    const tip = document.querySelector("[id^='tm-tooltip']");
+    expect(tip.classList.contains("show")).toBe(true);
+
+    // A different scroll container scrolls (e.g. a background feed autoscrolling
+    // to its tail). It does not contain the anchor, so the tooltip's fixed
+    // position is unaffected and it must survive — the regression this guards.
+    const elsewhere = document.createElement("div");
+    document.body.appendChild(elsewhere);
+    elsewhere.dispatchEvent(new Event("scroll"));
+    expect(tip.classList.contains("show")).toBe(true);
+
+    anchor.remove();
+    elsewhere.remove();
+  });
+
+  it("hides on a scroll in a container that holds the anchor (anchor moved)", () => {
+    const scroller = document.createElement("div");
+    const anchor = document.createElement("button");
+    anchor.dataset.tooltip = "Moves with the scroller";
+    scroller.appendChild(anchor);
+    document.body.appendChild(scroller);
+    anchor.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    const tip = document.querySelector("[id^='tm-tooltip']");
+    expect(tip.classList.contains("show")).toBe(true);
+
+    // The anchor's own scroll container scrolls → the anchor moves → the fixed
+    // tooltip is now stale, so it hides (the position-invalidation case).
+    scroller.dispatchEvent(new Event("scroll"));
+    expect(tip.classList.contains("show")).toBe(false);
+
+    scroller.remove();
+  });
+
+  it("hides on a whole-page scroll (document contains the anchor)", () => {
+    const anchor = document.createElement("button");
+    anchor.dataset.tooltip = "Page scroll";
+    document.body.appendChild(anchor);
+    anchor.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    const tip = document.querySelector("[id^='tm-tooltip']");
+    expect(tip.classList.contains("show")).toBe(true);
+
+    document.dispatchEvent(new Event("scroll"));
+    expect(tip.classList.contains("show")).toBe(false);
+
+    anchor.remove();
+  });
 });
