@@ -1096,6 +1096,45 @@ The settings store's \`theme\` value may be \`"dark"\`, \`"light"\`, or \`"syste
 The snippet reads the persisted settings blob, resolves a stored \`"system"\` value against the OS, and sets \`data-theme\`. It assumes the default storage key \`"tm-settings"\`; if your \`createSettings\` \`storageKey\` differs, replace that one literal. It touches only \`localStorage\`, \`matchMedia\`, and \`documentElement\` — nothing the conformance scanners flag.
 `,
   },
+  {
+    id: "how-tinymoon-compares",
+    title: "How tinymoon compares",
+    md: `
+**Measured/collected July 2026 — sizes drift; the capability matrix in the README is the durable comparison.** Every figure below is stamped with its **metric** (min+gzip vs raw), because comparing a raw, unminified number against a competitor's min+gzip number is apples-to-oranges. Where a number is approximate, unverified, or a vendor/marketing self-report, the metric column says so.
+
+tinymoon ships **unminified** (no build step), so its honest comparison point is its own **gzip** weight, not its raw bytes. The others' figures are their published **min+gzip** numbers unless the metric column marks them otherwise (\`gzip\`, \`raw\`, \`vendor figure\`, \`marketing figure\`, \`approx\`, \`unverified\`, \`proxy\`).
+
+\`\`\`
+Library      Version  Size                   Metric                   Build     Deps  Scope
+-----------  -------  ---------------------  -----------------------  --------  ----  ------------------------------------------------------
+Preact       10.29    ~4 KB                  min+gzip                 no        0     VDOM view + hooks
+Solid        1.9      ~7 KB                  min+gzip                 yes(JSX)  0     fine-grained reactive view
+Svelte       5 (rt)   ~2-5 KB                min+gzip approx          yes       0     compiled view; runtime only
+lit          3.3      ~5-7 KB                min+gzip unverif.        no        0     web-component base
+Mithril      2        ~9 KB                  gzip incl. router        no        0     view + router
+hyperapp     2        ~1 KB                  vendor figure            no        0     tiny view + state
+VanJS        1.5      ~1 KB                  vendor figure            no        0     reactive view (tiny)
+petite-vue   0.4      ~6 KB                  marketing figure         no        0     Vue-subset sprinkles
+Alpine       3.15     ~7-15 KB               gzip                     no        0     attribute reactivity + store
+htmx         2.0      ~5 KB                  gzip                     no        0     HTML-over-wire (+SSE/WS ext)
+Web Awesome  3.0      no verified total      lazy chunks              no        many  web-components (50+ incl. tree)
+Pico         2        ~2.5-12 KB             min+gzip (range)         no        0     classless CSS framework
+Bootstrap    5.3      ~25KB CSS +~15.5KB JS  gzip (5.2.2 proxy)       no        0     CSS + JS components
+Bulma        1.x      large, CSS-only        raw/min (post-1.0)       no        0     CSS framework (no JS)
+Open Props   2        ~4 KB                  min+gzip tokens-only     no        0     CSS token set (no components)
+tinymoon     0.7.0    ~396KB raw /~128KB gz  raw AND gzip (measured)  no        0     shell+table+tree+pickers+palette+store+realtime+md+CLI
+\`\`\`
+
+Reading notes:
+
+- **vendor / marketing figure** — a size the project reports about itself, not independently measured here. hyperapp and VanJS advertise ~1 KB; petite-vue markets ~6 KB (the project has low recent activity).
+- **approx / unverified** — sources disagree or the number could not be pinned. Svelte 5's runtime is variously cited ~2-5 KB; lit 3.3 is commonly cited ~5-7 KB but was not independently re-measured here.
+- **proxy** — Bootstrap's split (~25 KB CSS + ~15.5 KB JS gzip) is taken from a 5.2.2 measurement used as a stand-in for 5.3.
+- **Web Awesome** loads components as lazy per-component chunks, so there is no single verified total to quote. It is a large web-component library (50+ components, including a tree/tree-item) with no router, store, realtime, markdown, or conformance CLI.
+- **Scope** is what a library ships in its OWN tree, not what you can bolt on. Mithril bundles a router; Alpine bundles a store; htmx does realtime through its SSE/WS extensions.
+- **tinymoon** is the only row spanning app shell, data table, tree, date/time pickers, command palette, reactive store, realtime helpers, markdown, AND a conformance CLI in one dependency-free, build-free tree. That breadth is what the raw number buys: one tree doing the work of a hand-assembled stack. Its fair size comparison is the gzip figure (~128 KB whole kit) against the others' min+gzip numbers — roughly three Bootstraps, or about twice a hand-rolled no-build equivalent.
+`,
+  },
 ];
 
 const WikiView = createWikiView({ route: "wiki", sections: WIKI_SECTIONS });
