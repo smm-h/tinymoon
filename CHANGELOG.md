@@ -2,6 +2,31 @@
 
 # Changelog
 
+## 0.8.0
+
+The size guarantee becomes a standing ratchet (ceilings re-baseline to measured x1.25 when they bind; core re-baselined once to 147,500), with honest comparative positioning — a capability matrix in the README, a dated size survey in the gallery, and small consumer-reported fixes (renderStats instance pass-through, checker-limitation and vendoring documentation).
+
+<details>
+<summary>Context</summary>
+
+The frozen core ceiling had reached 17 bytes of headroom and was forcing byte-archaeology on every core-file change; the ratchet keeps walls deliberately close (placement decisions stay forced) while ending the archaeology. Positioning was rewritten against a mid-2026 survey of the minimal-framework landscape — the differentiator stated as surface-per-byte plus enforcement tooling, with measured gzip numbers replacing the absolute "tiny" claim.
+
+</details>
+
+### Breaking
+
+- **The size guarantee changed: the core JS byte ceiling is no longer frozen.** Every tier ceiling (core included) now follows a STANDING RATCHET: it is set to the tier's current measured weight x1.25, and re-baselines to a new measured x1.25 in review whenever a legitimate addition makes it bind. The old "the core ceiling is never raised" promise is retired; the core ceiling re-baselined once, from 118,000 to 147,500 bytes. Walls are kept deliberately close so adding a capability still forces a real placement decision.
+
+### Features
+
+- **New README section: Scope and non-goals.** Spells out that tinymoon is a fixed-identity, hand-coded, web-only framework and states its explicit non-goals (server-driven UI trees, per-deployment theming, cross-platform native rendering, and app-platform features), so readers can tell at a glance whether it fits their use case.
+- **New README positioning: a comparative size story and a capability coverage matrix.** The docs now frame tinymoon by surface-per-byte rather than absolute smallness: honest measured numbers (raw ~396 KB, gzip ~128 KB for the whole kit), a metric-discipline note (tinymoon's gzip weight vs competitors' min+gzip), two hedged comparisons (about three Bootstraps; roughly 2x a hand-rolled no-build stack), and a durable capability matrix versus view microframeworks, Mithril, Alpine, htmx, Web Awesome, and Bootstrap.
+- **`renderStats` now accepts already-built `createStat` instances**, or any mix of instances and config objects, not only config objects. Passing an instance no longer throws "label is required" -- an entry carrying an `.el` is mounted as-is (preserving references, bindings, and a pre-set trend), and the row's `destroy` still tears it down.
+
+### Fixes
+
+- **Documented two conformance-checker details consumers rely on.** The `external-url` rule matches inline URL literals only: a URL passed through a variable (`const u = "https://..."; fetch(u)`) is neither caught nor allowlistable, so keep external URLs inline at the load site. And vendored framework assets pass by hash-identity in a plain directory with no manifest, but under `third_party/` the quarantine's pin requirement applies to them too.
+
 ## 0.7.0
 
 Consumer-driven patch wave: vendored-framework recognition by hash identity, fenced code blocks in doc markdown, put/patch/del net helpers, table row event hooks, 2+1/1+2 grid presets, a WCAG-verified danger button, and a Python-side theme boot snippet — plus checker false-positive fixes and a hard error for a silent route misconfiguration.

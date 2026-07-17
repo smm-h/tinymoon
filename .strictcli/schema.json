@@ -48,7 +48,7 @@
   },
   "project_id": "tinymoon",
   "name": "tinymoon",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "help": "Tooling for the tinymoon web framework. Ships the conformance checker that enforces the framework's non-negotiables (no external URLs, no native browser controls, no title= attributes, no rounded corners, no off-token colors) as hard errors.",
   "commands": {
     "check": {
