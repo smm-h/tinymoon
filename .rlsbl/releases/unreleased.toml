@@ -1,9 +1,11 @@
 # Version bump type: patch, minor, major, hotfix, or prerelease
-bump = ""
+bump = "minor"
 # Short description of this release (required)
-description = ""
+description = "The size guarantee becomes a standing ratchet (ceilings re-baseline to measured x1.25 when they bind; core re-baselined once to 147,500), with honest comparative positioning — a capability matrix in the README, a dated size survey in the gallery, and small consumer-reported fixes (renderStats instance pass-through, checker-limitation and vendoring documentation)."
 # Optional context explaining why these changes were made
-context = ""
+context = """
+The frozen core ceiling had reached 17 bytes of headroom and was forcing byte-archaeology on every core-file change; the ratchet keeps walls deliberately close (placement decisions stay forced) while ending the archaeology. Positioning was rewritten against a mid-2026 survey of the minimal-framework landscape — the differentiator stated as surface-per-byte plus enforcement tooling, with measured gzip numbers replacing the absolute "tiny" claim.
+"""
 # Pre-release identifier: alpha, beta, rc, or stable
 # preid = ""
 # Set to true to generate a blog post for this release
