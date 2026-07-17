@@ -104,7 +104,7 @@ With npm, use bare specifiers by adding an import map:
 **Shell and DOM:**
 
 - `mountShell(opts)` -- mount the app shell with sidebar, topbar, router, and footer slot (routes accept `eager: true` to build at mount instead of first visit)
-- `createView(opts)` -- build a contract-conforming route view with managed `built`; `build`/`refresh` receive a ctx `{root, setSub(text)}`
+- `createView(opts)` -- build a contract-conforming route view with managed `built`; `build`/`refresh` receive a ctx `{root, setSub(text), query}` (`query` is the parsed deep-link query object)
 - `announce(msg)` -- push a message into the shell's aria-live route announcer (also on the shell instance as `shell.announce`)
 - `el(tag, cls?, text?)` -- element factory
 - `$(sel, root?)` -- querySelector shorthand
@@ -181,7 +181,7 @@ The Phase 6B framework wave. A separate barrel (not the core `tinymoon` index) p
 - `loadingBlock(opts?)` / `emptyBlock(opts)` / `errorBlock(opts)` -- one-shot async-state element blocks (static-first, reduced-motion-safe, built on the `.empty` widgets.css style)
 - `renderAsync(container, promise, opts)` -- swap loading/data/empty/error blocks into a container as a promise settles
 - `lazyMount(target, loadFn, opts?)` -- IntersectionObserver-gated loader with a concurrency pump (default 3-wide), draining in visibility order; returns `cancel()`
-- `registerShortcut(combo, handler, opts?)` -- keyboard shortcut binder on one shared listener ("mod+k" combos, overlay-aware suppression, `global`/`allowInInputs` opts, duplicate-combo hard error)
+- `registerShortcut(combo, handler, opts?)` -- keyboard shortcut binder on one shared listener ("mod+k" combos, overlay-aware suppression that consults both open modal dialogs and the light-dismiss registry so popover/ctxmenu/select/non-modal drawer suppress too, `global`/`allowInInputs` opts, duplicate-combo hard error)
 - `registerPaletteSource(fn)` / `openPalette()` / `installPalette(opts?)` -- opt-in command palette: source aggregation, debounced + stale-discarding querying, built-in subsequence match/rank, and (via `installPalette`) a global toggle shortcut seeded from the shell's routes
 - `registerLightDismiss(opts)` -- register a light-dismiss overlay layer on the kernel's central outside-pointer registry (one document capture-phase `pointerdown` listener over a LIFO stack; only the topmost layer is consulted per press). `{panels, dismiss, trigger?}`; a press on a registered `trigger` dismisses and claims the pointer gesture so a close-press cannot immediately reopen the overlay. Returns an unregister function
 - `registerOverlayTrigger(triggerEl, opener)` -- declarative invoker contract: the framework owns the trigger's click handler and open/closed state, sets `aria-expanded` (and `aria-controls`), and wires the gesture-claim. Backs the drawer toggle and the shell hamburger; double-registering the same element is a hard error
@@ -383,7 +383,7 @@ The corpus is fixture data with deliberate violations, so it is not part of the 
 
 **Selection model.** Elements declare tooltips via `data-tooltip` (plain text) and hovercards via `data-hovercard` (markdown with bold, code, links). The framework manages hover intent, positioning, and the hover bridge automatically.
 
-**View contract.** Routes map to view objects `{root, built, build(), refresh(), setSub?}`. The shell's router owns the lifecycle: `build()` constructs the DOM once (idempotent), `refresh()` runs on every visit, `setSub(sub)` receives deep-link tails. A string value instead of a view factory activates the content-first path -- plain HTML styled automatically with zero framework classes.
+**View contract.** Routes map to view objects `{root, built, build(), refresh(), setSub?, setQuery?}`. The shell's router owns the lifecycle: `build()` constructs the DOM once (idempotent), `refresh()` runs on every visit, `setSub(sub)` receives deep-link tails, and `setQuery(query)` receives the parsed deep-link query object (`#/key/tail?a=1&b=2` → `{a: "1", b: "2"}`) before build/refresh. A route's view factory may also return a `Promise` (async view): the router shows a `loadingBlock` placeholder while it resolves, then mounts the resolved view -- or an `errorBlock` on rejection. A string value instead of a view factory activates the content-first path -- plain HTML styled automatically with zero framework classes.
 
 ## Gallery
 
