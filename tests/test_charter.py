@@ -161,6 +161,43 @@ def test_gallery_css_durations_use_tokens():
     )
 
 
+# Every var(--dur-*) reference must name a token that actually exists in
+# tokens.css. Without this check, a typo'd or undefined token (e.g.
+# var(--dur-2)) satisfies the "uses var(--dur" tests above yet resolves to
+# nothing at runtime, silently turning the transition into a no-op.
+_DUR_VAR_RE = re.compile(r"var\(\s*(--dur-[\w-]+)")
+
+
+def _defined_dur_tokens():
+    """All --dur-* custom properties actually declared in tokens.css."""
+    return {t for t in _token_names() if t.startswith("--dur-")}
+
+
+def test_dur_var_references_name_existing_tokens():
+    """Every var(--dur-*) reference in shipped + gallery CSS names a token
+    that exists in tokens.css (guards against silent no-op transitions)."""
+    defined = _defined_dur_tokens()
+    css_files = sorted(ASSETS_CSS.glob("*.css")) + [GALLERY / "gallery.css"]
+    violations = []
+    for css_file in css_files:
+        # tokens.css is the definition source — skip it.
+        if css_file.name == "tokens.css":
+            continue
+        text = css_file.read_text()
+        for i, line in enumerate(text.splitlines(), 1):
+            for m in _DUR_VAR_RE.finditer(line):
+                name = m.group(1)
+                if name not in defined:
+                    violations.append(
+                        f"{css_file.name}:{i}: undefined duration token "
+                        f"{name} — {line.strip()}"
+                    )
+    assert violations == [], (
+        "var(--dur-*) references to tokens not defined in tokens.css:\n"
+        + "\n".join(violations)
+    )
+
+
 # ---------------------------------------------------------------------------
 # Interactive content in tooltips
 # ---------------------------------------------------------------------------
