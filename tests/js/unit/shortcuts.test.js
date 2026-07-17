@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { registerShortcut } from "../../../assets/js/shortcuts.js";
+import { registerLightDismiss } from "../../../assets/js/dismiss.js";
 
 // The module keeps ONE document keydown listener and a module-level registry.
 // Each test unregisters its combos so signatures do not collide across tests.
@@ -130,6 +131,47 @@ describe("registerShortcut — input & overlay suppression", () => {
     const dlg = document.createElement("dialog");
     dlg.setAttribute("open", "");
     document.body.appendChild(dlg);
+    key({ key: "k", ctrlKey: true });
+    expect(h).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("registerShortcut — light-dismiss overlay suppression", () => {
+  const layers = [];
+  function openLightOverlay() {
+    // Any transient overlay (popover, context menu, select, non-modal drawer)
+    // registers a light-dismiss layer; a bare panel registration stands in.
+    const panel = document.createElement("div");
+    document.body.appendChild(panel);
+    const off = registerLightDismiss({ panels: [panel], dismiss: () => {} });
+    layers.push(off);
+    return off;
+  }
+  afterEach(() => { while (layers.length) layers.pop()(); });
+
+  it("suppresses a non-global shortcut while a light-dismiss overlay is open", () => {
+    const h = vi.fn();
+    reg("mod+k", h);
+    openLightOverlay();
+    key({ key: "k", ctrlKey: true });
+    expect(h).not.toHaveBeenCalled();
+  });
+
+  it("a global shortcut still fires while a light-dismiss overlay is open", () => {
+    const h = vi.fn();
+    reg("mod+k", h, { global: true });
+    openLightOverlay();
+    key({ key: "k", ctrlKey: true });
+    expect(h).toHaveBeenCalledTimes(1);
+  });
+
+  it("suppression lifts once the overlay unregisters its layer", () => {
+    const h = vi.fn();
+    reg("mod+k", h);
+    const off = openLightOverlay();
+    key({ key: "k", ctrlKey: true });
+    expect(h).not.toHaveBeenCalled();
+    off(); // overlay closed → layer gone → shortcuts live again
     key({ key: "k", ctrlKey: true });
     expect(h).toHaveBeenCalledTimes(1);
   });

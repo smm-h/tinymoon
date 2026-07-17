@@ -13,18 +13,25 @@
 // character itself ("?" already means Shift+/), so shift is not part of the
 // signature there.
 //
-// Overlay suppression is detected via an open top-layer <dialog> — the shape
-// every modal overlay (openModal, a modal openDrawer, and the command palette)
-// takes. That covers the documented interplay: while the palette or a modal is
-// open, only {global: true} shortcuts fire. Transient light-dismiss overlays
-// (popover, context menu, select, a non-modal drawer) are Escape-dismissable
-// and short-lived, so they do not suppress shortcuts.
+// Overlay suppression consults TWO sources: an open top-layer <dialog> — the
+// shape every modal overlay (openModal, a modal openDrawer, the command palette)
+// takes — AND the central light-dismiss registry (dismiss.js), which every
+// transient overlay (popover, context menu, select menu, non-modal drawer)
+// registers on. While ANY of them is open, only {global: true} shortcuts fire —
+// so typing under an open overlay never triggers app-level keys underneath it,
+// and the palette's own {global: true} toggle still closes it. (Consulting the
+// registry replaced an earlier dialog-only querySelector that left the transient
+// overlays as a documented suppression gap.)
+
+import { lightDismissDepth } from "./dismiss.js";
 
 const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform || "");
 
-// overlayOpen() → true while a modal top-layer dialog is showing.
+// overlayOpen() → true while a modal top-layer dialog OR any light-dismiss
+// overlay is open.
 function overlayOpen() {
-  return typeof document !== "undefined" && !!document.querySelector("dialog[open]");
+  if (typeof document !== "undefined" && document.querySelector("dialog[open]")) return true;
+  return lightDismissDepth() > 0;
 }
 
 // canonical(mods, key) → the stable string signature both registration and

@@ -20,6 +20,14 @@ function inAny(els, target) {
   return els.some((el) => el === target || el.contains(target));
 }
 
+// lightDismissDepth() → how many light-dismiss layers are open (0 when none). A
+// read-only view of the LIFO stack so other modules — shortcuts.js suppression —
+// can ask "is any transient overlay (popover, ctxmenu, select, non-modal
+// drawer) open?" without reaching into the stack.
+export function lightDismissDepth() {
+  return lightLayers.length;
+}
+
 // registerLightDismiss({panels, dismiss, trigger?}) → unregister.
 //   panels  — elements whose interior counts as "inside" (never dismisses).
 //   dismiss — called to close the overlay when an outside press lands.

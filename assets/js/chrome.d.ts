@@ -97,17 +97,19 @@ export function lazyMount(
 export interface ShortcutOpts {
   /** Allow a bare single-key combo to fire inside inputs/contenteditable. */
   allowInInputs?: boolean;
-  /** Fire even while a kernel overlay (modal, drawer, menu) is open. */
+  /** Fire even while an overlay is open (modal dialog OR any light-dismiss
+   * overlay: popover, context menu, select, non-modal drawer). */
   global?: boolean;
 }
 
 /**
  * Bind a keyboard shortcut on the shared module-level keydown listener. `combo`
  * is "mod+k" style ("mod" resolves to Cmd on Apple platforms, Ctrl elsewhere).
- * Ordinary shortcuts are suppressed while a kernel overlay is open unless
- * `global`; bare single-key combos are suppressed inside text entry unless
- * `allowInInputs`. Registering an already-active combo throws. Returns an
- * unregister function.
+ * Ordinary shortcuts are suppressed while any overlay is open — a modal dialog
+ * OR a light-dismiss overlay (popover, context menu, select, non-modal drawer,
+ * via the dismiss.js registry) — unless `global`; bare single-key combos are
+ * suppressed inside text entry unless `allowInInputs`. Registering an
+ * already-active combo throws. Returns an unregister function.
  */
 export function registerShortcut(
   combo: string,
@@ -211,6 +213,14 @@ export type OverlayOpener = (ctx: OverlayTriggerContext) => OverlayHandle;
  * the topmost layer is consulted per press). Returns an unregister function.
  */
 export function registerLightDismiss(opts: LightDismissOpts): () => void;
+
+/**
+ * How many light-dismiss layers are currently open (0 when none). A read-only
+ * view of the LIFO stack; `registerShortcut` suppression consults it so a
+ * transient overlay (popover, context menu, select, non-modal drawer) suppresses
+ * non-global shortcuts, not just a modal dialog.
+ */
+export function lightDismissDepth(): number;
 
 /**
  * Declarative invoker contract: the framework owns `triggerEl`'s click handler
