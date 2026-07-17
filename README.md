@@ -240,20 +240,60 @@ Because that scope is intentional, several things are explicit **non-goals**. ti
 
 If you are building one of those systems -- a server-driven declarative UI runtime, a per-app theming engine, a cross-platform renderer, or a docking/plugin host -- tinymoon is not the framework to build it on. At most, such a system may consume tinymoon's **design-token values** (the palette and type scale, as plain values) as a source of visual kinship. It should never depend on tinymoon's runtime, and tinymoon will never grow runtime hooks to accommodate those models.
 
-## Size
+## Size and positioning
 
-No overhead -- as a number, not a vibe. Shipped CSS, JS, and fonts have hard byte ceilings enforced by CI; nothing bloats quietly.
+No overhead -- as a number, not a vibe. Shipped CSS, JS, and fonts have hard byte ceilings enforced by CI; nothing bloats quietly. But "tiny" here is not a claim to be the smallest thing on the shelf -- it is a claim about **surface per byte**. tinymoon is not competing to weigh less than a 4 KB view layer; it is one dependency-free, build-free tree that carries an app shell, a data table, a tree, date/time pickers, a command palette, a reactive store, realtime helpers, markdown, and a conformance CLI at once.
 
-- **Budgets are per-tier.** Every shipped file belongs to exactly one budgeted tier, each with its own hard ceiling. New capability tiers land as their own tiers, each carrying its own budget -- never charged against core. The full tier set: **JS** -- `core` (the original frozen module set), `controls-js` (new-generation controls: time picker, combobox, multi-select, accordion), `state-js` (store + reconciler), `widgets-js` (data-display widgets), `chrome-js` (shell-and-chrome modules: the Phase 6A view factory, drawer, tab panels, icon button, and preset grid, plus the Phase 6B async-state blocks, lazy mounting, keyboard shortcuts, and command palette, plus the light-dismiss engine and overlay-trigger invoker), and `dev` (dev-only modules, classified but uncounted); **CSS** -- `css` (the four base sheets) and `widgets-css` (the optional data-display sheet); plus **`fonts`** (the four vendored woff2 files). New-generation modules budget in their own tier even when they are still exported from the core barrel.
-- **The core tier's existing APIs are frozen against breaking change.** What core exports today keeps its shape and behavior.
+### What it weighs
+
+These are measured bytes on disk. There is **no build and no minification**, so the raw bytes *are* the wire bytes unless your server gzips (most do):
+
+| Layer | Raw (on disk / wire-if-uncompressed) | Gzip (wire-if-compressed) |
+| --- | --- | --- |
+| JS (all tiers) | ~299 KB | ~107 KB |
+| CSS (all sheets) | ~88 KB | ~21 KB |
+| **JS + CSS together** | **~396 KB** | **~128 KB** |
+| Fonts (4 woff2, already compressed) | ~95 KB | ~95 KB |
+
+A **metric-discipline note**, because it is easy to compare unlike things: published sizes for other libraries are almost always **minified + gzip**. tinymoon ships unminified on purpose (no toolchain), so its raw number looks large next to a min+gzip number and the comparison is dishonest. tinymoon's fair comparison point is its **own gzip weight** (~128 KB for the whole kit), measured against competitors' min+gzip figures.
+
+### How it compares (two honest hedges)
+
+- **Versus a component/CSS framework.** The whole kit -- every tier linked -- gzips to about **128 KB**, roughly **three Bootstraps'** worth of framework CSS + JS (Bootstrap 5.3 is about 25 KB CSS + 15.5 KB JS gzip). Most apps link a subset of tiers and weigh less.
+- **Versus rolling your own.** A hand-assembled no-build equivalent -- a view layer, a router, a data-table library, a command palette, a date picker, a store, and a markdown parser -- totals roughly **50-55 KB min+gzip** *before* you add widget CSS, a design system, realtime helpers, or a conformance checker. So choosing tinymoon's zero-toolchain path costs on the order of **2x in gzip**, and that is the deliberate price of shipping **no build step**. Raw-vs-raw (unminified against unminified), that DIY stack lands in the same **300-450 KB** band tinymoon does.
+
+The differentiator is not fewest bytes; it is **breadth of surface per byte, plus the enforcement tooling**. No surveyed alternative ships table + tree + date/time pickers + command palette + reactive store + realtime + markdown + a conformance CLI in a single dependency-free tree. A full dated, per-library size table (with the min+gzip-vs-raw metric stamped on every figure) lives in the gallery's **"How tinymoon compares"** wiki section; sizes drift, so the durable comparison is the capability matrix below.
+
+### Capability coverage matrix
+
+Rows are capabilities; a cell says whether that class of tool ships the capability in its own tree (not via a separate package you must find, vendor, and wire up yourself). "View microframeworks" groups Preact / Solid / Svelte / lit as a class.
+
+| Capability | tinymoon | View microframeworks | Mithril | Alpine | htmx | Web Awesome | Bootstrap |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| App shell / router | yes | no (router is a separate pkg) | router only | no | no | no | no |
+| Data table | yes | no | no | no | no | no | styling only |
+| Tree | yes | no | no | no | no | yes (tree / tree-item) | no |
+| Date / time pickers | yes | no | no | no | no | no | no |
+| Command palette | yes | no | no | no | no | no | no |
+| Reactive store | yes | partial (reactivity core) | no | yes (`Alpine.store`) | no | no | no |
+| SSE / WS helpers | yes | no | no | no | extension (SSE/WS) | no | no |
+| Markdown | yes | no | no | no | no | no | no |
+| Conformance CLI | yes | no | no | no | no | no | no |
+
+Web Awesome is a large component library (a tree, and 50+ components) but ships no router, store, realtime, markdown, or CLI. Mithril bundles a router with its view layer but no shell or widgets. htmx moves HTML over the wire and adds realtime through its SSE/WS extensions, but has no client-side widget surface. The point of the table is not to rank -- it is to show that tinymoon's columns are filled by *assembling several of the other columns* plus tooling none of them ship.
+
+### Budgets and the ratchet
+
+- **Budgets are per-tier.** Every shipped file belongs to exactly one budgeted tier, each with its own hard ceiling. New capability tiers land as their own tiers, each carrying its own budget -- new capability = new tier. The full tier set: **JS** -- `core` (the original module set), `controls-js` (new-generation controls: time picker, combobox, multi-select, accordion), `state-js` (store + reconciler), `widgets-js` (data-display widgets), `chrome-js` (shell-and-chrome modules: the Phase 6A view factory, drawer, tab panels, icon button, and preset grid, plus the Phase 6B async-state blocks, lazy mounting, keyboard shortcuts, and command palette, plus the light-dismiss engine and overlay-trigger invoker), and `dev` (dev-only modules, classified but uncounted); **CSS** -- `css` (the four base sheets) and `widgets-css` (the optional data-display sheet); plus **`fonts`** (the four vendored woff2 files). New-generation modules budget in their own tier even when they are still exported from the core barrel.
+- **The core tier's existing APIs are frozen against breaking change.** What core exports today keeps its shape and behavior. (This is an *API* freeze, distinct from the byte ceiling below.)
 - **Additive extensions are permitted.** New primitives and options can join a tier as long as they stay under its ceiling.
-- **The core ceiling is never raised.** Growth happens in new tiers, not by loosening core. Raising any ceiling is a deliberate reviewed decision, never a side effect.
+- **Ceilings are a standing ratchet, not a permanent promise.** Every ceiling is set the same way: the tier's current measured weight x1.25, rounded to a clean number. The walls are kept **deliberately close** -- the 25% headroom is a wall, not a moat -- so that adding a capability forces a real placement decision (which tier, or a new tier) instead of drifting into slack. When a tier's ceiling *binds* (a legitimate addition would exceed it), the ceiling **re-baselines** to the new measured weight x1.25, rounded clean, as a single-row reviewed edit with the measurement recorded. This applies to **every tier, core included** -- there is no frozen-in-bytes tier. The ratchet only ever moves up to track a real, measured, shipped addition; it is never pre-inflated for headroom the code does not yet use. (The core row has re-baselined once so far, from 118,000 to 147,500 bytes, when it bound at ~117,983 measured.)
 
 ## Conformance checker
 
 `tinymoon check` scans `.html`, `.css`, and `.js` files and enforces the framework's non-negotiables as hard errors:
 
-- **external-url** -- no external resource loads (no `http://`, `https://`, or `//host` URLs fetched into the page from HTML, CSS, or JS; form `action`/`formaction` count as loads). Plain `<a>`/`<area>` hyperlink navigations are legal
+- **external-url** -- no external resource loads (no `http://`, `https://`, or `//host` URLs fetched into the page from HTML, CSS, or JS; form `action`/`formaction` count as loads). Plain `<a>`/`<area>` hyperlink navigations are legal. **Known limitation (inline literals only):** in JS, the rule matches a URL only when it appears as an **inline string (or template) literal** directly inside the load site -- `fetch("https://...")`, `new WebSocket("wss://...")`, `import("https://...")`, or an `import ... from "https://..."` specifier. One level of variable indirection evades it: `const u = "https://evil.example"; fetch(u)` is not caught, because the regex-era checker sees only the literal at the call, not the value flowing into it. This is a deliberate, documented gap that the tree-sitter rewrite (which will follow the assignment) closes. Until then, keep external URLs as **inline literals** at their load site so the `tinymoon-allowlist.txt` allowlist does real work -- a URL you hide behind a variable is neither caught nor allowlistable, which defeats the point of the allowlist.
 - **native-control** -- no native `<select>`, `<dialog>`, `<textarea>`, or `<input>` of a type that has a shipped replacement factory. A bare `<input>` with no `type` also fires (a typeless input defaults to `text`). Every banned control maps to a framework primitive:
 
   | Banned native | Replacement factory |
@@ -287,6 +327,13 @@ One line per violation, exit non-zero on any finding. No `--skip`, `--ignore`, o
 A no-backend or self-hosting consumer often copies tinymoon's `css/`, `js/`, and `fonts/` out of the package into its own tree (e.g. `/tm`) and serves them directly. Those copies are tinymoon's own bytes, but the checker's framework-own allowance keys on the *installed* package location, so a naively-vendored copy would fail the checker's own native-control rule (`select.js` creating a `<select>`, etc.).
 
 Vendored framework assets are recognized by **identity**, not location: a file whose bytes `sha256`-match a packaged framework asset is framework-own wherever you put it, with zero configuration and no `third_party/` quarantine. Keep the copies **verbatim** -- the intended workflow is an update script that re-copies from `node_modules/tinymoon/assets` (or `tinymoon.assets_path()`) on each upgrade, never a hand-edit. The hash is the proof: editing a vendored file to make it yours breaks the match, and it is then scanned as ordinary consumer code. The `third_party/` quarantine below remains for genuinely foreign code you did not write.
+
+**Where you put the vendored framework tree matters (0.7.0).** Both placements are legal, but they earn their exemption through different mechanisms, and this is a common point of confusion:
+
+- **In a plain directory** (e.g. `/tm`, `assets/vendor/tinymoon`, anywhere that is *not* named `third_party/`): the copy passes on **hash identity alone**. No manifest, no configuration -- the bytes match a packaged framework asset, so the file is framework-own by identity. This is the recommended placement for tinymoon's own assets.
+- **Inside a `third_party/` directory**: the quarantine takes over, and its pin requirement applies to **everything in the directory, including framework-own files**. Hash-identity recognition does not exempt a file from the quarantine's own manifest rule -- a framework asset dropped into `third_party/` with no `PROVENANCE.toml` entry is a hard `unpinned-vendor` error, exactly like any other unpinned file. To keep framework assets in `third_party/` you must pin each one in the manifest like any foreign file. (Verified empirically: the same `select.js` that passes untouched in a plain directory fails `unpinned-vendor` under `third_party/` until it is pinned.)
+
+The practical rule: **vendor tinymoon's own assets into a plain directory** (no manifest needed), and reserve `third_party/` for foreign code you did not write. Only put framework assets under `third_party/` if you have a reason to quarantine the whole tree uniformly -- and then pin them.
 
 ### Vendored third-party code
 
