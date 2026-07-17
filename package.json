@@ -1,7 +1,7 @@
 {
   "name": "tinymoon",
   "version": "0.8.0",
-  "description": "Zero-dependency vanilla JS/CSS UI framework",
+  "description": "Zero-dependency vanilla JS/CSS UI framework with a conformance checker CLI",
   "license": "MIT",
   "type": "module",
   "main": "./assets/js/index.js",
