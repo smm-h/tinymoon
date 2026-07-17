@@ -1,9 +1,11 @@
 # Version bump type: patch, minor, major, hotfix, or prerelease
-bump = ""
+bump = "minor"
 # Short description of this release (required)
-description = ""
+description = "Deep-link query parsing and async view factories land in the router; shortcut suppression now covers all light-dismiss overlays; a human visual review pass fixed tooltip cancellation on unrelated scrolls, transcript entry flashing, and demo pacing."
 # Optional context explaining why these changes were made
-context = ""
+context = """
+The router features were originally deferred at the frozen core ceiling and became trivial after the ratchet; the shortcuts gap closed by consulting the dismissal registry that postdated it; the polish items came from the first human visual review of the gallery, which also surfaced a real framework tooltip bug.
+"""
 # Pre-release identifier: alpha, beta, rc, or stable
 # preid = ""
 # Set to true to generate a blog post for this release
