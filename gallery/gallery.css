@@ -150,6 +150,9 @@
   overflow-y: auto;
   background: var(--surface-2);
   border: 1px solid var(--border);
+  /* Autoscroll to the tail glides instead of jumping. scrollToTail() assigns
+     scrollTop directly, which this animates; reduced-motion resets it below. */
+  scroll-behavior: smooth;
 }
 .transcript-list {
   display: flex;
@@ -157,6 +160,18 @@
 }
 .transcript-block {
   border-bottom: 1px solid var(--border);
+  /* New messages fade in from below instead of snapping in. `backwards` fill
+     applies the 0% state (opacity:0) at insert time, so the block — its border
+     divider included — never paints one full-opacity frame first (the white
+     flash). Reduced-motion collapses the duration to near-zero (base.css). */
+  animation: transcript-enter var(--dur-base) ease-out backwards;
+}
+@keyframes transcript-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .transcript-scroll { scroll-behavior: auto; }
 }
 .transcript-block:last-child { border-bottom: none; }
 .transcript-head {

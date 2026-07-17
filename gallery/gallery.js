@@ -702,23 +702,27 @@ tinymoon is a **content-first web framework**: you bring plain, semantic content
     id: "view-contract",
     title: "The view contract",
     md: `
-A route's view is a plain object: \`{root, built, build(), refresh(), setSub?}\`. The shell's router owns the lifecycle:
+A route's view is a plain object: \`{root, built, build(), refresh(), setSub?, setQuery?}\`. The shell's router owns the lifecycle:
 
 - **root** — the view's \`section.view\` element. The router creates it inside \`#tm-content\` and assigns it before the first \`build()\`; views never pre-declare HTML.
 - **built + build()** — \`build()\` runs on every visit and must be idempotent: guard on \`this.built\` and construct the DOM once. Build the DOM once, then mutate data in place — no re-render passes.
 - **refresh()** — runs on every visit, after the view is shown. Cheap updates belong here.
 - **setSub(sub)** — optional. A deep link \`#/key/a/b\` delivers \`"a/b"\` before \`refresh()\` runs.
+- **setQuery(query)** — optional. A deep link \`#/key/tail?a=1&b=2\` delivers the parsed \`{a: "1", b: "2"}\` before \`build()\` and \`refresh()\`, so a link can both address a view and parameterize it.
 
 Routing to a different view retriggers the 180ms entry animation and resets the content scroll; revisiting the same view does neither.
 
+**Async view factories.** A route's \`view\` factory MAY return a \`Promise\` (e.g. \`view: () => import("./big-view.js").then(m => m.BigView)\` for code-splitting). The router shows a \`loadingBlock\` placeholder in the view's root while the promise resolves, then mounts the resolved view in place; on rejection it shows an \`errorBlock\` — never a silent failure. Any deep-link tail or query that arrived on the cold route is queued and delivered once the view resolves. The **Async route** demo shows this live.
+
 ### createView {#create-view}
 
-Writing the raw contract by hand is repetitive. \`createView({build, refresh?, setSub?})\` returns a conforming view object with \`built\` and the idempotent build guard managed for you. Your \`build(ctx)\` and \`refresh(ctx)\` receive a **ctx** \`{root, setSub(text)}\`:
+Writing the raw contract by hand is repetitive. \`createView({build, refresh?, setSub?})\` returns a conforming view object with \`built\` and the idempotent build guard managed for you. Your \`build(ctx)\` and \`refresh(ctx)\` receive a **ctx** \`{root, setSub(text), query}\`:
 
 - **ctx.root** — the view's section element (assigned before the first build; the same node across callbacks).
 - **ctx.setSub(text)** — write the topbar page subtitle (\`#tm-page-sub\`) without ever touching that node directly. The Tokens page uses it to show its live token count.
+- **ctx.query** — the parsed deep-link query object (\`{}\` when the route carries none), refreshed before every \`build\`/\`refresh\`/\`setSub\`. The **Async route** demo renders it live.
 
-The factory's own optional \`setSub(sub, ctx)\` is the deep-link handler (the contract's \`setSub\`), distinct from \`ctx.setSub\`. Plain object views still work unchanged — createView is additive sugar over the same contract.
+The factory's own optional \`setSub(sub, ctx)\` is the deep-link handler (the contract's \`setSub\`), distinct from \`ctx.setSub\`; the query is available to it as \`ctx.query\`. Plain object views still work unchanged — createView is additive sugar over the same contract.
 
 ### Eager routes {#eager-routes}
 
@@ -1044,7 +1048,7 @@ It resolves to the data on success. On rejection it also resolves (to \`undefine
 \`registerShortcut(combo, handler, {allowInInputs?, global?})\` → \`unregister\` binds a shortcut on ONE shared module-level keydown listener.
 
 - **Combo syntax** is \`"mod+k"\` style: \`+\`-joined tokens, the last is the key. \`mod\` resolves to Cmd on Apple platforms and Ctrl elsewhere, so one registration is correct on every OS. For a single-character key the shift state is implied by the character itself (\`"?"\` already means Shift+/), so shift is not part of the signature there.
-- **Overlay suppression** — while a modal overlay (a modal, a modal drawer, or the command palette) is open, ordinary shortcuts are suppressed; only \`{global: true}\` shortcuts fire. That is what lets the palette's own toggle close it while it is open. Documented limitation: shortcuts are not suppressed while these light-dismiss overlays are open: popover, context menu, select menu, non-modal drawer. They are Escape-dismissable and short-lived, so ordinary shortcuts stay live underneath them.
+- **Overlay suppression** — while ANY overlay is open, ordinary shortcuts are suppressed; only \`{global: true}\` shortcuts fire. That is what lets the palette's own toggle close it while it is open. Suppression consults two sources: an open modal top-layer \`<dialog>\` (a modal, a modal drawer, or the command palette) AND the central light-dismiss registry, so the transient overlays — popover, context menu, select menu, non-modal drawer — suppress too (this closed an earlier gap where they did not). \`registerShortcut\` reads \`lightDismissDepth()\` from the dismiss engine rather than scanning the DOM for a specific overlay shape.
 - **Text entry** — a bare single-key combo does not fire inside an input/textarea/contenteditable unless \`allowInInputs\` is set; modifier combos always fire.
 - **No silent override** — registering an already-active combo is a hard error; unregister the first before rebinding.
 `,
@@ -1914,16 +1918,38 @@ const TranscriptView = {
     note.style.fontSize = "13px";
     p.appendChild(note);
 
-    // The scroll viewport. Its scroll position drives the pin/pause state.
+    // The scroll viewport. `pinned` is the user's INTENT to follow the tail.
+    // Two rules keep it robust against both the streaming ticker and the smooth
+    // tail-follow glide (which passes through not-at-bottom positions):
+    //   1. Only a USER GESTURE un-pins, and it does so SYNCHRONOUSLY — before any
+    //      streaming render can re-follow. So there is no async-scroll-event race.
+    //   2. The scroll listener only ever RE-pins (on reaching the bottom); it
+    //      never un-pins, so our own downward glide can never trip the pause.
     this.scroll = el("div", "transcript-scroll");
     this.scroll.dataset.testid = "transcript-scroll";
     this.list = el("div", "transcript-list");
     this.scroll.appendChild(this.list);
+
+    // A user scroll-up gesture releases the pin at once (only if not already at
+    // the bottom, so a downward wheel at the tail does not toggle it).
+    const release = () => {
+      if (!this.atBottom()) {
+        this.pinned = false;
+        this.resume.classList.remove("hidden");
+      }
+    };
+    this.scroll.addEventListener("wheel", (e) => { if (e.deltaY < 0) release(); }, { passive: true });
+    this.scroll.addEventListener("touchmove", release, { passive: true });
+    this.scroll.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowUp" || e.key === "PageUp" || e.key === "Home") release();
+    });
+    // Re-pin when the viewport returns to the bottom (by the user or by a glide
+    // landing). Never un-pins here — that is the gesture listeners' job.
     this.scroll.addEventListener("scroll", () => {
-      const atBottom =
-        this.scroll.scrollHeight - this.scroll.scrollTop - this.scroll.clientHeight < 24;
-      this.pinned = atBottom;
-      this.resume.classList.toggle("hidden", this.pinned);
+      if (this.atBottom()) {
+        this.pinned = true;
+        this.resume.classList.add("hidden");
+      }
     });
     p.appendChild(this.scroll);
 
@@ -1944,11 +1970,18 @@ const TranscriptView = {
     this.start();
   },
 
+  atBottom() {
+    return this.scroll.scrollHeight - this.scroll.scrollTop - this.scroll.clientHeight < 24;
+  },
+
   render() {
     reconcile(this.list, transcriptStore.get("messages"), (m) => m.id, {
       create: (m) => this.createBlock(m),
       update: (node, m) => this.updateBlock(node, m),
     });
+    // Follow the tail whenever the user intends to (pinned). Un-pinning is
+    // handled synchronously by the user-gesture listeners, so this flag is never
+    // stale when a streaming render reads it.
     if (this.pinned) this.scrollToTail();
   },
 
@@ -1993,6 +2026,9 @@ const TranscriptView = {
   },
 
   scrollToTail() {
+    // CSS scroll-behavior: smooth glides us to the tail. The scroll listener
+    // distinguishes this (scrollTop increasing) from a user scroll-up, so no
+    // programmatic guard is needed here.
     this.scroll.scrollTop = this.scroll.scrollHeight;
   },
 
@@ -2533,14 +2569,16 @@ paintThemeBtn();
 
 // ---------- Async states + lazyMount demo ----------
 
-// A simulated fetch: resolves after a short delay with data, an empty list, or
-// a rejection, so renderAsync's loading → data / empty / error swap is visible.
+// A simulated fetch: resolves after a delay with data, an empty list, or a
+// rejection, so renderAsync's loading → data / empty / error swap is visible.
+// The delay is longer than one full 0.8s spinner rotation so the loading state
+// is actually perceivable — a 350ms flash reads as a glitch, not a spinner.
 function fakeFetch(kind) {
   return new Promise((res, rej) => setTimeout(() => {
     if (kind === "error") rej(new Error("Simulated fetch failure"));
     else if (kind === "empty") res([]);
     else res(["Alpha", "Beta", "Gamma", "Delta"]);
-  }, 350));
+  }, 1100));
 }
 
 const AsyncView = createView({
@@ -2621,6 +2659,50 @@ const AsyncView = createView({
   },
 });
 
+// ---------- async route + deep-link query demo ----------
+
+// renderDeferredQuery reads ctx.query (the parsed deep-link query) into the
+// <pre>, so the demo reflects "?panel=metrics&range=7d" live.
+function renderDeferredQuery(ctx) {
+  const out = ctx.root.querySelector('[data-testid="deferred-query"]');
+  if (!out) return;
+  const keys = Object.keys(ctx.query);
+  out.textContent = keys.length
+    ? keys.map((k) => k + " = " + ctx.query[k]).join("\n")
+    : "(no query params — append ?panel=metrics&range=7d to the hash)";
+}
+
+// The resolved view for the async route. Reads ctx.query so the SAME view is
+// parameterized by the deep-link query — addressing plus configuration in one
+// link. build() runs once; refresh() re-reads the query on every visit.
+const DeferredView = createView({
+  build(ctx) {
+    ctx.setSub("resolved async route");
+    const root = ctx.root;
+    root.appendChild(el("h2", null, "Deferred view"));
+    root.appendChild(el("p", "demo-note",
+      "This view's factory returned a Promise, so the router showed a loadingBlock spinner while it resolved, then mounted this in place. A rejected promise would show an errorBlock (with a Retry when the factory wires one) instead — no silent failure."));
+    const p = el("div", "panel");
+    p.appendChild(el("h3", null, "Deep-link query"));
+    p.appendChild(el("p", "demo-note",
+      "A deep link may carry a query: #/deferred?panel=metrics&range=7d parses into ctx.query. It renders below and updates live as the query changes."));
+    const out = el("pre", "mono");
+    out.dataset.testid = "deferred-query";
+    p.appendChild(out);
+    root.appendChild(p);
+    renderDeferredQuery(ctx);
+  },
+  refresh(ctx) { renderDeferredQuery(ctx); },
+});
+
+// The async route factory: returns a Promise<view>, so resolveView shows a
+// loadingBlock placeholder while it settles. A real app would `return
+// import("./deferred-view.js").then(m => m.DeferredView)` for code-splitting; a
+// short delayed resolve stands in here so the gallery needs no second chunk.
+function deferredViewFactory() {
+  return new Promise((res) => setTimeout(() => res(DeferredView), 700));
+}
+
 // Dogfood iconButton in the real topbar: a stateful "pin" toggle alongside the
 // theme button (topbarActions accepts Nodes, so we pass the instance's .el).
 const pinBtn = iconButton({ icon: "bookmark", tip: "Pin this page (demo toggle)", active: false });
@@ -2667,6 +2749,10 @@ shell = mountShell({
     async: {
       title: "Async & lazy", icon: "download", view: () => AsyncView,
       tip: "Async & lazy -- the Phase 6B async-state blocks (renderAsync driving loading/data/empty/error) and lazyMount (IntersectionObserver-gated, concurrency-pumped loading).",
+    },
+    deferred: {
+      title: "Async route", icon: "download", view: deferredViewFactory,
+      tip: "Async route -- an async view factory: view() returns a Promise, so the router shows a loadingBlock while it resolves, then mounts the view. Reads the deep-link query (ctx.query): try #/deferred?panel=metrics&range=7d.",
     },
     state: {
       title: "State", icon: "faders", view: () => StateView,

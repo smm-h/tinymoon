@@ -30,6 +30,9 @@ test.describe("realtime demo — socket lifecycle", () => {
 
 test.describe("transcript recipe — store · reconcile · realtime · primitives", () => {
   test("streams, auto-scrolls to the tail, pauses on scroll-up, and collapses a block", async ({ page }) => {
+    // A live 600ms ticker drives this test; under a saturated parallel run the
+    // message accumulation and settle waits stretch, so allow extra headroom.
+    test.slow();
     await page.goto("/gallery/");
     await expect(page.locator("#tm-app")).toBeVisible();
     await page.evaluate(() => { location.hash = "#/transcript"; });
@@ -47,9 +50,16 @@ test.describe("transcript recipe — store · reconcile · realtime · primitive
         scroll.evaluate((e) => e.scrollHeight - e.scrollTop - e.clientHeight), { timeout: 5000 })
       .toBeLessThan(24);
 
-    // (3) Pause on scroll-up: scrolling to the top reveals the resume control
-    // and stops the auto-follow — new messages no longer move the viewport.
-    await scroll.evaluate((e) => { e.scrollTop = 0; });
+    // (3) Pause on scroll-up: a user scroll-up gesture reveals the resume control
+    // and stops the auto-follow — new messages no longer move the viewport. The
+    // recipe un-pins on the gesture (wheel), so simulate a real one: jump to the
+    // top instantly (behavior:"instant", since CSS scroll-behavior:smooth would
+    // otherwise animate) and fire a wheel-up. This un-pins synchronously, so the
+    // pause is deterministic against the live ticker — no polling needed.
+    await scroll.evaluate((e) => {
+      e.scrollTo({ top: 0, behavior: "instant" });
+      e.dispatchEvent(new WheelEvent("wheel", { deltaY: -100, bubbles: true }));
+    });
     const resume = page.locator('[data-testid="transcript-resume"]');
     await expect(resume).toBeVisible();
     const topBefore = await scroll.evaluate((e) => e.scrollTop);
