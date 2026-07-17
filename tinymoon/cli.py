@@ -51,7 +51,7 @@ app = strictcli.App(
         "current directory implicitly)"
     ),
 )
-def check(dir):
+def check(ctx, dir):
     root = Path(dir)
     if not root.is_dir():
         print(f"error: --dir {dir!r} is not a directory", file=sys.stderr)
