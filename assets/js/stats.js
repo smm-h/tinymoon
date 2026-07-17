@@ -75,15 +75,23 @@ export function createStat(opts) {
   return { el: root, set, setTrend, destroy };
 }
 
-// renderStats(items) → {el, stats, destroy}. `items` is an array of createStat
-// option objects; the returned `el` is a .report-stats grid holding one stat
-// tile per item, `stats` is the array of createStat instances (in order), and
+// renderStats(items) → {el, stats, destroy}. `items` is an array whose entries
+// may EITHER be createStat option objects OR already-built createStat instances
+// (or any mix). An entry that carries an `.el` property is treated as a live
+// instance and passed through unchanged; anything else is handed to
+// createStat(). This lets callers pre-build tiles (to keep references, wire
+// bind(), or set a trend before mounting) and still drop them into the row
+// builder — without renderStats mistaking an instance for a bad config and
+// throwing "label is required". The returned `el` is a .report-stats grid
+// holding one tile per item, `stats` is the array of instances (in order), and
 // `destroy` tears them all down. A convenience over hand-wiring a row.
 export function renderStats(items) {
   if (!Array.isArray(items)) throw new Error("renderStats: items array is required");
   const root = el("div", "report-stats");
   const stats = items.map((item) => {
-    const s = createStat(item);
+    // An entry with an `.el` is already a createStat instance; pass it through.
+    // Otherwise it is a config object for createStat.
+    const s = item && item.el != null ? item : createStat(item);
     root.appendChild(s.el);
     return s;
   });

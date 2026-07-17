@@ -91,6 +91,49 @@ describe("renderStats", () => {
     expect(() => renderStats()).toThrow(/items array is required/);
   });
 
+  it("accepts already-built createStat instances and passes them through", async () => {
+    const { createStat, renderStats } = await import("../../../assets/js/stats.js");
+    // Pre-build a tile, then hand the INSTANCE (not a config) to renderStats.
+    // Previously this threw "label is required" because renderStats fed the
+    // instance to createStat, which saw no .label.
+    const pre = createStat({ label: "Pre", value: 7, trend: "good" });
+    const row = renderStats([pre]);
+    expect(row.stats.length).toBe(1);
+    // The SAME instance is used (identity preserved), not a rebuilt copy.
+    expect(row.stats[0]).toBe(pre);
+    // Its already-set trend and value survived the pass-through.
+    expect(row.el.querySelector(".stat-v-text").textContent).toBe("7");
+    expect(row.stats[0].el.classList.contains("trend-good")).toBe(true);
+    // And its .el is actually mounted into the row.
+    expect(pre.el.parentNode).toBe(row.el);
+  });
+
+  it("accepts a mix of config objects and instances in one row", async () => {
+    const { createStat, renderStats } = await import("../../../assets/js/stats.js");
+    const inst = createStat({ label: "Inst", value: 2 });
+    const row = renderStats([
+      { label: "Cfg", value: 1 },       // config object -> createStat()
+      inst,                              // instance -> passed through
+    ]);
+    expect(row.el.querySelectorAll(".stat").length).toBe(2);
+    expect(row.stats[1]).toBe(inst);
+    // The config entry became a fresh instance, distinct from the passed one.
+    expect(row.stats[0]).not.toBe(inst);
+    expect(row.stats[0].el.querySelector(".k").textContent).toBe("Cfg");
+  });
+
+  it("destroy tears down passed-through instances too", async () => {
+    const { createStat, renderStats } = await import("../../../assets/js/stats.js");
+    const parent = document.createElement("div");
+    const inst = createStat({ label: "X", value: 1 });
+    const row = renderStats([inst]);
+    parent.appendChild(row.el);
+    row.destroy();
+    expect(parent.children.length).toBe(0);
+    // The instance's node is detached by the row's destroy.
+    expect(inst.el.parentNode).toBe(null);
+  });
+
   it("destroy tears down every tile and the row", async () => {
     const { renderStats } = await import("../../../assets/js/stats.js");
     const parent = document.createElement("div");
