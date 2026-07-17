@@ -147,3 +147,96 @@ describe("eager routes", () => {
     expect(built).toBe(false);
   });
 });
+
+function mountOne(view) {
+  return mountShell({
+    root: document.body,
+    brand: { name: "T", logoHTML: "<b>T</b>" },
+    routes: { a: { title: "A", icon: "library", view } },
+    defaultRoute: "a",
+  });
+}
+const flush = () => new Promise((r) => setTimeout(r));
+
+describe("shell router — deep-link query", () => {
+  it("parses the hash query into ctx.query for build and refresh", () => {
+    let buildQ = null;
+    let refreshQ = null;
+    const v = createView({
+      build(ctx) { buildQ = ctx.query; },
+      refresh(ctx) { refreshQ = ctx.query; },
+    });
+    location.hash = "#/a?panel=metrics&range=7d";
+    mountOne(() => v);
+    expect(buildQ).toEqual({ panel: "metrics", range: "7d" });
+    expect(refreshQ).toEqual({ panel: "metrics", range: "7d" });
+  });
+
+  it("ctx.query is an empty object when the route carries no query", () => {
+    let seen = null;
+    const v = createView({ build(ctx) { seen = ctx.query; } });
+    location.hash = "#/a";
+    mountOne(() => v);
+    expect(seen).toEqual({});
+  });
+
+  it("delivers both the deep-link tail (setSub) and the query together", () => {
+    let sub = null;
+    let q = null;
+    const v = createView({
+      build() {},
+      setSub(s, ctx) { sub = s; q = ctx.query; },
+    });
+    location.hash = "#/a/x/y?k=1";
+    mountOne(() => v);
+    expect(sub).toBe("x/y");
+    expect(q).toEqual({ k: "1" });
+  });
+
+  it("URI-decodes query values", () => {
+    let seen = null;
+    const v = createView({ build(ctx) { seen = ctx.query; } });
+    location.hash = "#/a?q=" + encodeURIComponent("a b&c");
+    mountOne(() => v);
+    expect(seen.q).toBe("a b&c");
+  });
+});
+
+describe("shell router — async view factory", () => {
+  it("shows a loadingBlock placeholder, then mounts the resolved view", async () => {
+    const inner = createView({
+      build(ctx) { const h = document.createElement("h2"); h.textContent = "Loaded async"; ctx.root.appendChild(h); },
+    });
+    let resolveFn;
+    location.hash = "#/a";
+    mountOne(() => new Promise((res) => { resolveFn = res; }));
+    // Synchronously after mount: the loading placeholder is in the DOM.
+    expect(document.querySelector(".tm-state-loading")).not.toBeNull();
+    resolveFn(inner);
+    await flush();
+    expect(document.querySelector(".tm-state-loading")).toBeNull();
+    expect(document.body.textContent).toContain("Loaded async");
+  });
+
+  it("shows an errorBlock when the factory rejects (no silent failure)", async () => {
+    let rejectFn;
+    location.hash = "#/a";
+    mountOne(() => new Promise((_, rej) => { rejectFn = rej; }));
+    rejectFn(new Error("could not load"));
+    await flush();
+    const err = document.querySelector(".tm-state-error");
+    expect(err).not.toBeNull();
+    expect(err.textContent).toContain("could not load");
+  });
+
+  it("delivers a queued deep-link query to the async view once it resolves", async () => {
+    let seen = null;
+    const inner = createView({ build(ctx) { seen = ctx.query; } });
+    let resolveFn;
+    location.hash = "#/a?x=1&y=2";
+    mountOne(() => new Promise((res) => { resolveFn = res; }));
+    resolveFn(inner);
+    await flush();
+    expect(seen).toEqual({ x: "1", y: "2" });
+  });
+});

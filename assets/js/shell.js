@@ -6,23 +6,32 @@
 //   root           — container the shell frame is appended to
 //   brand          — {name, logoHTML}: name feeds --brand-initial
 //   routes         — {key: {title, icon, view, tip?, hidden?, eager?}}. view is
-//                    a () => viewObj factory, an HTML string, or an Element.
+//                    a () => viewObj factory, an HTML string, or an Element. The
+//                    factory MAY return a Promise<viewObj> (async view): the
+//                    router shows a loadingBlock placeholder while it resolves,
+//                    then mounts the resolved view, or an errorBlock on reject.
 //                    hidden routes stay routable with no nav item; eager: true
 //                    builds the view (hidden) at mount.
 //   defaultRoute   — route key for an empty or unknown hash
-//   legacyRoutes?  — {oldKey: "newRoute"}: old hashes redirect, tails preserved
+//   legacyRoutes?  — {oldKey: "newRoute"}: old hashes redirect, tail+query kept
 //   topbarActions? — nodes or {icon, tip, onClick} specs for #tm-topbar-actions
 //   footer?        — {height, node}: sets --footer-h and appends node to body
 //   onRoute?       — fn(routeKey, sub): runs after each route is handled
 //                    (view built, setSub applied, refresh run, title set),
 //                    including the initial mount route.
 //
-// View contract: {root, built, build(), refresh(), setSub?(sub)}. The router
-// creates each view's section.view inside #tm-content and assigns view.root
-// before the first build() (views never pre-declare HTML). build() must be
-// idempotent (guard on .built); refresh() runs every visit; setSub(sub) gets
-// the deep-link tail ("#/key/a/b" → "a/b") before refresh(). The createView
-// factory (view.js) builds a conforming object for you.
+// Deep links carry an optional query: "#/key/tail?a=1&b=2". The path segments
+// after the key are the setSub tail ("tail"); the query parses into an object
+// pushed onto the view via setQuery before build/refresh (ctx.query in a
+// createView view), so a link can address a view AND parameterize it.
+//
+// View contract: {root, built, build(), refresh(), setSub?(sub), setQuery?(q)}.
+// The router creates each view's section.view inside #tm-content and assigns
+// view.root before the first build() (views never pre-declare HTML). build()
+// must be idempotent (guard on .built); refresh() runs every visit; setSub(sub)
+// gets the deep-link tail ("#/key/a/b" → "a/b") and setQuery(q) the parsed
+// query, both before refresh(). The createView factory (view.js) builds a
+// conforming object for you and surfaces the query as ctx.query.
 //
 // Declarative shorthand: view can also be an HTML string or an Element (e.g. a
 // <template>'s content); the shell wraps it in a minimal view object. Additive
@@ -34,6 +43,7 @@ import { ensureTooltip } from "./tooltip.js";
 import { ensureRoot } from "./kernel.js";
 import { swipeToClose } from "./drawer.js";
 import { registerOverlayTrigger, registerLightDismiss } from "./dismiss.js";
+import { loadingBlock, errorBlock } from "./states.js";
 
 // Live handles to the mounted shell's #tm-page-sub and aria-live announcer,
 // backing setPageSub()/announce() (used by the createView ctx). No-op unmounted.
@@ -43,11 +53,90 @@ let _announcer = null;
 export function setPageSub(text) { if (_pageSub) _pageSub.textContent = text || ""; }
 export function announce(msg) { if (_announcer) _announcer.textContent = msg || ""; }
 
+// parseQuery("a=1&b=2") → {a: "1", b: "2"}. Empty string → {}. Values are
+// URI-decoded (URLSearchParams handles "+" and "%xx"); repeated keys keep the
+// last. The parsed object is handed to views via ctx.query and setSub.
+function parseQuery(qs) {
+  const out = {};
+  if (!qs) return out;
+  for (const [k, v] of new URLSearchParams(qs)) out[k] = v;
+  return out;
+}
+
+// makeAsyncView(promise) — wrap a view-factory Promise into a synchronous view
+// object the router can use at once: build() shows a loadingBlock placeholder in
+// its root, awaits the promise, then builds the resolved view into the SAME root
+// (clearing the placeholder). A rejection swaps in an errorBlock — no silent
+// failure. Any setQuery/setSub/refresh the router issues before resolution is
+// queued and flushed once the inner view mounts, so a deep link that lands on a
+// cold async route still delivers its query and tail.
+function makeAsyncView(promise) {
+  let inner = null;
+  let pendingQuery;
+  let pendingSub;
+  let refreshQueued = false;
+
+  const wrapper = {
+    root: null,
+    built: false,
+    setQuery(query) {
+      if (inner) inner.setQuery && inner.setQuery(query);
+      else pendingQuery = query;
+    },
+    setSub(sub) {
+      if (inner) inner.setSub && inner.setSub(sub);
+      else pendingSub = sub;
+    },
+    build() {
+      if (this.built) return;
+      this.built = true;
+      const root = this.root;
+      root.appendChild(loadingBlock({ label: "Loading…" }));
+      Promise.resolve(promise).then(
+        (resolved) => {
+          if (!resolved || typeof resolved.build !== "function") {
+            throw new Error("mountShell: async route factory must resolve to a view object");
+          }
+          inner = resolved;
+          root.textContent = "";
+          inner.root = root;
+          if (pendingQuery !== undefined && inner.setQuery) inner.setQuery(pendingQuery);
+          inner.build();
+          if (pendingSub !== undefined && inner.setSub) inner.setSub(pendingSub);
+          if (refreshQueued) inner.refresh();
+        },
+        (err) => {
+          root.textContent = "";
+          root.appendChild(errorBlock({ message: (err && err.message) || String(err) }));
+        },
+      );
+    },
+    refresh() {
+      if (inner) inner.refresh();
+      else refreshQueued = true;
+    },
+  };
+  return wrapper;
+}
+
 // Wrap a declarative view value (string HTML or Element) into a view object,
 // cached by identity so repeated calls return the same instance.
 const _declCache = new Map();
+// Async factories resolve to a persistent async-wrapper (keyed by the factory
+// fn), so a re-route or refreshCurrent() reuses the loaded view — the promise
+// is awaited once, never re-fired.
+const _asyncCache = new Map();
 function resolveView(viewSpec) {
-  if (typeof viewSpec === "function") return viewSpec();
+  if (typeof viewSpec === "function") {
+    if (_asyncCache.has(viewSpec)) return _asyncCache.get(viewSpec);
+    const out = viewSpec();
+    if (out && typeof out.then === "function") {
+      const wrapper = makeAsyncView(out);
+      _asyncCache.set(viewSpec, wrapper);
+      return wrapper;
+    }
+    return out;
+  }
   if (viewSpec instanceof Object && !(viewSpec instanceof Element))
     throw new Error("mountShell: route view is an object, not a factory -- wrap it: () => view");
   if (_declCache.has(viewSpec)) return _declCache.get(viewSpec);
@@ -225,10 +314,12 @@ export function mountShell(config) {
   let currentRoute = null;
   let currentHash = null;
 
-  // mountView: resolve + first-mount root + build.
-  function mountView(spec) {
+  // mountView: resolve + first-mount root + push query + build. The query is set
+  // BEFORE build() so ctx.query is current on the first (idempotent) build too.
+  function mountView(spec, query) {
     const view = resolveView(spec);
     if (!view.root) { view.root = el("section", "view hidden"); content.appendChild(view.root); }
+    if (view.setQuery) view.setQuery(query || {});
     view.build();
     return view;
   }
@@ -239,13 +330,19 @@ export function mountShell(config) {
     currentHash = raw;
     // Close the mobile nav drawer on route change.
     if (closeNav) closeNav();
-    // Routes can carry a sub-path (deep link): #/key/<tail>.
-    const parts = raw.split("/");
+    // A deep link is "#/key/<tail>?<query>": split the query off the path first,
+    // then segment the path. The query parses into an object handed to the view.
+    const qIndex = raw.indexOf("?");
+    const pathRaw = qIndex === -1 ? raw : raw.slice(0, qIndex);
+    const queryStr = qIndex === -1 ? "" : raw.slice(qIndex + 1);
+    const query = parseQuery(queryStr);
+    const parts = pathRaw.split("/");
     const key = parts[0];
     if (legacyRoutes && legacyRoutes[key] !== undefined) {
-      // Old bookmarks keep working; the tail rides along.
+      // Old bookmarks keep working; the tail AND the query ride along.
       const tail = parts.length > 1 ? "/" + parts.slice(1).join("/") : "";
-      location.replace("#/" + legacyRoutes[key] + tail);
+      const qs = queryStr ? "?" + queryStr : "";
+      location.replace("#/" + legacyRoutes[key] + tail + qs);
       return;
     }
     let sub;
@@ -269,7 +366,7 @@ export function mountShell(config) {
     });
     setTitle(r.title, "");
     $$(".view", content).forEach((v) => v.classList.add("hidden"));
-    const view = mountView(r.view);
+    const view = mountView(r.view, query);
     if (sub && view.setSub) view.setSub(sub);
     view.root.classList.remove("hidden");
     if (!sameView) {

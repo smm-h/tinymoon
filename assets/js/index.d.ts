@@ -608,7 +608,10 @@ export function renderMiniMd(text: string): string;
 export interface ShellRoute {
   title: string;
   icon: string;
-  view: (() => ShellView) | string | HTMLElement;
+  /** A view factory, an HTML string, or an Element. The factory MAY return a
+   * `Promise<ShellView>` (async view): the router shows a loadingBlock while it
+   * resolves and mounts the resolved view, or an errorBlock on rejection. */
+  view: (() => ShellView | Promise<ShellView>) | string | HTMLElement;
   tip?: string;
   hidden?: boolean;
   /** Build the view (hidden) at mount instead of on first visit. */
@@ -620,7 +623,10 @@ export interface ShellView {
   built: boolean;
   build(): void;
   refresh(): void;
+  /** Receives the deep-link path tail ("#/key/a/b" → "a/b") before refresh(). */
   setSub?(sub: string): void;
+  /** Receives the parsed deep-link query object before build/refresh. */
+  setQuery?(query: Record<string, string>): void;
 }
 
 export interface ShellConfig {
@@ -664,6 +670,10 @@ export interface ViewContext {
   root: HTMLElement;
   /** Write the shell topbar's page subtitle (#tm-page-sub). */
   setSub(text: string): void;
+  /** The parsed deep-link query object: "#/key/tail?a=1&b=2" → {a:"1", b:"2"}
+   * ({} when the route carries no query). Refreshed by the router before every
+   * build/refresh/setSub. */
+  query: Record<string, string>;
 }
 
 export interface CreateViewOpts {
@@ -672,7 +682,8 @@ export interface CreateViewOpts {
   build(ctx: ViewContext): void;
   /** Cheap per-visit updates; runs after the view is shown. */
   refresh?(ctx: ViewContext): void;
-  /** Deep-link handler: receives the hash tail before refresh() runs. */
+  /** Deep-link handler: receives the hash tail before refresh() runs. The
+   * parsed query is available as ctx.query. */
   setSub?(sub: string, ctx: ViewContext): void;
 }
 

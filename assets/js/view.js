@@ -4,11 +4,14 @@
 // interesting parts. Plain object views still work unchanged — createView is a
 // convenience layer on top of the same contract the router already understands.
 //
-// build(ctx) and refresh(ctx) receive a ctx {root, setSub(text)}:
+// build(ctx) and refresh(ctx) receive a ctx {root, setSub(text), query}:
 //   ctx.root       — the view's section element (assigned by the router before
 //                    the first build; the same node for every callback)
 //   ctx.setSub(t)  — write the shell's page-subtitle element (#tm-page-sub)
 //                    without the consumer ever touching that node directly.
+//   ctx.query      — the parsed deep-link query object: "#/key/tail?a=1&b=2"
+//                    yields {a: "1", b: "2"} ({} when the route carries none).
+//                    The router refreshes it before every build/refresh/setSub.
 //
 // The factory's own optional setSub(sub, ctx) is the DEEP-LINK handler (the
 // view-contract setSub): it receives the deep-link tail before refresh() runs.
@@ -22,12 +25,16 @@ export function createView(opts) {
     throw new Error("createView: build(ctx) is required");
   }
   const { build, refresh, setSub } = opts;
-  // One ctx instance per view; ctx.root is filled in on first build.
-  const ctx = { root: null, setSub: setPageSub };
+  // One ctx instance per view; ctx.root is filled in on first build, ctx.query
+  // is refreshed by the router (view.setQuery) before each build/refresh/setSub.
+  const ctx = { root: null, setSub: setPageSub, query: {} };
 
   const view = {
     root: null,
     built: false,
+    // The router pushes the parsed deep-link query in before build/refresh, so
+    // ctx.query is current for every callback (see shell.js route()).
+    setQuery(query) { ctx.query = query || {}; },
     build() {
       if (this.built) return;
       this.built = true;
