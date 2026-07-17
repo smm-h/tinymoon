@@ -28,6 +28,21 @@ no warning mode and no bypass:
   comments, and URLs in plain HTML prose. An optional allowlist file
   (tinymoon-allowlist.txt at the scanned dir root, one exact URL per
   line, # comments allowed) exempts exact matches.
+  KNOWN LIMITATION (JS: inline literals only): in JS the rule matches a URL
+  only when it appears as an INLINE STRING (or template) LITERAL directly at
+  the load site -- fetch("https://..."), new WebSocket("wss://..."),
+  import("https://..."), or an `import ... from "https://..."` specifier. The
+  detectors are regexes with no data-flow analysis, so ONE LEVEL OF VARIABLE
+  INDIRECTION evades them: `const u = "https://x"; fetch(u)` is not caught,
+  because the checker sees only the literal at the call, not the value flowing
+  into it. This is a deliberate, documented gap the TREE-SITTER REWRITE closes
+  (an AST walk follows the assignment). Until then the rule is honest about its
+  reach: consumers must keep external URLs as INLINE LITERALS at the load site,
+  both so the rule can see them and so tinymoon-allowlist.txt can exempt them --
+  a URL hidden behind a variable is neither caught nor allowlistable, which
+  defeats the allowlist. (This is the external-url analogue of the title-attr
+  and raw-color regex limitations documented below: the rule prefers a known,
+  stated boundary over a false sense of completeness.)
 - native-control: no native form/dialog controls in HTML, and no JS creation
   of the same. The banned surface is:
     * elements: <select>, <dialog>, <textarea>;
