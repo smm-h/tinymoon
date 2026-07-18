@@ -2,6 +2,21 @@
 
 # Changelog
 
+## 0.9.1
+
+strictcli 0.29 compatibility — fixes `tinymoon check` crashing at startup
+
+<details>
+<summary>Context</summary>
+
+strictcli 0.29.0 requires ctx-first handler signatures. Published tinymoon 0.9.0 crashed at import under current strictcli (handler missing parameter "dir"). This patch migrates all CLI handlers to the ctx-first signature, restoring compatibility.
+
+</details>
+
+### Fixes
+
+- **Fixed `tinymoon check` crashing at startup with strictcli 0.29+.** The CLI now uses ctx-first handler signatures, restoring compatibility with current strictcli.
+
 ## 0.9.0
 
 Deep-link query parsing and async view factories land in the router; shortcut suppression now covers all light-dismiss overlays; a human visual review pass fixed tooltip cancellation on unrelated scrolls, transcript entry flashing, and demo pacing.
